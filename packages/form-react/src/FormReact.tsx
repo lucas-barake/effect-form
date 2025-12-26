@@ -732,16 +732,14 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
   const stateAtom = Atom.make(initialState).pipe(Atom.setIdleTTL(0))
   const crossFieldErrorsAtom = Atom.make<Map<string, string>>(new Map()).pipe(Atom.setIdleTTL(0))
 
-  // structuralRegion enables deep structural equality for nested objects
   const isDirtyAtom = Atom.readable((get) => {
     const state = get(stateAtom)
+    // structuralRegion enables deep structural equality for nested objects
     return !Utils.structuralRegion(() => Equal.equals(state.values, state.initialValues))
   }).pipe(Atom.setIdleTTL(0))
   const onSubmitAtom = Atom.make<Atom.AtomResultFn<Form.DecodedFromFields<TFields>, unknown, unknown> | null>(null)
     .pipe(Atom.setIdleTTL(0))
 
-  // WeakRef registries allow automatic cleanup via FinalizationRegistry when atoms are GC'd.
-  // Prevents memory leaks when array items are removed - atoms become unreferenced and auto-cleanup.
   const validationAtomsRegistry = createWeakRegistry<Atom.AtomResultFn<unknown, void, ParseResult.ParseError>>()
   const fieldAtomsRegistry = createWeakRegistry<FieldAtoms>()
 
