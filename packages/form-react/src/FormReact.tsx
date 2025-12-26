@@ -137,6 +137,7 @@ export type BuiltForm<TFields extends Form.FieldsRecord, R> = {
     readonly reset: () => void
     readonly isDirty: boolean
     readonly submitResult: Result.Result<unknown, unknown>
+    readonly values: Form.EncodedFromFields<TFields>
   }
 
   readonly submit: <A, E>(
@@ -432,15 +433,10 @@ const makeArrayFieldComponent = <TItemFields extends Form.FieldsRecord>(
     readonly children: React.ReactNode | ((props: { readonly remove: () => void }) => React.ReactNode)
   }> = ({ children, index }) => {
     const arrayCtx = useContext(ArrayItemContext)
-    const [formState, setFormState] = useAtom(stateAtom)
+    const setFormState = useAtomSet(stateAtom)
 
     const parentPath = arrayCtx ? `${arrayCtx.parentPath}.${fieldKey}` : fieldKey
     const itemPath = `${parentPath}[${index}]`
-
-    const items = React.useMemo(
-      () => getNestedValue(formState.values, parentPath) ?? [],
-      [formState.values, parentPath],
-    )
 
     const remove = React.useCallback(() => {
       setFormState((prev: Form.FormState<any>) => {
@@ -616,6 +612,13 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
 
   const stateAtom = Atom.make(initialState).pipe(Atom.setIdleTTL(0))
   const crossFieldErrorsAtom = Atom.make<Map<string, string>>(new Map()).pipe(Atom.setIdleTTL(0))
+
+  // Derived atom for isDirty - memoized at atom level, only recomputes when state changes
+  // structuralRegion enables deep structural equality for nested objects
+  const isDirtyAtom = Atom.readable((get) => {
+    const state = get(stateAtom)
+    return !Utils.structuralRegion(() => Equal.equals(state.values, state.initialValues))
+  }).pipe(Atom.setIdleTTL(0))
   const onSubmitAtom = Atom.make<Atom.AtomResultFn<Form.DecodedFromFields<TFields>, unknown, unknown> | null>(null)
     .pipe(Atom.setIdleTTL(0))
 
@@ -744,9 +747,11 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
 
   const useFormHook = () => {
     const registry = React.useContext(RegistryContext)
-    const [formState, setFormState] = useAtom(stateAtom)
+    const formValues = useAtomValue(stateAtom).values
+    const setFormState = useAtomSet(stateAtom)
     const setCrossFieldErrors = useAtomSet(crossFieldErrorsAtom)
     const [decodeAndSubmitResult, callDecodeAndSubmit] = useAtom(decodeAndSubmit)
+    const isDirty = useAtomValue(isDirtyAtom)
 
     React.useEffect(() => {
       if (decodeAndSubmitResult._tag === "Failure") {
@@ -779,8 +784,8 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
         touched: Form.createTouchedRecord(fields, true) as { readonly [K in keyof TFields]: boolean },
       }))
 
-      callDecodeAndSubmit(formState.values)
-    }, [formState.values, setFormState, callDecodeAndSubmit, setCrossFieldErrors])
+      callDecodeAndSubmit(formValues)
+    }, [formValues, setFormState, callDecodeAndSubmit, setCrossFieldErrors])
 
     const reset = React.useCallback(() => {
       setFormState((prev: Form.FormState<any>) => ({
@@ -794,18 +799,15 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
       callDecodeAndSubmit(Atom.Reset)
     }, [setFormState, setCrossFieldErrors, callDecodeAndSubmit, registry])
 
-    const isDirty = !Utils.structuralRegion(() => Equal.equals(formState.values, formState.initialValues))
-
-    return { submit, reset, isDirty, submitResult: decodeAndSubmitResult }
+    return { submit, reset, isDirty, submitResult: decodeAndSubmitResult, values: formValues }
   }
 
   const SubscribeComponent: React.FC<{
     readonly children: (state: SubscribeState<TFields>) => React.ReactNode
   }> = ({ children }) => {
-    const { isDirty, reset, submit, submitResult } = useFormHook()
-    const formState = useAtomValue(stateAtom)
+    const { isDirty, reset, submit, submitResult, values } = useFormHook()
 
-    return <>{children({ values: formState.values, isDirty, submitResult, submit, reset })}</>
+    return <>{children({ values, isDirty, submitResult, submit, reset })}</>
   }
 
   const submitHelper = <A, E>(
