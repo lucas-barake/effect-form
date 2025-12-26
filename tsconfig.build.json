@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "references": [
+    {
+      "path": "packages/form/tsconfig.build.json"
+    },
+    {
+      "path": "packages/form-react/tsconfig.build.json"
+    }
+  ]
+}

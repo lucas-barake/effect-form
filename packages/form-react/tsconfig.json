@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "references": [
+    {
+      "path": "../form/tsconfig.src.json"
+    },
+    {
+      "path": "tsconfig.src.json"
+    },
+    {
+      "path": "tsconfig.test.json"
+    }
+  ]
+}
