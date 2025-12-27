@@ -1610,7 +1610,7 @@ describe("FormReact.build", () => {
       const onSubmit = form.submit(() => Effect.void)
 
       const SubmitCountDisplay = () => {
-        const state = useAtomValue(form.atom)
+        const state = Option.getOrThrow(useAtomValue(form.atom))
         return <span data-testid="submit-count">{state.submitCount}</span>
       }
 
