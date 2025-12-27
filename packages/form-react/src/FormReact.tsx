@@ -1050,7 +1050,7 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
         submitCount: 0,
         dirtyFields: new Set(),
       }))
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only initialization
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
     }, [])
 
     const debouncedAutoSubmit = useDebounced(() => {
@@ -1190,7 +1190,6 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
         })
       })
 
-      // Clear cross-field errors for this path and children
       setCrossFieldErrors((prev) => {
         let changed = false
         const next = new Map(prev)
@@ -1223,7 +1222,6 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
         })
       })
 
-      // Clear ALL cross-field errors
       setCrossFieldErrors(new Map())
     }, [setFormState, setCrossFieldErrors])
 

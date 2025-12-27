@@ -517,7 +517,6 @@ export const buildSchema = <TFields extends FieldsRecord, R>(
 
   let schema: Schema.Schema<any, any, any> = buildSchemaFromFields(self.fields)
 
-  // Apply refinements in order
   for (const refinement of self.refinements) {
     if (refinement._tag === "sync") {
       schema = schema.pipe(Schema.filter(refinement.fn))
