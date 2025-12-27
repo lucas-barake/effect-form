@@ -428,6 +428,13 @@ export const make = <TFields extends Form.FieldsRecord, R>(
 
     swapArrayItems: (state, arrayPath, indexA, indexB) => {
       const currentItems = (getNestedValue(state.values, arrayPath) ?? []) as ReadonlyArray<unknown>
+      if (
+        indexA < 0 || indexA >= currentItems.length ||
+        indexB < 0 || indexB >= currentItems.length ||
+        indexA === indexB
+      ) {
+        return state
+      }
       const newItems = [...currentItems]
       const temp = newItems[indexA]
       newItems[indexA] = newItems[indexB]
@@ -441,6 +448,13 @@ export const make = <TFields extends Form.FieldsRecord, R>(
 
     moveArrayItem: (state, arrayPath, fromIndex, toIndex) => {
       const currentItems = (getNestedValue(state.values, arrayPath) ?? []) as ReadonlyArray<unknown>
+      if (
+        fromIndex < 0 || fromIndex >= currentItems.length ||
+        toIndex < 0 || toIndex > currentItems.length ||
+        fromIndex === toIndex
+      ) {
+        return state
+      }
       const newItems = [...currentItems]
       const [item] = newItems.splice(fromIndex, 1)
       newItems.splice(toIndex, 0, item)

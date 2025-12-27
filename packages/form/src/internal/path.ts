@@ -4,6 +4,8 @@
  * @internal
  */
 
+const BRACKET_NOTATION_REGEX = /\[(\d+)\]/g
+
 /**
  * Converts a schema path array to a dot/bracket notation string.
  *
@@ -53,7 +55,7 @@ export const isPathOrParentDirty = (dirtyFields: ReadonlySet<string>, path: stri
  * getNestedValue({ items: [{ name: "A" }] }, "items[0].name") // "A"
  */
 export const getNestedValue = (obj: unknown, path: string): unknown => {
-  const parts = path.replace(/\[(\d+)\]/g, ".$1").split(".")
+  const parts = path.replace(BRACKET_NOTATION_REGEX, ".$1").split(".")
   let current: unknown = obj
   for (const part of parts) {
     if (current == null) return undefined
@@ -70,7 +72,7 @@ export const getNestedValue = (obj: unknown, path: string): unknown => {
  * // { items: [{ name: "B" }] }
  */
 export const setNestedValue = <T>(obj: T, path: string, value: unknown): T => {
-  const parts = path.replace(/\[(\d+)\]/g, ".$1").split(".")
+  const parts = path.replace(BRACKET_NOTATION_REGEX, ".$1").split(".")
   const result = { ...obj } as Record<string, unknown>
 
   let current = result
