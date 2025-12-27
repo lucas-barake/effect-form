@@ -181,25 +181,6 @@ export interface FormState<TFields extends FieldsRecord> {
   readonly dirtyFields: ReadonlySet<string>
 }
 
-/**
- * Context passed to refinement predicates for type-safe error creation.
- *
- * @since 1.0.0
- * @category Models
- */
-export interface RefineContext<TFields extends FieldsRecord> {
-  /**
-   * Creates a type-safe error targeting a specific field.
-   *
-   * @param field - The field name to attach the error to (type-safe)
-   * @param message - The error message to display
-   */
-  readonly error: <K extends keyof TFields & string>(
-    field: K,
-    message: string,
-  ) => Schema.FilterIssue
-}
-
 interface SyncRefinement {
   readonly _tag: "sync"
   readonly fn: (values: unknown) => Schema.FilterOutput
@@ -287,19 +268,16 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
    * const form = Form.empty
    *   .addField("password", Schema.String)
    *   .addField("confirmPassword", Schema.String)
-   *   .refine((values, ctx) => {
+   *   .refine((values) => {
    *     if (values.password !== values.confirmPassword) {
-   *       return ctx.error("confirmPassword", "Passwords must match")
+   *       return { path: ["confirmPassword"], message: "Passwords must match" }
    *     }
    *   })
    * ```
    */
   refine(
     this: FormBuilder<TFields, R>,
-    predicate: (
-      values: DecodedFromFields<TFields>,
-      ctx: RefineContext<TFields>,
-    ) => Schema.FilterOutput,
+    predicate: (values: DecodedFromFields<TFields>) => Schema.FilterOutput,
   ): FormBuilder<TFields, R>
 
   /**
@@ -309,20 +287,17 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
    * ```ts
    * const form = Form.empty
    *   .addField("username", Schema.String)
-   *   .refineEffect((values, ctx) =>
+   *   .refineEffect((values) =>
    *     Effect.gen(function* () {
    *       const taken = yield* checkUsername(values.username)
-   *       if (taken) return ctx.error("username", "Already taken")
+   *       if (taken) return { path: ["username"], message: "Already taken" }
    *     })
    *   )
    * ```
    */
   refineEffect<RD>(
     this: FormBuilder<TFields, R>,
-    predicate: (
-      values: DecodedFromFields<TFields>,
-      ctx: RefineContext<TFields>,
-    ) => Effect.Effect<Schema.FilterOutput, never, RD>,
+    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>,
   ): FormBuilder<TFields, R | RD>
 }
 
@@ -348,37 +323,25 @@ const FormBuilderProto = {
   },
   refine<TFields extends FieldsRecord, R>(
     this: FormBuilder<TFields, R>,
-    predicate: (
-      values: DecodedFromFields<TFields>,
-      ctx: RefineContext<TFields>,
-    ) => Schema.FilterOutput,
+    predicate: (values: DecodedFromFields<TFields>) => Schema.FilterOutput,
   ): FormBuilder<TFields, R> {
-    const ctx: RefineContext<TFields> = {
-      error: (field, message) => ({ path: [field], message }),
-    }
     const newSelf = Object.create(FormBuilderProto)
     newSelf.fields = this.fields
     newSelf.refinements = [
       ...this.refinements,
-      { _tag: "sync" as const, fn: (values: unknown) => predicate(values as DecodedFromFields<TFields>, ctx) },
+      { _tag: "sync" as const, fn: (values: unknown) => predicate(values as DecodedFromFields<TFields>) },
     ]
     return newSelf
   },
   refineEffect<TFields extends FieldsRecord, R, RD>(
     this: FormBuilder<TFields, R>,
-    predicate: (
-      values: DecodedFromFields<TFields>,
-      ctx: RefineContext<TFields>,
-    ) => Effect.Effect<Schema.FilterOutput, never, RD>,
+    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>,
   ): FormBuilder<TFields, R | RD> {
-    const ctx: RefineContext<TFields> = {
-      error: (field, message) => ({ path: [field], message }),
-    }
     const newSelf = Object.create(FormBuilderProto)
     newSelf.fields = this.fields
     newSelf.refinements = [
       ...this.refinements,
-      { _tag: "async" as const, fn: (values: unknown) => predicate(values as DecodedFromFields<TFields>, ctx) },
+      { _tag: "async" as const, fn: (values: unknown) => predicate(values as DecodedFromFields<TFields>) },
     ]
     return newSelf
   },

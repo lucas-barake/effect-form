@@ -55,10 +55,11 @@ export const isPathOrParentDirty = (dirtyFields: ReadonlySet<string>, path: stri
  * getNestedValue({ items: [{ name: "A" }] }, "items[0].name") // "A"
  */
 export const getNestedValue = (obj: unknown, path: string): unknown => {
+  if (path === "") return obj
   const parts = path.replace(BRACKET_NOTATION_REGEX, ".$1").split(".")
   let current: unknown = obj
   for (const part of parts) {
-    if (current == null) return undefined
+    if (current == null || typeof current !== "object") return undefined
     current = (current as Record<string, unknown>)[part]
   }
   return current
@@ -72,6 +73,7 @@ export const getNestedValue = (obj: unknown, path: string): unknown => {
  * // { items: [{ name: "B" }] }
  */
 export const setNestedValue = <T>(obj: T, path: string, value: unknown): T => {
+  if (path === "") return value as T
   const parts = path.replace(BRACKET_NOTATION_REGEX, ".$1").split(".")
   const result = { ...obj } as Record<string, unknown>
 

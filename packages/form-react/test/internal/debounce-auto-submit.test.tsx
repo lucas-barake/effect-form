@@ -36,7 +36,6 @@ const AgeInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = 
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-// Field definitions
 const NameField = Form.makeField("name", Schema.String)
 const NameFieldMinLength = Form.makeField(
   "name",

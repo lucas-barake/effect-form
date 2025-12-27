@@ -141,6 +141,17 @@ describe("path utilities", () => {
     it("handles numeric string keys in objects", () => {
       expect(getNestedValue({ "0": "zero" }, "0")).toBe("zero")
     })
+
+    it("returns object itself for empty path", () => {
+      const obj = { name: "John" }
+      expect(getNestedValue(obj, "")).toBe(obj)
+    })
+
+    it("returns undefined when traversing through primitive", () => {
+      expect(getNestedValue({ name: "John" }, "name.length")).toBe(undefined)
+      expect(getNestedValue({ count: 42 }, "count.value")).toBe(undefined)
+      expect(getNestedValue({ active: true }, "active.value")).toBe(undefined)
+    })
   })
 
   describe("setNestedValue", () => {
@@ -222,6 +233,14 @@ describe("path utilities", () => {
       const result = setNestedValue(original, "items", [1, 2, 3])
 
       expect(result).toEqual({ items: [1, 2, 3] })
+    })
+
+    it("returns value as new root for empty path", () => {
+      const original = { name: "John" }
+      const newValue = { name: "Jane", age: 30 }
+      const result = setNestedValue(original, "", newValue)
+
+      expect(result).toBe(newValue)
     })
   })
 })

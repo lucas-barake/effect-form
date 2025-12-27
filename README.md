@@ -170,9 +170,9 @@ const ConfirmPasswordField = Form.makeField("confirmPassword", Schema.String)
 const signupForm = Form.empty
   .addField(PasswordField)
   .addField(ConfirmPasswordField)
-  .refine((values, ctx) => {
+  .refine((values) => {
     if (values.password !== values.confirmPassword) {
-      return ctx.error("confirmPassword", "Passwords must match")
+      return { path: ["confirmPassword"], message: "Passwords must match" }
     }
   })
 ```
@@ -186,18 +186,63 @@ const UsernameField = Form.makeField("username", Schema.String)
 // Build form with async validation
 const usernameForm = Form.empty
   .addField(UsernameField)
-  .refineEffect((values, ctx) =>
+  .refineEffect((values) =>
     Effect.gen(function* () {
       yield* Effect.sleep("100 millis") // Simulate API call
       const isTaken = values.username === "taken"
       if (isTaken) {
-        return ctx.error("username", "Username is already taken")
+        return { path: ["username"], message: "Username is already taken" }
       }
     }),
   )
 ```
 
-## 6. setValue and setValues
+## 6. Async Validation with Services
+
+```tsx
+import * as Context from "effect/Context"
+
+// Define a service for validation
+class UsernameValidator extends Context.Tag("UsernameValidator")<
+  UsernameValidator,
+  { readonly isTaken: (username: string) => Effect.Effect<boolean> }
+>() {}
+
+// Create service implementation
+const UsernameValidatorLive = Layer.succeed(UsernameValidator, {
+  isTaken: (username) =>
+    Effect.gen(function* () {
+      yield* Effect.sleep("100 millis") // Simulate API call
+      return username === "taken"
+    }),
+})
+
+// Create runtime with the service layer
+const runtime = Atom.runtime(UsernameValidatorLive)
+
+// Define form with async validation using the service
+const UsernameField = Form.makeField("username", Schema.String)
+
+const signupForm = Form.empty
+  .addField(UsernameField)
+  .refineEffect((values) =>
+    Effect.gen(function* () {
+      const validator = yield* UsernameValidator
+      const isTaken = yield* validator.isTaken(values.username)
+      if (isTaken) {
+        return { path: ["username"], message: "Username is already taken" }
+      }
+    }),
+  )
+
+// Build form - the runtime provides the service
+const form = FormReact.build(signupForm, {
+  runtime,
+  fields: { username: UsernameInput },
+})
+```
+
+## 7. setValue and setValues
 
 ```tsx
 function FormControls() {
@@ -241,7 +286,7 @@ function FormControls() {
 }
 ```
 
-## 7. Auto-Submit Mode
+## 8. Auto-Submit Mode
 
 ```tsx
 // Auto-submit on change (debounced)
@@ -259,7 +304,7 @@ FormReact.build(form, {
 })
 ```
 
-## 8. Debounced Validation
+## 9. Debounced Validation
 
 ```tsx
 // Debounce validation without auto-submit
@@ -270,7 +315,7 @@ FormReact.build(form, {
 })
 ```
 
-## 9. isDirty Tracking
+## 10. isDirty Tracking
 
 ```tsx
 function FormStatus() {
@@ -301,7 +346,7 @@ const EmailInput: React.FC<
 )
 ```
 
-## 10. Error Display Patterns
+## 11. Error Display Patterns
 
 ```tsx
 // Field component with all error-related props

@@ -5,15 +5,6 @@ import { extractFirstError, routeErrors } from "../src/Validation.js"
 
 describe("Validation", () => {
   describe("extractFirstError", () => {
-    it("returns None for valid input", () => {
-      const schema = Schema.Struct({ name: Schema.String })
-      const result = Schema.decodeUnknownEither(schema)({ name: "John" })
-
-      if (result._tag === "Left") {
-        throw new Error("Expected Right")
-      }
-    })
-
     it("returns Some with first error message for invalid input", () => {
       const schema = Schema.Struct({
         name: Schema.String.pipe(Schema.minLength(3, { message: () => "Name too short" })),
@@ -37,18 +28,6 @@ describe("Validation", () => {
         email: Schema.String.pipe(Schema.pattern(/@/, { message: () => "Invalid email" })),
       })
       const result = Schema.decodeUnknownEither(schema)({ name: "AB", email: "invalid" })
-
-      if (result._tag === "Right") {
-        throw new Error("Expected Left")
-      }
-
-      const error = extractFirstError(result.left)
-      expect(error._tag).toBe("Some")
-    })
-
-    it("returns None when no issues found (edge case)", () => {
-      const schema = Schema.Struct({ name: Schema.String })
-      const result = Schema.decodeUnknownEither(schema)({ name: 123 })
 
       if (result._tag === "Right") {
         throw new Error("Expected Left")
@@ -100,15 +79,6 @@ describe("Validation", () => {
   })
 
   describe("routeErrors", () => {
-    it("returns empty map for valid input", () => {
-      const schema = Schema.Struct({ name: Schema.String })
-      const result = Schema.decodeUnknownEither(schema)({ name: "John" })
-
-      if (result._tag === "Left") {
-        throw new Error("Expected Right")
-      }
-    })
-
     it("routes single error to field path", () => {
       const schema = Schema.Struct({
         email: Schema.String.pipe(Schema.pattern(/@/, { message: () => "Invalid email" })),

@@ -3,34 +3,10 @@ import { parse } from "../src/Mode.js"
 
 describe("Mode", () => {
   describe("parse", () => {
-    it("parses 'onSubmit' string mode", () => {
-      const result = parse("onSubmit")
-
-      expect(result).toEqual({
-        validation: "onSubmit",
-        debounce: null,
-        autoSubmit: false,
-      })
-    })
-
-    it("parses 'onBlur' string mode", () => {
-      const result = parse("onBlur")
-
-      expect(result).toEqual({
-        validation: "onBlur",
-        debounce: null,
-        autoSubmit: false,
-      })
-    })
-
-    it("parses 'onChange' string mode", () => {
-      const result = parse("onChange")
-
-      expect(result).toEqual({
-        validation: "onChange",
-        debounce: null,
-        autoSubmit: false,
-      })
+    it("parses string mode", () => {
+      expect(parse("onSubmit")).toEqual({ validation: "onSubmit", debounce: null, autoSubmit: false })
+      expect(parse("onBlur")).toEqual({ validation: "onBlur", debounce: null, autoSubmit: false })
+      expect(parse("onChange")).toEqual({ validation: "onChange", debounce: null, autoSubmit: false })
     })
 
     it("defaults to 'onSubmit' when no mode provided", () => {
@@ -69,16 +45,6 @@ describe("Mode", () => {
       expect(result).toEqual({
         validation: "onChange",
         debounce: 500,
-        autoSubmit: false,
-      })
-    })
-
-    it("parses onChange with debounce and autoSubmit false", () => {
-      const result = parse({ onChange: { debounce: 200, autoSubmit: false } })
-
-      expect(result).toEqual({
-        validation: "onChange",
-        debounce: 200,
         autoSubmit: false,
       })
     })

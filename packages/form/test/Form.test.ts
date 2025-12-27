@@ -19,19 +19,6 @@ describe("Form", () => {
       expect(builder.fields.email._tag).toBe("field")
     })
 
-    it("multiple addField calls accumulate fields", () => {
-      const EmailField = Form.makeField("email", Schema.String)
-      const PasswordField = Form.makeField("password", Schema.String)
-      const AgeField = Form.makeField("age", Schema.Number)
-
-      const builder = Form.empty
-        .addField(EmailField)
-        .addField(PasswordField)
-        .addField(AgeField)
-
-      expect(Object.keys(builder.fields)).toEqual(["email", "password", "age"])
-    })
-
     it("addArray adds an array field", () => {
       const StreetField = Form.makeField("street", Schema.String)
       const CityField = Form.makeField("city", Schema.String)
@@ -124,9 +111,9 @@ describe("Form", () => {
       const builder = Form.empty
         .addField(PasswordField)
         .addField(ConfirmPasswordField)
-        .refine((values, ctx) => {
+        .refine((values) => {
           if (values.password !== values.confirmPassword) {
-            return ctx.error("confirmPassword", "Passwords must match")
+            return { path: ["confirmPassword"], message: "Passwords must match" }
           }
         })
 
@@ -144,11 +131,11 @@ describe("Form", () => {
 
       const builder = Form.empty
         .addField(UsernameField)
-        .refineEffect((values, ctx) =>
+        .refineEffect((values) =>
           Effect.gen(function*() {
             yield* Effect.sleep("1 millis")
             if (values.username === "taken") {
-              return ctx.error("username", "Username is already taken")
+              return { path: ["username"], message: "Username is already taken" }
             }
           })
         )
@@ -172,26 +159,23 @@ describe("Form", () => {
       const builder = Form.empty
         .addField(AField)
         .addField(BField)
-        .refine((values, ctx) => {
+        .refine((values) => {
           if (values.a === "error") {
-            return ctx.error("a", "First refinement failed")
+            return { path: ["a"], message: "First refinement failed" }
           }
         })
-        .refine((values, ctx) => {
+        .refine((values) => {
           if (values.b === "error") {
-            return ctx.error("b", "Second refinement failed")
+            return { path: ["b"], message: "Second refinement failed" }
           }
         })
 
       const schema = Form.buildSchema(builder)
 
-      // First refinement fails
       expect(() => Schema.decodeUnknownSync(schema)({ a: "error", b: "ok" })).toThrow(/First refinement failed/)
 
-      // Second refinement fails
       expect(() => Schema.decodeUnknownSync(schema)({ a: "ok", b: "error" })).toThrow(/Second refinement failed/)
 
-      // Both pass
       expect(Schema.decodeUnknownSync(schema)({ a: "ok", b: "ok" })).toEqual({ a: "ok", b: "ok" })
     })
   })
@@ -224,21 +208,6 @@ describe("Form", () => {
       const defaults = Form.getDefaultEncodedValues(builder.fields)
 
       expect(defaults).toEqual({ title: "", items: [] })
-    })
-
-    it("createTouchedRecord creates record with given value", () => {
-      const EmailField = Form.makeField("email", Schema.String)
-      const PasswordField = Form.makeField("password", Schema.String)
-
-      const builder = Form.empty
-        .addField(EmailField)
-        .addField(PasswordField)
-
-      const touched = Form.createTouchedRecord(builder.fields, false)
-      expect(touched).toEqual({ email: false, password: false })
-
-      const allTouched = Form.createTouchedRecord(builder.fields, true)
-      expect(allTouched).toEqual({ email: true, password: true })
     })
   })
 

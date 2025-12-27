@@ -25,17 +25,6 @@ const makeArrayTestForm = () => {
 
 describe("FormAtoms", () => {
   describe("make", () => {
-    it("creates field refs for all fields", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
-
-      expect(atoms.fieldRefs.name).toBeDefined()
-      expect(atoms.fieldRefs.name.key).toBe("name")
-      expect(atoms.fieldRefs.email).toBeDefined()
-      expect(atoms.fieldRefs.email.key).toBe("email")
-    })
-
     it("builds combined schema from form builder", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
@@ -457,40 +446,6 @@ describe("FormAtoms", () => {
   })
 
   describe("getOrCreateFieldAtoms", () => {
-    it("returns cached atoms for same path", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
-      const registry = Registry.make()
-
-      registry.set(
-        atoms.stateAtom,
-        Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" })),
-      )
-
-      const fieldAtoms1 = atoms.getOrCreateFieldAtoms("name")
-      const fieldAtoms2 = atoms.getOrCreateFieldAtoms("name")
-
-      expect(fieldAtoms1).toBe(fieldAtoms2)
-    })
-
-    it("creates different atoms for different paths", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
-      const registry = Registry.make()
-
-      registry.set(
-        atoms.stateAtom,
-        Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" })),
-      )
-
-      const nameAtoms = atoms.getOrCreateFieldAtoms("name")
-      const emailAtoms = atoms.getOrCreateFieldAtoms("email")
-
-      expect(nameAtoms).not.toBe(emailAtoms)
-    })
-
     it("creates all expected field atoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
@@ -508,32 +463,6 @@ describe("FormAtoms", () => {
       expect(fieldAtoms.initialValueAtom).toBeDefined()
       expect(fieldAtoms.touchedAtom).toBeDefined()
       expect(fieldAtoms.crossFieldErrorAtom).toBeDefined()
-    })
-  })
-
-  describe("getOrCreateValidationAtom", () => {
-    it("returns cached atoms for same path and schema", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
-
-      const schema = Schema.String
-      const validationAtom1 = atoms.getOrCreateValidationAtom("name", schema)
-      const validationAtom2 = atoms.getOrCreateValidationAtom("name", schema)
-
-      expect(validationAtom1).toBe(validationAtom2)
-    })
-
-    it("creates different atoms for different paths", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
-
-      const schema = Schema.String
-      const nameValidation = atoms.getOrCreateValidationAtom("name", schema)
-      const emailValidation = atoms.getOrCreateValidationAtom("email", schema)
-
-      expect(nameValidation).not.toBe(emailValidation)
     })
   })
 

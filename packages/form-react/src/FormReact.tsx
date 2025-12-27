@@ -164,7 +164,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any>(
   getOrCreateFieldAtoms: (fieldPath: string) => FormAtoms.FieldAtoms,
   Component: React.FC<FieldComponentProps<S>>,
 ): React.FC => {
-  const FieldComponent: React.FC = () => {
+  const FieldComponent: React.FC = React.memo(() => {
     const arrayCtx = useContext(ArrayItemContext)
     const autoSubmitOnBlur = useContext(AutoSubmitContext)
     const fieldPath = arrayCtx ? `${arrayCtx.parentPath}.${fieldKey}` : fieldKey
@@ -264,7 +264,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any>(
         isDirty={isDirty}
       />
     )
-  }
+  })
 
   return FieldComponent
 }
