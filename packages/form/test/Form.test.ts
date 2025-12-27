@@ -20,14 +20,14 @@ describe("Form", () => {
     })
 
     it("addArray adds an array field", () => {
-      const StreetField = Form.makeField("street", Schema.String)
-      const CityField = Form.makeField("city", Schema.String)
-      const itemForm = Form.empty
-        .addField(StreetField)
-        .addField(CityField)
-
       const NameField = Form.makeField("name", Schema.String)
-      const AddressesField = Form.makeArrayField("addresses", itemForm)
+      const AddressesField = Form.makeArrayField(
+        "addresses",
+        Schema.Struct({
+          street: Schema.String,
+          city: Schema.String,
+        }),
+      )
       const builder = Form.empty
         .addField(NameField)
         .addField(AddressesField)
@@ -68,11 +68,8 @@ describe("Form", () => {
     })
 
     it("builds a Schema with array fields", () => {
-      const NameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(NameField)
-
       const TitleField = Form.makeField("title", Schema.String)
-      const ItemsField = Form.makeArrayField("items", itemForm)
+      const ItemsField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
       const builder = Form.empty
         .addField(TitleField)
@@ -195,11 +192,8 @@ describe("Form", () => {
     })
 
     it("getDefaultEncodedValues returns empty array for array fields", () => {
-      const NameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(NameField)
-
       const TitleField = Form.makeField("title", Schema.String)
-      const ItemsField = Form.makeArrayField("items", itemForm)
+      const ItemsField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
       const builder = Form.empty
         .addField(TitleField)
@@ -218,11 +212,8 @@ describe("Form", () => {
     })
 
     it("isFieldDef and isArrayFieldDef work correctly", () => {
-      const NameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(NameField)
-
       const EmailField = Form.makeField("email", Schema.String)
-      const ItemsField = Form.makeArrayField("items", itemForm)
+      const ItemsField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
       const builder = Form.empty
         .addField(EmailField)

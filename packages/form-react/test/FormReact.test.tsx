@@ -271,11 +271,8 @@ describe("FormReact.build", () => {
     it("renders array field with items", async () => {
       const user = userEvent.setup()
 
-      const ItemNameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(ItemNameField)
-
       const TitleField = Form.makeField("title", Schema.String)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = Form.empty.addField(TitleField).addField(ItemsArrayField)
 
       const TitleInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
@@ -352,9 +349,7 @@ describe("FormReact.build", () => {
     it("remove() removes item at specified index", async () => {
       const user = userEvent.setup()
 
-      const ItemNameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(ItemNameField)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = Form.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
@@ -421,9 +416,7 @@ describe("FormReact.build", () => {
     it("swap() exchanges items at two indices", async () => {
       const user = userEvent.setup()
 
-      const ItemNameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(ItemNameField)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = Form.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
@@ -487,9 +480,7 @@ describe("FormReact.build", () => {
     it("move() relocates item from one index to another", async () => {
       const user = userEvent.setup()
 
-      const ItemNameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(ItemNameField)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = Form.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
@@ -549,9 +540,7 @@ describe("FormReact.build", () => {
     it("Item render prop provides remove function", async () => {
       const user = userEvent.setup()
 
-      const ItemNameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(ItemNameField)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = Form.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
@@ -1112,9 +1101,7 @@ describe("FormReact.build", () => {
         name: Schema.String.pipe(Schema.minLength(3, { message: () => "Name must be at least 3 characters" })),
       })
 
-      const ItemNameField = Form.makeField("name", ItemSchema.fields.name)
-      const itemForm = Form.empty.addField(ItemNameField)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField("items", ItemSchema)
       const formBuilder = Form.empty.addField(ItemsArrayField)
 
       const runtime = createRuntime()
@@ -1836,13 +1823,13 @@ describe("FormReact.build", () => {
     })
 
     it("updates array items using functional callback (filter)", async () => {
-      const ItemIdField = Form.makeField("id", Schema.NumberFromString)
-      const ItemNameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty
-        .addField(ItemIdField)
-        .addField(ItemNameField)
-
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField(
+        "items",
+        Schema.Struct({
+          id: Schema.NumberFromString,
+          name: Schema.String,
+        }),
+      )
       const formBuilder = Form.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
@@ -2025,14 +2012,14 @@ describe("FormReact.build", () => {
     })
 
     it("clears stale nested dirty paths when parent object is replaced", async () => {
-      const StreetField = Form.makeField("street", Schema.String)
-      const CityField = Form.makeField("city", Schema.String)
-      const addressForm = Form.empty
-        .addField(StreetField)
-        .addField(CityField)
-
       const NameField = Form.makeField("name", Schema.String)
-      const AddressesArrayField = Form.makeArrayField("addresses", addressForm)
+      const AddressesArrayField = Form.makeArrayField(
+        "addresses",
+        Schema.Struct({
+          street: Schema.String,
+          city: Schema.String,
+        }),
+      )
       const formBuilder = Form.empty
         .addField(NameField)
         .addField(AddressesArrayField)
@@ -2721,9 +2708,7 @@ describe("FormReact.build", () => {
         </div>
       )
 
-      const ItemNameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(ItemNameField)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
       const formBuilder = Form.empty.addField(ItemsArrayField)
         .refine((values) => {
@@ -2820,9 +2805,7 @@ describe("FormReact.build", () => {
         </div>
       )
 
-      const ItemNameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(ItemNameField)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
       const formBuilder = Form.empty.addField(ItemsArrayField)
         .refine((values) => {
@@ -2901,9 +2884,7 @@ describe("FormReact.build", () => {
         </div>
       )
 
-      const ItemNameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(ItemNameField)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
+      const ItemsArrayField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
       const formBuilder = Form.empty.addField(ItemsArrayField)
         .refineEffect((values) =>
@@ -2976,12 +2957,12 @@ describe("FormReact.build", () => {
         </div>
       )
 
-      const ItemNameSchema = Schema.String.pipe(
-        Schema.minLength(3, { message: () => "Name must be at least 3 characters" }),
+      const ItemsArrayField = Form.makeArrayField(
+        "items",
+        Schema.Struct({
+          name: Schema.String.pipe(Schema.minLength(3, { message: () => "Name must be at least 3 characters" })),
+        }),
       )
-      const ItemNameField = Form.makeField("name", ItemNameSchema)
-      const itemForm = Form.empty.addField(ItemNameField)
-      const ItemsArrayField = Form.makeArrayField("items", itemForm)
       const formBuilder = Form.empty.addField(ItemsArrayField)
 
       const runtime = createRuntime()

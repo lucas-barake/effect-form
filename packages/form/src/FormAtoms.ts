@@ -16,7 +16,7 @@ import type * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
 import * as Utils from "effect/Utils"
 import type * as Form from "./Form.js"
-import { buildSchema, createTouchedRecord, getDefaultEncodedValues, makeFieldRef } from "./Form.js"
+import { buildSchema, createTouchedRecord, getDefaultFromSchema, makeFieldRef } from "./Form.js"
 import { recalculateDirtyFieldsForArray, recalculateDirtySubtree } from "./internal/dirty.js"
 import { getNestedValue, setNestedValue } from "./internal/path.js"
 import { createWeakRegistry, type WeakRegistry } from "./internal/weak-registry.js"
@@ -53,8 +53,7 @@ export interface FormAtomsConfig<TFields extends Form.FieldsRecord, R> {
  */
 export type FieldRefs<TFields extends Form.FieldsRecord> = {
   readonly [K in keyof TFields]: TFields[K] extends Form.FieldDef<any, infer S> ? Form.Field<Schema.Schema.Encoded<S>>
-    : TFields[K] extends Form.ArrayFieldDef<any, infer F>
-      ? Form.Field<ReadonlyArray<Form.EncodedFromFields<F["fields"]>>>
+    : TFields[K] extends Form.ArrayFieldDef<any, infer S> ? Form.Field<ReadonlyArray<Schema.Schema.Encoded<S>>>
     : never
 }
 
@@ -150,7 +149,7 @@ export interface FormOperations<TFields extends Form.FieldsRecord> {
   readonly appendArrayItem: (
     state: Form.FormState<TFields>,
     arrayPath: string,
-    itemForm: Form.FormBuilder<any, any>,
+    itemSchema: Schema.Schema.Any,
     value?: unknown,
   ) => Form.FormState<TFields>
 
@@ -405,8 +404,8 @@ export const make = <TFields extends Form.FieldsRecord, R>(
       touched: setNestedValue(state.touched, fieldPath, touched) as { readonly [K in keyof TFields]: boolean },
     }),
 
-    appendArrayItem: (state, arrayPath, itemForm, value) => {
-      const newItem = value ?? getDefaultEncodedValues(itemForm.fields)
+    appendArrayItem: (state, arrayPath, itemSchema, value) => {
+      const newItem = value ?? getDefaultFromSchema(itemSchema)
       const currentItems = (getNestedValue(state.values, arrayPath) ?? []) as ReadonlyArray<unknown>
       const newItems = [...currentItems, newItem]
       return {

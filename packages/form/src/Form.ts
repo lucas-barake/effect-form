@@ -73,15 +73,15 @@ export interface FieldDef<K extends string, S extends Schema.Schema.Any> {
 }
 
 /**
- * An array field definition containing a nested FormBuilder for items.
+ * An array field definition containing a schema for items.
  *
  * @since 1.0.0
  * @category Models
  */
-export interface ArrayFieldDef<K extends string, TItemForm extends FormBuilder<any, any>> {
+export interface ArrayFieldDef<K extends string, S extends Schema.Schema.Any> {
   readonly _tag: "array"
   readonly key: K
-  readonly itemForm: TItemForm
+  readonly itemSchema: S
 }
 
 /**
@@ -90,7 +90,7 @@ export interface ArrayFieldDef<K extends string, TItemForm extends FormBuilder<a
  * @since 1.0.0
  * @category Models
  */
-export type AnyFieldDef = FieldDef<string, Schema.Schema.Any> | ArrayFieldDef<string, any>
+export type AnyFieldDef = FieldDef<string, Schema.Schema.Any> | ArrayFieldDef<string, Schema.Schema.Any>
 
 /**
  * Creates a scalar field definition.
@@ -118,21 +118,26 @@ export const makeField = <K extends string, S extends Schema.Schema.Any>(
  *
  * @example
  * ```ts
- * const itemForm = Form.empty.addField(Form.makeField("name", Schema.String))
- * const ItemsField = Form.makeArrayField("items", itemForm)
- * const form = Form.empty.addField(ItemsField)
+ * // Array of primitives
+ * const TagsField = Form.makeArrayField("tags", Schema.String)
+ *
+ * // Array of objects
+ * const ItemsField = Form.makeArrayField("items", Schema.Struct({
+ *   name: Schema.String,
+ *   quantity: Schema.Number
+ * }))
  * ```
  *
  * @since 1.0.0
  * @category Constructors
  */
-export const makeArrayField = <K extends string, TItemFields extends FieldsRecord, IR>(
+export const makeArrayField = <K extends string, S extends Schema.Schema.Any>(
   key: K,
-  itemForm: FormBuilder<TItemFields, IR>,
-): ArrayFieldDef<K, FormBuilder<TItemFields, IR>> => ({
+  itemSchema: S,
+): ArrayFieldDef<K, S> => ({
   _tag: "array",
   key,
-  itemForm,
+  itemSchema,
 })
 
 /**
@@ -151,7 +156,7 @@ export type FieldsRecord = Record<string, AnyFieldDef>
  */
 export type EncodedFromFields<T extends FieldsRecord> = {
   readonly [K in keyof T]: T[K] extends FieldDef<any, infer S> ? Schema.Schema.Encoded<S>
-    : T[K] extends ArrayFieldDef<any, infer F> ? ReadonlyArray<EncodedFromFields<F["fields"]>>
+    : T[K] extends ArrayFieldDef<any, infer S> ? ReadonlyArray<Schema.Schema.Encoded<S>>
     : never
 }
 
@@ -163,7 +168,7 @@ export type EncodedFromFields<T extends FieldsRecord> = {
  */
 export type DecodedFromFields<T extends FieldsRecord> = {
   readonly [K in keyof T]: T[K] extends FieldDef<any, infer S> ? Schema.Schema.Type<S>
-    : T[K] extends ArrayFieldDef<any, infer F> ? ReadonlyArray<DecodedFromFields<F["fields"]>>
+    : T[K] extends ArrayFieldDef<any, infer S> ? ReadonlyArray<Schema.Schema.Type<S>>
     : never
 }
 
@@ -230,15 +235,14 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
    *
    * @example
    * ```ts
-   * const itemForm = Form.empty.addField(Form.makeField("name", Schema.String))
-   * const ItemsField = Form.makeArrayField("items", itemForm)
+   * const ItemsField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
    * const form = Form.empty.addField(ItemsField)
    * ```
    */
-  addField<K extends string, TItemFields extends FieldsRecord, IR>(
+  addField<K extends string, S extends Schema.Schema.Any>(
     this: FormBuilder<TFields, R>,
-    field: ArrayFieldDef<K, FormBuilder<TItemFields, IR>>,
-  ): FormBuilder<TFields & { readonly [key in K]: ArrayFieldDef<K, FormBuilder<TItemFields, IR>> }, R | IR>
+    field: ArrayFieldDef<K, S>,
+  ): FormBuilder<TFields & { readonly [key in K]: ArrayFieldDef<K, S> }, R | Schema.Schema.Context<S>>
 
   /**
    * Merges another FormBuilder's fields into this one.
@@ -385,6 +389,40 @@ export const isArrayFieldDef = (def: AnyFieldDef): def is ArrayFieldDef<string, 
 export const isFieldDef = (def: AnyFieldDef): def is FieldDef<string, Schema.Schema.Any> => def._tag === "field"
 
 /**
+ * Gets a default encoded value from a schema.
+ *
+ * @since 1.0.0
+ * @category Helpers
+ */
+export const getDefaultFromSchema = (schema: Schema.Schema.Any): unknown => {
+  const ast = schema.ast
+  switch (ast._tag) {
+    case "StringKeyword":
+    case "TemplateLiteral":
+      return ""
+    case "NumberKeyword":
+      return 0
+    case "BooleanKeyword":
+      return false
+    case "TypeLiteral": {
+      const result: Record<string, unknown> = {}
+      for (const prop of ast.propertySignatures) {
+        result[prop.name as string] = getDefaultFromSchema(Schema.make(prop.type))
+      }
+      return result
+    }
+    case "Transformation":
+      return getDefaultFromSchema(Schema.make(ast.from))
+    case "Refinement":
+      return getDefaultFromSchema(Schema.make(ast.from))
+    case "Suspend":
+      return getDefaultFromSchema(Schema.make(ast.f()))
+    default:
+      return ""
+  }
+}
+
+/**
  * An empty `FormBuilder` to start building a form.
  *
  * **Details**
@@ -425,20 +463,16 @@ export const empty: FormBuilder<{}, never> = (() => {
 export const buildSchema = <TFields extends FieldsRecord, R>(
   self: FormBuilder<TFields, R>,
 ): Schema.Schema<DecodedFromFields<TFields>, EncodedFromFields<TFields>, R> => {
-  const buildSchemaFromFields = (fields: FieldsRecord): Schema.Schema<any, any, any> => {
-    const schemaFields: Record<string, Schema.Schema.Any> = {}
-    for (const [key, def] of Object.entries(fields)) {
-      if (isArrayFieldDef(def)) {
-        const itemSchema = buildSchemaFromFields(def.itemForm.fields)
-        schemaFields[key] = Schema.Array(itemSchema)
-      } else if (isFieldDef(def)) {
-        schemaFields[key] = def.schema
-      }
+  const schemaFields: Record<string, Schema.Schema.Any> = {}
+  for (const [key, def] of Object.entries(self.fields)) {
+    if (isArrayFieldDef(def)) {
+      schemaFields[key] = Schema.Array(def.itemSchema)
+    } else if (isFieldDef(def)) {
+      schemaFields[key] = def.schema
     }
-    return Schema.Struct(schemaFields)
   }
 
-  let schema: Schema.Schema<any, any, any> = buildSchemaFromFields(self.fields)
+  let schema: Schema.Schema<any, any, any> = Schema.Struct(schemaFields)
 
   for (const refinement of self.refinements) {
     if (refinement._tag === "sync") {

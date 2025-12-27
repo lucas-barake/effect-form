@@ -14,11 +14,8 @@ const makeTestForm = () => {
 }
 
 const makeArrayTestForm = () => {
-  const NameField = Form.makeField("name", Schema.String)
-  const itemForm = Form.empty.addField(NameField)
-
   const TitleField = Form.makeField("title", Schema.String)
-  const ItemsField = Form.makeArrayField("items", itemForm)
+  const ItemsField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
   return Form.empty.addField(TitleField).addField(ItemsField)
 }
@@ -269,10 +266,9 @@ describe("FormAtoms", () => {
   describe("operations.appendArrayItem", () => {
     it("adds item to array and updates dirty fields", () => {
       const runtime = Atom.runtime(Layer.empty)
-      const NameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(NameField)
       const TitleField = Form.makeField("title", Schema.String)
-      const ItemsField = Form.makeArrayField("items", itemForm)
+      const ItemSchema = Schema.Struct({ name: Schema.String })
+      const ItemsField = Form.makeArrayField("items", ItemSchema)
       const form = Form.empty.addField(TitleField).addField(ItemsField)
 
       const atoms = FormAtoms.make({ runtime, formBuilder: form })
@@ -285,7 +281,7 @@ describe("FormAtoms", () => {
       const newState = atoms.operations.appendArrayItem(
         initialState,
         "items",
-        itemForm,
+        ItemSchema,
         { name: "New Item" },
       )
 
@@ -296,10 +292,9 @@ describe("FormAtoms", () => {
 
     it("uses default values when no value provided", () => {
       const runtime = Atom.runtime(Layer.empty)
-      const NameField = Form.makeField("name", Schema.String)
-      const itemForm = Form.empty.addField(NameField)
       const TitleField = Form.makeField("title", Schema.String)
-      const ItemsField = Form.makeArrayField("items", itemForm)
+      const ItemSchema = Schema.Struct({ name: Schema.String })
+      const ItemsField = Form.makeArrayField("items", ItemSchema)
       const form = Form.empty.addField(TitleField).addField(ItemsField)
 
       const atoms = FormAtoms.make({ runtime, formBuilder: form })
@@ -309,7 +304,7 @@ describe("FormAtoms", () => {
         items: [],
       })
 
-      const newState = atoms.operations.appendArrayItem(initialState, "items", itemForm)
+      const newState = atoms.operations.appendArrayItem(initialState, "items", ItemSchema)
 
       expect(newState.values.items).toHaveLength(1)
       expect(newState.values.items[0]).toEqual({ name: "" })

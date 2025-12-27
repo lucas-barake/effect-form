@@ -91,13 +91,12 @@ function LoginPage() {
 ## 2. Array Fields
 
 ```tsx
-// Define field for item form
-const ItemNameField = Form.makeField("name", Schema.String)
-const itemForm = Form.empty.addField(ItemNameField)
-
 // Define fields for order form
 const TitleField = Form.makeField("title", Schema.String)
-const ItemsArrayField = Form.makeArrayField("items", itemForm)
+const ItemsArrayField = Form.makeArrayField(
+  "items",
+  Schema.Struct({ name: Schema.String }),
+)
 
 // Build order form
 const orderForm = Form.empty.addField(TitleField).addField(ItemsArrayField)
