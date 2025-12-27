@@ -11,7 +11,8 @@ describe("Form", () => {
     })
 
     it("addField adds a field to the builder", () => {
-      const builder = Form.empty.addField(Form.makeField("email", Schema.String))
+      const EmailField = Form.makeField("email", Schema.String)
+      const builder = Form.empty.addField(EmailField)
 
       expect(Form.isFormBuilder(builder)).toBe(true)
       expect(builder.fields).toHaveProperty("email")
@@ -19,34 +20,45 @@ describe("Form", () => {
     })
 
     it("multiple addField calls accumulate fields", () => {
+      const EmailField = Form.makeField("email", Schema.String)
+      const PasswordField = Form.makeField("password", Schema.String)
+      const AgeField = Form.makeField("age", Schema.Number)
+
       const builder = Form.empty
-        .addField(Form.makeField("email", Schema.String))
-        .addField(Form.makeField("password", Schema.String))
-        .addField(Form.makeField("age", Schema.Number))
+        .addField(EmailField)
+        .addField(PasswordField)
+        .addField(AgeField)
 
       expect(Object.keys(builder.fields)).toEqual(["email", "password", "age"])
     })
 
     it("addArray adds an array field", () => {
+      const StreetField = Form.makeField("street", Schema.String)
+      const CityField = Form.makeField("city", Schema.String)
       const itemForm = Form.empty
-        .addField(Form.makeField("street", Schema.String))
-        .addField(Form.makeField("city", Schema.String))
+        .addField(StreetField)
+        .addField(CityField)
 
+      const NameField = Form.makeField("name", Schema.String)
+      const AddressesField = Form.makeArrayField("addresses", itemForm)
       const builder = Form.empty
-        .addField(Form.makeField("name", Schema.String))
-        .addField(Form.makeArrayField("addresses", itemForm))
+        .addField(NameField)
+        .addField(AddressesField)
 
       expect(builder.fields.addresses._tag).toBe("array")
       expect(Form.isArrayFieldDef(builder.fields.addresses)).toBe(true)
     })
 
     it("merge combines two form builders", () => {
+      const StreetField = Form.makeField("street", Schema.String)
+      const CityField = Form.makeField("city", Schema.String)
       const addressFields = Form.empty
-        .addField(Form.makeField("street", Schema.String))
-        .addField(Form.makeField("city", Schema.String))
+        .addField(StreetField)
+        .addField(CityField)
 
+      const NameField = Form.makeField("name", Schema.String)
       const builder = Form.empty
-        .addField(Form.makeField("name", Schema.String))
+        .addField(NameField)
         .merge(addressFields)
 
       expect(Object.keys(builder.fields)).toEqual(["name", "street", "city"])
@@ -55,9 +67,12 @@ describe("Form", () => {
 
   describe("buildSchema", () => {
     it("builds a Schema from simple fields", () => {
+      const EmailField = Form.makeField("email", Schema.String)
+      const AgeField = Form.makeField("age", Schema.Number)
+
       const builder = Form.empty
-        .addField(Form.makeField("email", Schema.String))
-        .addField(Form.makeField("age", Schema.Number))
+        .addField(EmailField)
+        .addField(AgeField)
 
       const schema = Form.buildSchema(builder)
       const result = Schema.decodeUnknownSync(schema)({ email: "test@example.com", age: 25 })
@@ -66,11 +81,15 @@ describe("Form", () => {
     })
 
     it("builds a Schema with array fields", () => {
-      const itemForm = Form.empty.addField(Form.makeField("name", Schema.String))
+      const NameField = Form.makeField("name", Schema.String)
+      const itemForm = Form.empty.addField(NameField)
+
+      const TitleField = Form.makeField("title", Schema.String)
+      const ItemsField = Form.makeArrayField("items", itemForm)
 
       const builder = Form.empty
-        .addField(Form.makeField("title", Schema.String))
-        .addField(Form.makeArrayField("items", itemForm))
+        .addField(TitleField)
+        .addField(ItemsField)
 
       const schema = Form.buildSchema(builder)
       const result = Schema.decodeUnknownSync(schema)({
@@ -86,8 +105,9 @@ describe("Form", () => {
 
     it("validates with schema constraints", () => {
       const Email = Schema.String.pipe(Schema.pattern(/@/))
+      const EmailField = Form.makeField("email", Email)
 
-      const builder = Form.empty.addField(Form.makeField("email", Email))
+      const builder = Form.empty.addField(EmailField)
 
       const schema = Form.buildSchema(builder)
 
@@ -98,9 +118,12 @@ describe("Form", () => {
     })
 
     it("applies refinements in buildSchema", () => {
+      const PasswordField = Form.makeField("password", Schema.String)
+      const ConfirmPasswordField = Form.makeField("confirmPassword", Schema.String)
+
       const builder = Form.empty
-        .addField(Form.makeField("password", Schema.String))
-        .addField(Form.makeField("confirmPassword", Schema.String))
+        .addField(PasswordField)
+        .addField(ConfirmPasswordField)
         .refine((values, ctx) => {
           if (values.password !== values.confirmPassword) {
             return ctx.error("confirmPassword", "Passwords must match")
@@ -117,8 +140,10 @@ describe("Form", () => {
     })
 
     it("applies async refinements with refineEffect", async () => {
+      const UsernameField = Form.makeField("username", Schema.String)
+
       const builder = Form.empty
-        .addField(Form.makeField("username", Schema.String))
+        .addField(UsernameField)
         .refineEffect((values, ctx) =>
           Effect.gen(function*() {
             yield* Effect.sleep("1 millis")
@@ -141,9 +166,12 @@ describe("Form", () => {
     })
 
     it("applies multiple chained refinements", () => {
+      const AField = Form.makeField("a", Schema.String)
+      const BField = Form.makeField("b", Schema.String)
+
       const builder = Form.empty
-        .addField(Form.makeField("a", Schema.String))
-        .addField(Form.makeField("b", Schema.String))
+        .addField(AField)
+        .addField(BField)
         .refine((values, ctx) => {
           if (values.a === "error") {
             return ctx.error("a", "First refinement failed")
@@ -170,9 +198,12 @@ describe("Form", () => {
 
   describe("helpers", () => {
     it("getDefaultEncodedValues returns empty values", () => {
+      const EmailField = Form.makeField("email", Schema.String)
+      const AgeField = Form.makeField("age", Schema.Number)
+
       const builder = Form.empty
-        .addField(Form.makeField("email", Schema.String))
-        .addField(Form.makeField("age", Schema.Number))
+        .addField(EmailField)
+        .addField(AgeField)
 
       const defaults = Form.getDefaultEncodedValues(builder.fields)
 
@@ -180,10 +211,15 @@ describe("Form", () => {
     })
 
     it("getDefaultEncodedValues returns empty array for array fields", () => {
-      const itemForm = Form.empty.addField(Form.makeField("name", Schema.String))
+      const NameField = Form.makeField("name", Schema.String)
+      const itemForm = Form.empty.addField(NameField)
+
+      const TitleField = Form.makeField("title", Schema.String)
+      const ItemsField = Form.makeArrayField("items", itemForm)
+
       const builder = Form.empty
-        .addField(Form.makeField("title", Schema.String))
-        .addField(Form.makeArrayField("items", itemForm))
+        .addField(TitleField)
+        .addField(ItemsField)
 
       const defaults = Form.getDefaultEncodedValues(builder.fields)
 
@@ -191,9 +227,12 @@ describe("Form", () => {
     })
 
     it("createTouchedRecord creates record with given value", () => {
+      const EmailField = Form.makeField("email", Schema.String)
+      const PasswordField = Form.makeField("password", Schema.String)
+
       const builder = Form.empty
-        .addField(Form.makeField("email", Schema.String))
-        .addField(Form.makeField("password", Schema.String))
+        .addField(EmailField)
+        .addField(PasswordField)
 
       const touched = Form.createTouchedRecord(builder.fields, false)
       expect(touched).toEqual({ email: false, password: false })
@@ -210,10 +249,15 @@ describe("Form", () => {
     })
 
     it("isFieldDef and isArrayFieldDef work correctly", () => {
-      const itemForm = Form.empty.addField(Form.makeField("name", Schema.String))
+      const NameField = Form.makeField("name", Schema.String)
+      const itemForm = Form.empty.addField(NameField)
+
+      const EmailField = Form.makeField("email", Schema.String)
+      const ItemsField = Form.makeArrayField("items", itemForm)
+
       const builder = Form.empty
-        .addField(Form.makeField("email", Schema.String))
-        .addField(Form.makeArrayField("items", itemForm))
+        .addField(EmailField)
+        .addField(ItemsField)
 
       expect(Form.isFieldDef(builder.fields.email)).toBe(true)
       expect(Form.isArrayFieldDef(builder.fields.email)).toBe(false)

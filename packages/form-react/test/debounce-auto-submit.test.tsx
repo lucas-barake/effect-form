@@ -36,16 +36,22 @@ const AgeInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = 
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+// Field definitions
+const NameField = Form.makeField("name", Schema.String)
+const NameFieldMinLength = Form.makeField(
+  "name",
+  Schema.String.pipe(
+    Schema.minLength(5, { message: () => "Must be at least 5 characters" }),
+  ),
+)
+const AgeField = Form.makeField("age", Schema.String)
+
 describe("Debounce and Auto-Submit", () => {
   describe("Manual Submit Debounce", () => {
     it("should debounce validation updates in onChange mode", async () => {
       const user = userEvent.setup()
 
-      const MinLength = Schema.String.pipe(
-        Schema.minLength(5, { message: () => "Must be at least 5 characters" }),
-      )
-
-      const formBuilder = Form.empty.addField(Form.makeField("name", MinLength))
+      const formBuilder = Form.empty.addField(NameFieldMinLength)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -86,7 +92,7 @@ describe("Debounce and Auto-Submit", () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
 
-      const formBuilder = Form.empty.addField(Form.makeField("name", Schema.String))
+      const formBuilder = Form.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -123,8 +129,8 @@ describe("Debounce and Auto-Submit", () => {
       const submitHandler = vi.fn()
 
       const formBuilder = Form.empty
-        .addField(Form.makeField("name", Schema.String))
-        .addField(Form.makeField("age", Schema.String))
+        .addField(NameField)
+        .addField(AgeField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -166,11 +172,7 @@ describe("Debounce and Auto-Submit", () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
 
-      const MinLength = Schema.String.pipe(
-        Schema.minLength(5, { message: () => "Must be at least 5 characters" }),
-      )
-
-      const formBuilder = Form.empty.addField(Form.makeField("name", MinLength))
+      const formBuilder = Form.empty.addField(NameFieldMinLength)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -211,7 +213,7 @@ describe("Debounce and Auto-Submit", () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
 
-      const formBuilder = Form.empty.addField(Form.makeField("name", Schema.String))
+      const formBuilder = Form.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -244,7 +246,7 @@ describe("Debounce and Auto-Submit", () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
 
-      const formBuilder = Form.empty.addField(Form.makeField("name", Schema.String))
+      const formBuilder = Form.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -281,11 +283,7 @@ describe("Debounce and Auto-Submit", () => {
     it("should validate immediately in onChange mode without debounce config", async () => {
       const user = userEvent.setup()
 
-      const MinLength = Schema.String.pipe(
-        Schema.minLength(5, { message: () => "Must be at least 5 characters" }),
-      )
-
-      const formBuilder = Form.empty.addField(Form.makeField("name", MinLength))
+      const formBuilder = Form.empty.addField(NameFieldMinLength)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),

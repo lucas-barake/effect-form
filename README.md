@@ -8,7 +8,7 @@ Type-safe forms powered by Effect Schema.
 pnpm add @lucas-barake/effect-form-react
 ```
 
-## Basic Form
+## 1. Basic Form Setup
 
 ```tsx
 import { Form } from "@lucas-barake/effect-form"
@@ -19,141 +19,94 @@ import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Layer from "effect/Layer"
 
+// Create runtime
 const runtime = Atom.runtime(Layer.empty)
 
-const loginForm = Form.empty
-  .addField("email", Schema.String.pipe(Schema.nonEmptyString()))
-  .addField("password", Schema.String.pipe(Schema.minLength(8)))
+// Define fields as named constants
+const EmailField = Form.makeField(
+  "email",
+  Schema.String.pipe(Schema.nonEmptyString()),
+)
+const PasswordField = Form.makeField(
+  "password",
+  Schema.String.pipe(Schema.minLength(8)),
+)
 
+// Define form by adding fields
+const loginForm = Form.empty.addField(EmailField).addField(PasswordField)
+
+// Build React form
 const form = FormReact.build(loginForm, {
   runtime,
   fields: {
     email: ({ value, onChange, onBlur, error }) => (
       <div>
-        <input value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />
-        {Option.isSome(error) && <span>{error.value}</span>}
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+        />
+        {Option.isSome(error) && <span className="error">{error.value}</span>}
       </div>
     ),
     password: ({ value, onChange, onBlur, error }) => (
       <div>
-        <input type="password" value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />
-        {Option.isSome(error) && <span>{error.value}</span>}
+        <input
+          type="password"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+        />
+        {Option.isSome(error) && <span className="error">{error.value}</span>}
       </div>
     ),
   },
 })
 
-const handleSubmit = form.submit((values) => Effect.log(`Login: ${values.email}`))
+// Create submit handler
+const handleSubmit = form.submit((values) =>
+  Effect.log(`Login: ${values.email}`),
+)
 
 function LoginPage() {
-  const { submit, isDirty } = form.useForm()
-
   return (
-    <form.Form defaultValues={{ email: "", password: "" }} onSubmit={handleSubmit}>
+    <form.Form
+      defaultValues={{ email: "", password: "" }}
+      onSubmit={handleSubmit}
+    >
       <form.email />
       <form.password />
-      <button onClick={submit} disabled={!isDirty}>Login</button>
+      <form.Subscribe>
+        {({ submit, isDirty }) => (
+          <button onClick={submit} disabled={!isDirty}>
+            Login
+          </button>
+        )}
+      </form.Subscribe>
     </form.Form>
   )
 }
 ```
 
-## Validation Modes
+## 2. Array Fields
 
 ```tsx
-// Default: validate on submit only
-FormReact.build(loginForm, { runtime, fields, mode: "onSubmit" })
+// Define field for item form
+const ItemNameField = Form.makeField("name", Schema.String)
+const itemForm = Form.empty.addField(ItemNameField)
 
-// Validate on blur
-FormReact.build(loginForm, { runtime, fields, mode: "onBlur" })
+// Define fields for order form
+const TitleField = Form.makeField("title", Schema.String)
+const ItemsArrayField = Form.makeArrayField("items", itemForm)
 
-// Validate on change (immediate)
-FormReact.build(loginForm, { runtime, fields, mode: "onChange" })
-```
-
-## Debounced Validation
-
-```tsx
-FormReact.build(loginForm, {
-  runtime,
-  fields,
-  mode: { onChange: { debounce: "300 millis" } },
-})
-```
-
-## Auto-Submit
-
-```tsx
-// Auto-submit on change (debounced)
-FormReact.build(loginForm, {
-  runtime,
-  fields,
-  mode: { onChange: { debounce: "300 millis", autoSubmit: true } },
-})
-
-// Auto-submit on blur
-FormReact.build(loginForm, {
-  runtime,
-  fields,
-  mode: { onBlur: { autoSubmit: true } },
-})
-```
-
-## Cross-Field Validation
-
-```tsx
-// Sync refinement
-const signupForm = Form.empty
-  .addField("password", Schema.String)
-  .addField("confirmPassword", Schema.String)
-  .refine((values, ctx) => {
-    if (values.password !== values.confirmPassword) {
-      return ctx.error("confirmPassword", "Passwords must match")
-    }
-  })
-
-// Async refinement
-const usernameForm = Form.empty
-  .addField("username", Schema.String)
-  .refineEffect((values, ctx) =>
-    Effect.gen(function* () {
-      const taken = yield* checkUsernameAvailability(values.username)
-      if (taken) {
-        return ctx.error("username", "Username is already taken")
-      }
-    })
-  )
-
-// Multiple errors from one refinement
-Form.empty
-  .addField("email", Schema.String)
-  .addField("password", Schema.String)
-  .refine((values, ctx) => {
-    const errors: Array<Schema.FilterIssue> = []
-    if (!values.email.includes("@")) {
-      errors.push({ path: ["email"], message: "Invalid email" })
-    }
-    if (values.password.length < 8) {
-      errors.push({ path: ["password"], message: "Too short" })
-    }
-    return errors.length > 0 ? errors : undefined
-  })
-```
-
-## Array Fields
-
-```tsx
-const itemForm = Form.empty.addField("name", Schema.String)
-
-const orderForm = Form.empty
-  .addField("title", Schema.String)
-  .addArray("items", itemForm)
+// Build order form
+const orderForm = Form.empty.addField(TitleField).addField(ItemsArrayField)
 
 const form = FormReact.build(orderForm, {
   runtime,
   fields: {
     title: TitleInput,
-    items: { name: NameInput },
+    items: { name: ItemNameInput },
   },
 })
 
@@ -169,12 +122,22 @@ function OrderPage() {
                 {({ remove }) => (
                   <div>
                     <form.items.name />
-                    <button onClick={remove}>Remove</button>
+                    <button type="button" onClick={remove}>
+                      Remove
+                    </button>
                   </div>
                 )}
               </form.items.Item>
             ))}
-            <button onClick={() => append()}>Add Item</button>
+            <button type="button" onClick={() => append()}>
+              Add Item
+            </button>
+            <button type="button" onClick={() => swap(0, 1)}>
+              Swap 0 and 1
+            </button>
+            <button type="button" onClick={() => move(0, 2)}>
+              Move 0 to 2
+            </button>
           </>
         )}
       </form.items>
@@ -183,38 +146,180 @@ function OrderPage() {
 }
 ```
 
-## Form State
+## 3. Validation Modes
+
+```tsx
+// Default: validate on submit only
+FormReact.build(form, { runtime, fields, mode: "onSubmit" })
+
+// Validate on blur
+FormReact.build(form, { runtime, fields, mode: "onBlur" })
+
+// Validate on change (immediate)
+FormReact.build(form, { runtime, fields, mode: "onChange" })
+```
+
+## 4. Cross-Field Validation (Sync Refinements)
+
+```tsx
+// Define fields
+const PasswordField = Form.makeField("password", Schema.String)
+const ConfirmPasswordField = Form.makeField("confirmPassword", Schema.String)
+
+// Build form with cross-field validation
+const signupForm = Form.empty
+  .addField(PasswordField)
+  .addField(ConfirmPasswordField)
+  .refine((values, ctx) => {
+    if (values.password !== values.confirmPassword) {
+      return ctx.error("confirmPassword", "Passwords must match")
+    }
+  })
+```
+
+## 5. Async Refinements
+
+```tsx
+// Define field
+const UsernameField = Form.makeField("username", Schema.String)
+
+// Build form with async validation
+const usernameForm = Form.empty
+  .addField(UsernameField)
+  .refineEffect((values, ctx) =>
+    Effect.gen(function* () {
+      yield* Effect.sleep("100 millis") // Simulate API call
+      const isTaken = values.username === "taken"
+      if (isTaken) {
+        return ctx.error("username", "Username is already taken")
+      }
+    }),
+  )
+```
+
+## 6. setValue and setValues
 
 ```tsx
 function FormControls() {
-  const { submit, reset, isDirty, submitResult, values } = form.useForm()
+  const { setValue, setValues } = form.useForm()
 
   return (
     <>
-      <button onClick={submit} disabled={!isDirty || submitResult.waiting}>
-        {submitResult.waiting ? "Submitting..." : "Submit"}
+      {/* Update single field */}
+      <button onClick={() => setValue(form.fields.email, "new@email.com")}>
+        Set Email
       </button>
-      <button onClick={reset} disabled={!isDirty}>Reset</button>
+
+      {/* Update with callback */}
+      <button
+        onClick={() =>
+          setValue(form.fields.count, (prev) => String(Number(prev) + 1))
+        }
+      >
+        Increment
+      </button>
+
+      {/* Filter array items */}
+      <button
+        onClick={() =>
+          setValue(form.fields.items, (items) =>
+            items.filter((i) => i.name !== ""),
+          )
+        }
+      >
+        Remove Empty
+      </button>
+
+      {/* Replace all values */}
+      <button
+        onClick={() => setValues({ email: "reset@email.com", password: "" })}
+      >
+        Reset to Defaults
+      </button>
     </>
   )
 }
 ```
 
-## Subscribe Component
+## 7. Auto-Submit Mode
 
 ```tsx
-<form.Subscribe>
-  {({ values, isDirty, submitResult, submit, reset }) => (
-    <button onClick={submit} disabled={!isDirty || submitResult.waiting}>
-      Submit
-    </button>
-  )}
-</form.Subscribe>
+// Auto-submit on change (debounced)
+FormReact.build(form, {
+  runtime,
+  fields,
+  mode: { onChange: { debounce: "300 millis", autoSubmit: true } },
+})
+
+// Auto-submit on blur
+FormReact.build(form, {
+  runtime,
+  fields,
+  mode: { onBlur: { autoSubmit: true } },
+})
 ```
 
-## Submit Result
+## 8. Debounced Validation
 
 ```tsx
+// Debounce validation without auto-submit
+FormReact.build(form, {
+  runtime,
+  fields,
+  mode: { onChange: { debounce: "300 millis" } },
+})
+```
+
+## 9. isDirty Tracking
+
+```tsx
+function FormStatus() {
+  const { isDirty, reset } = form.useForm()
+
+  return (
+    <>
+      {isDirty && <span>You have unsaved changes</span>}
+      <button onClick={reset} disabled={!isDirty}>
+        Reset
+      </button>
+    </>
+  )
+}
+
+// Per-field isDirty
+const EmailInput: React.FC<
+  FormReact.FieldComponentProps<typeof Schema.String>
+> = ({ value, onChange, onBlur, isDirty }) => (
+  <div>
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+    />
+    {isDirty && <span>*</span>}
+  </div>
+)
+```
+
+## 10. Error Display Patterns
+
+```tsx
+// Field component with all error-related props
+const TextInput: React.FC<
+  FormReact.FieldComponentProps<typeof Schema.String>
+> = ({ value, onChange, onBlur, error, isTouched, isValidating }) => (
+  <div>
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+    />
+    {isValidating && <span>Validating...</span>}
+    {Option.isSome(error) && <span className="error">{error.value}</span>}
+  </div>
+)
+
+// Submit result handling
 import * as Result from "@effect-atom/atom/Result"
 
 function SubmitStatus() {
@@ -227,41 +332,17 @@ function SubmitStatus() {
 }
 ```
 
-## Form Atom
-
-```tsx
-import { useAtomValue } from "@effect-atom/atom-react"
-
-function SubmitCount() {
-  const state = useAtomValue(form.atom)
-  return <span>Submit count: {state.submitCount}</span>
-}
-```
-
-## Merge Form Builders
-
-```tsx
-const addressFields = Form.empty
-  .addField("street", Schema.String)
-  .addField("city", Schema.String)
-
-const userForm = Form.empty
-  .addField("name", Schema.String)
-  .merge(addressFields)
-// Results in: { name, street, city }
-```
-
-## Field Component Props
+## Field Component Props Reference
 
 ```ts
 interface FieldComponentProps<S extends Schema.Schema.Any> {
-  value: Schema.Schema.Encoded<S>
+  value: Schema.Schema.Encoded<S> // Current field value
   onChange: (value: Schema.Schema.Encoded<S>) => void
   onBlur: () => void
-  error: Option.Option<string>
-  isTouched: boolean
-  isValidating: boolean
-  isDirty: boolean
+  error: Option.Option<string> // Validation error (shown after touch/submit)
+  isTouched: boolean // Field has been blurred
+  isValidating: boolean // Async validation in progress
+  isDirty: boolean // Value differs from initial
 }
 ```
 
