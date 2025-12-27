@@ -3,18 +3,6 @@
   "version": "0.0.1",
   "description": "Type-safe form builder powered by Effect Schema",
   "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/dts/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "default": "./dist/cjs/index.js"
-    },
-    "./internal/*": {
-      "types": "./dist/dts/internal/*.d.ts",
-      "import": "./dist/esm/internal/*.js",
-      "default": "./dist/cjs/internal/*.js"
-    }
-  },
   "publishConfig": {
     "access": "public",
     "directory": "dist"
