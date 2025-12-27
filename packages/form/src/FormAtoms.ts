@@ -15,8 +15,8 @@ import * as Option from "effect/Option"
 import type * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
 import * as Utils from "effect/Utils"
-import type * as Form from "./Form.js"
-import { buildSchema, createTouchedRecord, getDefaultFromSchema, makeFieldRef } from "./Form.js"
+import * as Field from "./Field.js"
+import * as Form from "./Form.js"
 import { recalculateDirtyFieldsForArray, recalculateDirtySubtree } from "./internal/dirty.js"
 import { getNestedValue, setNestedValue } from "./internal/path.js"
 import { createWeakRegistry, type WeakRegistry } from "./internal/weak-registry.js"
@@ -40,7 +40,7 @@ export interface FieldAtoms {
  * @since 1.0.0
  * @category Models
  */
-export interface FormAtomsConfig<TFields extends Form.FieldsRecord, R> {
+export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R> {
   readonly runtime: Atom.AtomRuntime<R, any>
   readonly formBuilder: Form.FormBuilder<TFields, R>
 }
@@ -51,9 +51,9 @@ export interface FormAtomsConfig<TFields extends Form.FieldsRecord, R> {
  * @since 1.0.0
  * @category Models
  */
-export type FieldRefs<TFields extends Form.FieldsRecord> = {
-  readonly [K in keyof TFields]: TFields[K] extends Form.FieldDef<any, infer S> ? Form.Field<Schema.Schema.Encoded<S>>
-    : TFields[K] extends Form.ArrayFieldDef<any, infer S> ? Form.Field<ReadonlyArray<Schema.Schema.Encoded<S>>>
+export type FieldRefs<TFields extends Field.FieldsRecord> = {
+  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S> ? Form.Field<Schema.Schema.Encoded<S>>
+    : TFields[K] extends Field.ArrayFieldDef<any, infer S> ? Form.Field<ReadonlyArray<Schema.Schema.Encoded<S>>>
     : never
 }
 
@@ -63,20 +63,20 @@ export type FieldRefs<TFields extends Form.FieldsRecord> = {
  * @since 1.0.0
  * @category Models
  */
-export interface FormAtoms<TFields extends Form.FieldsRecord, R> {
+export interface FormAtoms<TFields extends Field.FieldsRecord, R> {
   readonly stateAtom: Atom.Writable<Option.Option<Form.FormState<TFields>>, Option.Option<Form.FormState<TFields>>>
   readonly crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>
   readonly dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly isDirtyAtom: Atom.Atom<boolean>
   readonly submitCountAtom: Atom.Atom<number>
   readonly onSubmitAtom: Atom.Writable<
-    Atom.AtomResultFn<Form.DecodedFromFields<TFields>, unknown, unknown> | null,
-    Atom.AtomResultFn<Form.DecodedFromFields<TFields>, unknown, unknown> | null
+    Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown> | null,
+    Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown> | null
   >
 
-  readonly decodeAndSubmit: Atom.AtomResultFn<Form.EncodedFromFields<TFields>, unknown, unknown>
+  readonly decodeAndSubmit: Atom.AtomResultFn<Field.EncodedFromFields<TFields>, unknown, unknown>
 
-  readonly combinedSchema: Schema.Schema<Form.DecodedFromFields<TFields>, Form.EncodedFromFields<TFields>, R>
+  readonly combinedSchema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
 
   readonly fieldRefs: FieldRefs<TFields>
 
@@ -101,11 +101,11 @@ export interface FormAtoms<TFields extends Form.FieldsRecord, R> {
  * @since 1.0.0
  * @category Models
  */
-export interface FormOperations<TFields extends Form.FieldsRecord> {
+export interface FormOperations<TFields extends Field.FieldsRecord> {
   /**
    * Creates the initial form state from default values.
    */
-  readonly createInitialState: (defaultValues: Form.EncodedFromFields<TFields>) => Form.FormState<TFields>
+  readonly createInitialState: (defaultValues: Field.EncodedFromFields<TFields>) => Form.FormState<TFields>
 
   /**
    * Creates a reset state (back to initial values).
@@ -131,7 +131,7 @@ export interface FormOperations<TFields extends Form.FieldsRecord> {
    */
   readonly setFormValues: (
     state: Form.FormState<TFields>,
-    values: Form.EncodedFromFields<TFields>,
+    values: Field.EncodedFromFields<TFields>,
   ) => Form.FormState<TFields>
 
   /**
@@ -209,13 +209,13 @@ export interface FormOperations<TFields extends Form.FieldsRecord> {
  * @since 1.0.0
  * @category Constructors
  */
-export const make = <TFields extends Form.FieldsRecord, R>(
+export const make = <TFields extends Field.FieldsRecord, R>(
   config: FormAtomsConfig<TFields, R>,
 ): FormAtoms<TFields, R> => {
   const { formBuilder, runtime } = config
   const { fields } = formBuilder
 
-  const combinedSchema = buildSchema(formBuilder)
+  const combinedSchema = Form.buildSchema(formBuilder)
 
   const stateAtom = Atom.make(Option.none<Form.FormState<TFields>>()).pipe(Atom.setIdleTTL(0))
   const crossFieldErrorsAtom = Atom.make<Map<string, string>>(new Map()).pipe(Atom.setIdleTTL(0))
@@ -232,7 +232,7 @@ export const make = <TFields extends Form.FieldsRecord, R>(
     Atom.setIdleTTL(0),
   )
 
-  const onSubmitAtom = Atom.make<Atom.AtomResultFn<Form.DecodedFromFields<TFields>, unknown, unknown> | null>(
+  const onSubmitAtom = Atom.make<Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown> | null>(
     null,
   ).pipe(Atom.setIdleTTL(0))
 
@@ -330,10 +330,10 @@ export const make = <TFields extends Form.FieldsRecord, R>(
     fieldAtomsRegistry.clear()
   }
 
-  const decodeAndSubmit = runtime.fn<Form.EncodedFromFields<TFields>>()((values, get) =>
+  const decodeAndSubmit = runtime.fn<Field.EncodedFromFields<TFields>>()((values, get) =>
     Effect.gen(function*() {
       const decoded = yield* Schema.decodeUnknown(combinedSchema)(values) as Effect.Effect<
-        Form.DecodedFromFields<TFields>,
+        Field.DecodedFromFields<TFields>,
         ParseResult.ParseError,
         R
       >
@@ -341,17 +341,17 @@ export const make = <TFields extends Form.FieldsRecord, R>(
       get.set(onSubmit, decoded)
       return yield* get.result(onSubmit, { suspendOnWaiting: true })
     })
-  ).pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<Form.EncodedFromFields<TFields>, unknown, unknown>
+  ).pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<Field.EncodedFromFields<TFields>, unknown, unknown>
 
   const fieldRefs = Object.fromEntries(
-    Object.keys(fields).map((key) => [key, makeFieldRef(key)]),
+    Object.keys(fields).map((key) => [key, Form.makeFieldRef(key)]),
   ) as FieldRefs<TFields>
 
   const operations: FormOperations<TFields> = {
     createInitialState: (defaultValues) => ({
       values: defaultValues,
       initialValues: defaultValues,
-      touched: createTouchedRecord(fields, false) as { readonly [K in keyof TFields]: boolean },
+      touched: Field.createTouchedRecord(fields, false) as { readonly [K in keyof TFields]: boolean },
       submitCount: 0,
       dirtyFields: new Set(),
     }),
@@ -359,14 +359,14 @@ export const make = <TFields extends Form.FieldsRecord, R>(
     createResetState: (state) => ({
       values: state.initialValues,
       initialValues: state.initialValues,
-      touched: createTouchedRecord(fields, false) as { readonly [K in keyof TFields]: boolean },
+      touched: Field.createTouchedRecord(fields, false) as { readonly [K in keyof TFields]: boolean },
       submitCount: 0,
       dirtyFields: new Set(),
     }),
 
     createSubmitState: (state) => ({
       ...state,
-      touched: createTouchedRecord(fields, true) as { readonly [K in keyof TFields]: boolean },
+      touched: Field.createTouchedRecord(fields, true) as { readonly [K in keyof TFields]: boolean },
       submitCount: state.submitCount + 1,
     }),
 
@@ -380,7 +380,7 @@ export const make = <TFields extends Form.FieldsRecord, R>(
       )
       return {
         ...state,
-        values: newValues as Form.EncodedFromFields<TFields>,
+        values: newValues as Field.EncodedFromFields<TFields>,
         dirtyFields: newDirtyFields,
       }
     },
@@ -405,12 +405,12 @@ export const make = <TFields extends Form.FieldsRecord, R>(
     }),
 
     appendArrayItem: (state, arrayPath, itemSchema, value) => {
-      const newItem = value ?? getDefaultFromSchema(itemSchema)
+      const newItem = value ?? Field.getDefaultFromSchema(itemSchema)
       const currentItems = (getNestedValue(state.values, arrayPath) ?? []) as ReadonlyArray<unknown>
       const newItems = [...currentItems, newItem]
       return {
         ...state,
-        values: setNestedValue(state.values, arrayPath, newItems) as Form.EncodedFromFields<TFields>,
+        values: setNestedValue(state.values, arrayPath, newItems) as Field.EncodedFromFields<TFields>,
         dirtyFields: recalculateDirtyFieldsForArray(state.dirtyFields, state.initialValues, arrayPath, newItems),
       }
     },
@@ -420,7 +420,7 @@ export const make = <TFields extends Form.FieldsRecord, R>(
       const newItems = currentItems.filter((_, i) => i !== index)
       return {
         ...state,
-        values: setNestedValue(state.values, arrayPath, newItems) as Form.EncodedFromFields<TFields>,
+        values: setNestedValue(state.values, arrayPath, newItems) as Field.EncodedFromFields<TFields>,
         dirtyFields: recalculateDirtyFieldsForArray(state.dirtyFields, state.initialValues, arrayPath, newItems),
       }
     },
@@ -440,7 +440,7 @@ export const make = <TFields extends Form.FieldsRecord, R>(
       newItems[indexB] = temp
       return {
         ...state,
-        values: setNestedValue(state.values, arrayPath, newItems) as Form.EncodedFromFields<TFields>,
+        values: setNestedValue(state.values, arrayPath, newItems) as Field.EncodedFromFields<TFields>,
         dirtyFields: recalculateDirtyFieldsForArray(state.dirtyFields, state.initialValues, arrayPath, newItems),
       }
     },
@@ -459,7 +459,7 @@ export const make = <TFields extends Form.FieldsRecord, R>(
       newItems.splice(toIndex, 0, item)
       return {
         ...state,
-        values: setNestedValue(state.values, arrayPath, newItems) as Form.EncodedFromFields<TFields>,
+        values: setNestedValue(state.values, arrayPath, newItems) as Field.EncodedFromFields<TFields>,
         dirtyFields: recalculateDirtyFieldsForArray(state.dirtyFields, state.initialValues, arrayPath, newItems),
       }
     },

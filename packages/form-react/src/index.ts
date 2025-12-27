@@ -6,6 +6,12 @@
  * @since 1.0.0
  * @category re-exports
  */
+export * as Field from "@lucas-barake/effect-form/Field"
+
+/**
+ * @since 1.0.0
+ * @category re-exports
+ */
 export * as Form from "@lucas-barake/effect-form/Form"
 
 /**
