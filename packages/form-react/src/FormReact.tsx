@@ -4,7 +4,8 @@
 import { RegistryContext, useAtom, useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
 import * as Atom from "@effect-atom/atom/Atom"
 import type * as Result from "@effect-atom/atom/Result"
-import { Form, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
+import { Field, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
+import type * as Form from "@lucas-barake/effect-form/Form"
 import { getNestedValue, isPathOrParentDirty, schemaPathToFieldPath } from "@lucas-barake/effect-form/internal/path"
 import * as Cause from "effect/Cause"
 import type * as Effect from "effect/Effect"
@@ -51,9 +52,9 @@ export type ArrayItemComponentMap<S extends Schema.Schema.Any> = S extends Schem
  * @since 1.0.0
  * @category Models
  */
-export type FieldComponentMap<TFields extends Form.FieldsRecord> = {
-  readonly [K in keyof TFields]: TFields[K] extends Form.FieldDef<any, infer S> ? React.FC<FieldComponentProps<S>>
-    : TFields[K] extends Form.ArrayFieldDef<any, infer S> ? ArrayItemComponentMap<S>
+export type FieldComponentMap<TFields extends Field.FieldsRecord> = {
+  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S> ? React.FC<FieldComponentProps<S>>
+    : TFields[K] extends Field.ArrayFieldDef<any, infer S> ? ArrayItemComponentMap<S>
     : never
 }
 
@@ -63,7 +64,7 @@ export type FieldComponentMap<TFields extends Form.FieldsRecord> = {
  * @since 1.0.0
  * @category Models
  */
-export type FieldRefs<TFields extends Form.FieldsRecord> = FormAtoms.FieldRefs<TFields>
+export type FieldRefs<TFields extends Field.FieldsRecord> = FormAtoms.FieldRefs<TFields>
 
 /**
  * Operations available for array fields.
@@ -85,14 +86,14 @@ export interface ArrayFieldOperations<TItem> {
  * @since 1.0.0
  * @category Models
  */
-export interface SubscribeState<TFields extends Form.FieldsRecord> {
-  readonly values: Form.EncodedFromFields<TFields>
+export interface SubscribeState<TFields extends Field.FieldsRecord> {
+  readonly values: Field.EncodedFromFields<TFields>
   readonly isDirty: boolean
   readonly submitResult: Result.Result<unknown, unknown>
   readonly submit: () => void
   readonly reset: () => void
   readonly setValue: <S>(field: Form.Field<S>, update: S | ((prev: S) => S)) => void
-  readonly setValues: (values: Form.EncodedFromFields<TFields>) => void
+  readonly setValues: (values: Field.EncodedFromFields<TFields>) => void
 }
 
 /**
@@ -102,14 +103,14 @@ export interface SubscribeState<TFields extends Form.FieldsRecord> {
  * @since 1.0.0
  * @category Models
  */
-export type BuiltForm<TFields extends Form.FieldsRecord, R> = {
+export type BuiltForm<TFields extends Field.FieldsRecord, R> = {
   readonly atom: Atom.Writable<Option.Option<Form.FormState<TFields>>, Option.Option<Form.FormState<TFields>>>
-  readonly schema: Schema.Schema<Form.DecodedFromFields<TFields>, Form.EncodedFromFields<TFields>, R>
+  readonly schema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
   readonly fields: FieldRefs<TFields>
 
   readonly Form: React.FC<{
-    readonly defaultValues: Form.EncodedFromFields<TFields>
-    readonly onSubmit: Atom.AtomResultFn<Form.DecodedFromFields<TFields>, unknown, unknown>
+    readonly defaultValues: Field.EncodedFromFields<TFields>
+    readonly onSubmit: Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown>
     readonly children: React.ReactNode
   }>
 
@@ -122,19 +123,19 @@ export type BuiltForm<TFields extends Form.FieldsRecord, R> = {
     readonly reset: () => void
     readonly isDirty: boolean
     readonly submitResult: Result.Result<unknown, unknown>
-    readonly values: Form.EncodedFromFields<TFields>
+    readonly values: Field.EncodedFromFields<TFields>
     readonly setValue: <S>(field: Form.Field<S>, update: S | ((prev: S) => S)) => void
-    readonly setValues: (values: Form.EncodedFromFields<TFields>) => void
+    readonly setValues: (values: Field.EncodedFromFields<TFields>) => void
   }
 
   readonly submit: <A, E>(
-    fn: (values: Form.DecodedFromFields<TFields>, get: Atom.FnContext) => Effect.Effect<A, E, R>,
-  ) => Atom.AtomResultFn<Form.DecodedFromFields<TFields>, A, E>
+    fn: (values: Field.DecodedFromFields<TFields>, get: Atom.FnContext) => Effect.Effect<A, E, R>,
+  ) => Atom.AtomResultFn<Field.DecodedFromFields<TFields>, A, E>
 } & FieldComponents<TFields>
 
-type FieldComponents<TFields extends Form.FieldsRecord> = {
-  readonly [K in keyof TFields]: TFields[K] extends Form.FieldDef<any, any> ? React.FC
-    : TFields[K] extends Form.ArrayFieldDef<any, infer S> ? ArrayFieldComponent<S>
+type FieldComponents<TFields extends Field.FieldsRecord> = {
+  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, any> ? React.FC
+    : TFields[K] extends Field.ArrayFieldDef<any, infer S> ? ArrayFieldComponent<S>
     : never
 }
 
@@ -161,7 +162,7 @@ const AutoSubmitContext = createContext<(() => void) | null>(null)
 
 const makeFieldComponent = <S extends Schema.Schema.Any>(
   fieldKey: string,
-  fieldDef: Form.FieldDef<string, S>,
+  fieldDef: Field.FieldDef<string, S>,
   crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>,
   submitCountAtom: Atom.Atom<number>,
   dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>,
@@ -280,7 +281,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any>(
 
 const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
   fieldKey: string,
-  def: Form.ArrayFieldDef<string, S>,
+  def: Field.ArrayFieldDef<string, S>,
   stateAtom: Atom.Writable<Option.Option<Form.FormState<any>>, Option.Option<Form.FormState<any>>>,
   crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>,
   submitCountAtom: Atom.Atom<number>,
@@ -383,7 +384,7 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
     for (const prop of ast.propertySignatures) {
       const itemKey = prop.name as string
       const itemSchema = { ast: prop.type } as Schema.Schema.Any
-      const itemDef = Form.makeField(itemKey, itemSchema)
+      const itemDef = Field.makeField(itemKey, itemSchema)
       const itemComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any>>>)[itemKey]
       itemFieldComponents[itemKey] = makeFieldComponent(
         itemKey,
@@ -414,7 +415,7 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
   }) as ArrayFieldComponent<S>
 }
 
-const makeFieldComponents = <TFields extends Form.FieldsRecord>(
+const makeFieldComponents = <TFields extends Field.FieldsRecord>(
   fields: TFields,
   stateAtom: Atom.Writable<Option.Option<Form.FormState<TFields>>, Option.Option<Form.FormState<TFields>>>,
   crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>,
@@ -432,11 +433,11 @@ const makeFieldComponents = <TFields extends Form.FieldsRecord>(
   const components: Record<string, any> = {}
 
   for (const [key, def] of Object.entries(fields)) {
-    if (Form.isArrayFieldDef(def)) {
+    if (Field.isArrayFieldDef(def)) {
       const arrayComponentMap = (componentMap as Record<string, any>)[key]
       components[key] = makeArrayFieldComponent(
         key,
-        def as Form.ArrayFieldDef<string, Schema.Schema.Any>,
+        def as Field.ArrayFieldDef<string, Schema.Schema.Any>,
         stateAtom,
         crossFieldErrorsAtom,
         submitCountAtom,
@@ -447,7 +448,7 @@ const makeFieldComponents = <TFields extends Form.FieldsRecord>(
         operations,
         arrayComponentMap,
       )
-    } else if (Form.isFieldDef(def)) {
+    } else if (Field.isFieldDef(def)) {
       const fieldComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any>>>)[key]
       components[key] = makeFieldComponent(
         key,
@@ -514,7 +515,7 @@ const makeFieldComponents = <TFields extends Form.FieldsRecord>(
  * @since 1.0.0
  * @category Constructors
  */
-export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
+export const build = <TFields extends Field.FieldsRecord, R, ER = never>(
   self: Form.FormBuilder<TFields, R>,
   options: {
     readonly runtime: Atom.AtomRuntime<R, ER>
@@ -548,8 +549,8 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
   } = formAtoms
 
   const FormComponent: React.FC<{
-    readonly defaultValues: Form.EncodedFromFields<TFields>
-    readonly onSubmit: Atom.AtomResultFn<Form.DecodedFromFields<TFields>, unknown, unknown>
+    readonly defaultValues: Field.EncodedFromFields<TFields>
+    readonly onSubmit: Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown>
     readonly children: React.ReactNode
   }> = ({ children, defaultValues, onSubmit }) => {
     const registry = React.useContext(RegistryContext)
@@ -693,7 +694,7 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
       })
     }, [setFormState, setCrossFieldErrors])
 
-    const setValues = React.useCallback((values: Form.EncodedFromFields<TFields>) => {
+    const setValues = React.useCallback((values: Field.EncodedFromFields<TFields>) => {
       setFormState((prev) => {
         if (Option.isNone(prev)) return prev
         return Option.some(operations.setFormValues(prev.value, values))
@@ -714,8 +715,8 @@ export const build = <TFields extends Form.FieldsRecord, R, ER = never>(
   }
 
   const submitHelper = <A, E>(
-    fn: (values: Form.DecodedFromFields<TFields>, get: Atom.FnContext) => Effect.Effect<A, E, R>,
-  ) => runtime.fn<Form.DecodedFromFields<TFields>>()(fn) as Atom.AtomResultFn<Form.DecodedFromFields<TFields>, A, E>
+    fn: (values: Field.DecodedFromFields<TFields>, get: Atom.FnContext) => Effect.Effect<A, E, R>,
+  ) => runtime.fn<Field.DecodedFromFields<TFields>>()(fn) as Atom.AtomResultFn<Field.DecodedFromFields<TFields>, A, E>
 
   const fieldComponents = makeFieldComponents(
     fields,

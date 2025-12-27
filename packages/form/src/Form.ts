@@ -5,19 +5,15 @@ import type * as Effect from "effect/Effect"
 import * as Predicate from "effect/Predicate"
 import * as Schema from "effect/Schema"
 
-/**
- * Unique identifier for FormBuilder instances.
- *
- * @since 1.0.0
- * @category Symbols
- */
-export const TypeId: unique symbol = Symbol.for("@lucas-barake/effect-form/Form")
-
-/**
- * @since 1.0.0
- * @category Symbols
- */
-export type TypeId = typeof TypeId
+import type {
+  AnyFieldDef,
+  ArrayFieldDef,
+  DecodedFromFields,
+  EncodedFromFields,
+  FieldDef,
+  FieldsRecord,
+} from "./Field.js"
+import { isArrayFieldDef, isFieldDef } from "./Field.js"
 
 /**
  * Unique identifier for Field references.
@@ -60,117 +56,23 @@ export const makeFieldRef = <S>(key: string): Field<S> => ({
   key,
 })
 
-/**
- * A scalar field definition containing the key and schema.
- *
- * @since 1.0.0
- * @category Models
- */
-export interface FieldDef<K extends string, S extends Schema.Schema.Any> {
-  readonly _tag: "field"
-  readonly key: K
-  readonly schema: S
-}
+// ================================
+// FormBuilder
+// ================================
 
 /**
- * An array field definition containing a schema for items.
+ * Unique identifier for FormBuilder instances.
  *
  * @since 1.0.0
- * @category Models
+ * @category Symbols
  */
-export interface ArrayFieldDef<K extends string, S extends Schema.Schema.Any> {
-  readonly _tag: "array"
-  readonly key: K
-  readonly itemSchema: S
-}
+export const TypeId: unique symbol = Symbol.for("@lucas-barake/effect-form/Form")
 
 /**
- * Union of all field definition types.
- *
  * @since 1.0.0
- * @category Models
+ * @category Symbols
  */
-export type AnyFieldDef = FieldDef<string, Schema.Schema.Any> | ArrayFieldDef<string, Schema.Schema.Any>
-
-/**
- * Creates a scalar field definition.
- *
- * @example
- * ```ts
- * const NameField = Form.makeField("name", Schema.String)
- * const form = Form.empty.addField(NameField)
- * ```
- *
- * @since 1.0.0
- * @category Constructors
- */
-export const makeField = <K extends string, S extends Schema.Schema.Any>(
-  key: K,
-  schema: S,
-): FieldDef<K, S> => ({
-  _tag: "field",
-  key,
-  schema,
-})
-
-/**
- * Creates an array field definition.
- *
- * @example
- * ```ts
- * // Array of primitives
- * const TagsField = Form.makeArrayField("tags", Schema.String)
- *
- * // Array of objects
- * const ItemsField = Form.makeArrayField("items", Schema.Struct({
- *   name: Schema.String,
- *   quantity: Schema.Number
- * }))
- * ```
- *
- * @since 1.0.0
- * @category Constructors
- */
-export const makeArrayField = <K extends string, S extends Schema.Schema.Any>(
-  key: K,
-  itemSchema: S,
-): ArrayFieldDef<K, S> => ({
-  _tag: "array",
-  key,
-  itemSchema,
-})
-
-/**
- * A record of field definitions.
- *
- * @since 1.0.0
- * @category Models
- */
-export type FieldsRecord = Record<string, AnyFieldDef>
-
-/**
- * Extracts the encoded (input) type from a fields record.
- *
- * @since 1.0.0
- * @category Type Helpers
- */
-export type EncodedFromFields<T extends FieldsRecord> = {
-  readonly [K in keyof T]: T[K] extends FieldDef<any, infer S> ? Schema.Schema.Encoded<S>
-    : T[K] extends ArrayFieldDef<any, infer S> ? ReadonlyArray<Schema.Schema.Encoded<S>>
-    : never
-}
-
-/**
- * Extracts the decoded (output) type from a fields record.
- *
- * @since 1.0.0
- * @category Type Helpers
- */
-export type DecodedFromFields<T extends FieldsRecord> = {
-  readonly [K in keyof T]: T[K] extends FieldDef<any, infer S> ? Schema.Schema.Type<S>
-    : T[K] extends ArrayFieldDef<any, infer S> ? ReadonlyArray<Schema.Schema.Type<S>>
-    : never
-}
+export type TypeId = typeof TypeId
 
 /**
  * The state of a form at runtime.
@@ -373,56 +275,6 @@ const FormBuilderProto = {
 export const isFormBuilder = (u: unknown): u is FormBuilder<any, any> => Predicate.hasProperty(u, TypeId)
 
 /**
- * Checks if a field definition is an array field.
- *
- * @since 1.0.0
- * @category Guards
- */
-export const isArrayFieldDef = (def: AnyFieldDef): def is ArrayFieldDef<string, any> => def._tag === "array"
-
-/**
- * Checks if a field definition is a simple field.
- *
- * @since 1.0.0
- * @category Guards
- */
-export const isFieldDef = (def: AnyFieldDef): def is FieldDef<string, Schema.Schema.Any> => def._tag === "field"
-
-/**
- * Gets a default encoded value from a schema.
- *
- * @since 1.0.0
- * @category Helpers
- */
-export const getDefaultFromSchema = (schema: Schema.Schema.Any): unknown => {
-  const ast = schema.ast
-  switch (ast._tag) {
-    case "StringKeyword":
-    case "TemplateLiteral":
-      return ""
-    case "NumberKeyword":
-      return 0
-    case "BooleanKeyword":
-      return false
-    case "TypeLiteral": {
-      const result: Record<string, unknown> = {}
-      for (const prop of ast.propertySignatures) {
-        result[prop.name as string] = getDefaultFromSchema(Schema.make(prop.type))
-      }
-      return result
-    }
-    case "Transformation":
-      return getDefaultFromSchema(Schema.make(ast.from))
-    case "Refinement":
-      return getDefaultFromSchema(Schema.make(ast.from))
-    case "Suspend":
-      return getDefaultFromSchema(Schema.make(ast.f()))
-    default:
-      return ""
-  }
-}
-
-/**
  * An empty `FormBuilder` to start building a form.
  *
  * **Details**
@@ -487,36 +339,4 @@ export const buildSchema = <TFields extends FieldsRecord, R>(
     EncodedFromFields<TFields>,
     R
   >
-}
-
-/**
- * Gets default encoded values for a fields record.
- *
- * @since 1.0.0
- * @category Helpers
- */
-export const getDefaultEncodedValues = (fields: FieldsRecord): Record<string, unknown> => {
-  const result: Record<string, unknown> = {}
-  for (const [key, def] of Object.entries(fields)) {
-    if (isArrayFieldDef(def)) {
-      result[key] = []
-    } else {
-      result[key] = ""
-    }
-  }
-  return result
-}
-
-/**
- * Creates a touched record with all fields set to the given value.
- *
- * @since 1.0.0
- * @category Helpers
- */
-export const createTouchedRecord = (fields: FieldsRecord, value: boolean): Record<string, boolean> => {
-  const result: Record<string, boolean> = {}
-  for (const key of Object.keys(fields)) {
-    result[key] = value
-  }
-  return result
 }

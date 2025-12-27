@@ -1,5 +1,5 @@
 import * as Atom from "@effect-atom/atom/Atom"
-import { Form, FormReact } from "@lucas-barake/effect-form-react"
+import { Field, Form, FormReact } from "@lucas-barake/effect-form-react"
 import { render, screen, waitFor } from "@testing-library/react"
 import { userEvent } from "@testing-library/user-event"
 import * as Effect from "effect/Effect"
@@ -36,14 +36,14 @@ const AgeInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = 
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-const NameField = Form.makeField("name", Schema.String)
-const NameFieldMinLength = Form.makeField(
+const NameField = Field.makeField("name", Schema.String)
+const NameFieldMinLength = Field.makeField(
   "name",
   Schema.String.pipe(
     Schema.minLength(5, { message: () => "Must be at least 5 characters" }),
   ),
 )
-const AgeField = Form.makeField("age", Schema.String)
+const AgeField = Field.makeField("age", Schema.String)
 
 describe("Debounce and Auto-Submit", () => {
   describe("Manual Submit Debounce", () => {

@@ -1,4 +1,4 @@
-import { Form } from "@lucas-barake/effect-form"
+import { Field, Form } from "@lucas-barake/effect-form"
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
@@ -11,7 +11,7 @@ describe("Form", () => {
     })
 
     it("addField adds a field to the builder", () => {
-      const EmailField = Form.makeField("email", Schema.String)
+      const EmailField = Field.makeField("email", Schema.String)
       const builder = Form.empty.addField(EmailField)
 
       expect(Form.isFormBuilder(builder)).toBe(true)
@@ -20,8 +20,8 @@ describe("Form", () => {
     })
 
     it("addArray adds an array field", () => {
-      const NameField = Form.makeField("name", Schema.String)
-      const AddressesField = Form.makeArrayField(
+      const NameField = Field.makeField("name", Schema.String)
+      const AddressesField = Field.makeArrayField(
         "addresses",
         Schema.Struct({
           street: Schema.String,
@@ -33,17 +33,17 @@ describe("Form", () => {
         .addField(AddressesField)
 
       expect(builder.fields.addresses._tag).toBe("array")
-      expect(Form.isArrayFieldDef(builder.fields.addresses)).toBe(true)
+      expect(Field.isArrayFieldDef(builder.fields.addresses)).toBe(true)
     })
 
     it("merge combines two form builders", () => {
-      const StreetField = Form.makeField("street", Schema.String)
-      const CityField = Form.makeField("city", Schema.String)
+      const StreetField = Field.makeField("street", Schema.String)
+      const CityField = Field.makeField("city", Schema.String)
       const addressFields = Form.empty
         .addField(StreetField)
         .addField(CityField)
 
-      const NameField = Form.makeField("name", Schema.String)
+      const NameField = Field.makeField("name", Schema.String)
       const builder = Form.empty
         .addField(NameField)
         .merge(addressFields)
@@ -54,8 +54,8 @@ describe("Form", () => {
 
   describe("buildSchema", () => {
     it("builds a Schema from simple fields", () => {
-      const EmailField = Form.makeField("email", Schema.String)
-      const AgeField = Form.makeField("age", Schema.Number)
+      const EmailField = Field.makeField("email", Schema.String)
+      const AgeField = Field.makeField("age", Schema.Number)
 
       const builder = Form.empty
         .addField(EmailField)
@@ -68,8 +68,8 @@ describe("Form", () => {
     })
 
     it("builds a Schema with array fields", () => {
-      const TitleField = Form.makeField("title", Schema.String)
-      const ItemsField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
+      const TitleField = Field.makeField("title", Schema.String)
+      const ItemsField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
       const builder = Form.empty
         .addField(TitleField)
@@ -89,7 +89,7 @@ describe("Form", () => {
 
     it("validates with schema constraints", () => {
       const Email = Schema.String.pipe(Schema.pattern(/@/))
-      const EmailField = Form.makeField("email", Email)
+      const EmailField = Field.makeField("email", Email)
 
       const builder = Form.empty.addField(EmailField)
 
@@ -102,8 +102,8 @@ describe("Form", () => {
     })
 
     it("applies refinements in buildSchema", () => {
-      const PasswordField = Form.makeField("password", Schema.String)
-      const ConfirmPasswordField = Form.makeField("confirmPassword", Schema.String)
+      const PasswordField = Field.makeField("password", Schema.String)
+      const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String)
 
       const builder = Form.empty
         .addField(PasswordField)
@@ -124,7 +124,7 @@ describe("Form", () => {
     })
 
     it("applies async refinements with refineEffect", async () => {
-      const UsernameField = Form.makeField("username", Schema.String)
+      const UsernameField = Field.makeField("username", Schema.String)
 
       const builder = Form.empty
         .addField(UsernameField)
@@ -150,8 +150,8 @@ describe("Form", () => {
     })
 
     it("applies multiple chained refinements", () => {
-      const AField = Form.makeField("a", Schema.String)
-      const BField = Form.makeField("b", Schema.String)
+      const AField = Field.makeField("a", Schema.String)
+      const BField = Field.makeField("b", Schema.String)
 
       const builder = Form.empty
         .addField(AField)
@@ -177,53 +177,10 @@ describe("Form", () => {
     })
   })
 
-  describe("helpers", () => {
-    it("getDefaultEncodedValues returns empty values", () => {
-      const EmailField = Form.makeField("email", Schema.String)
-      const AgeField = Form.makeField("age", Schema.Number)
-
-      const builder = Form.empty
-        .addField(EmailField)
-        .addField(AgeField)
-
-      const defaults = Form.getDefaultEncodedValues(builder.fields)
-
-      expect(defaults).toEqual({ email: "", age: "" })
-    })
-
-    it("getDefaultEncodedValues returns empty array for array fields", () => {
-      const TitleField = Form.makeField("title", Schema.String)
-      const ItemsField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-
-      const builder = Form.empty
-        .addField(TitleField)
-        .addField(ItemsField)
-
-      const defaults = Form.getDefaultEncodedValues(builder.fields)
-
-      expect(defaults).toEqual({ title: "", items: [] })
-    })
-  })
-
   describe("type guards", () => {
     it("isFormBuilder correctly identifies FormBuilder", () => {
       expect(Form.isFormBuilder(Form.empty)).toBe(true)
       expect(Form.isFormBuilder({})).toBe(false)
-    })
-
-    it("isFieldDef and isArrayFieldDef work correctly", () => {
-      const EmailField = Form.makeField("email", Schema.String)
-      const ItemsField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-
-      const builder = Form.empty
-        .addField(EmailField)
-        .addField(ItemsField)
-
-      expect(Form.isFieldDef(builder.fields.email)).toBe(true)
-      expect(Form.isArrayFieldDef(builder.fields.email)).toBe(false)
-
-      expect(Form.isArrayFieldDef(builder.fields.items)).toBe(true)
-      expect(Form.isFieldDef(builder.fields.items)).toBe(false)
     })
   })
 })

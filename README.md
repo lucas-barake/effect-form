@@ -11,7 +11,7 @@ pnpm add @lucas-barake/effect-form-react
 ## 1. Basic Form Setup
 
 ```tsx
-import { Form } from "@lucas-barake/effect-form"
+import { Field, Form } from "@lucas-barake/effect-form"
 import { FormReact } from "@lucas-barake/effect-form-react"
 import * as Atom from "@effect-atom/atom/Atom"
 import * as Schema from "effect/Schema"
@@ -19,24 +19,20 @@ import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Layer from "effect/Layer"
 
-// Create runtime
 const runtime = Atom.runtime(Layer.empty)
 
-// Define fields as named constants
-const EmailField = Form.makeField(
+const EmailField = Field.makeField(
   "email",
   Schema.String.pipe(Schema.nonEmptyString()),
 )
-const PasswordField = Form.makeField(
+const PasswordField = Field.makeField(
   "password",
   Schema.String.pipe(Schema.minLength(8)),
 )
 
-// Define form by adding fields
-const loginForm = Form.empty.addField(EmailField).addField(PasswordField)
+const loginFormBuilder = Form.empty.addField(EmailField).addField(PasswordField)
 
-// Build React form
-const form = FormReact.build(loginForm, {
+const LoginForm = FormReact.build(loginFormBuilder, {
   runtime,
   fields: {
     email: ({ value, onChange, onBlur, error }) => (
@@ -63,27 +59,26 @@ const form = FormReact.build(loginForm, {
   },
 })
 
-// Create submit handler
-const handleSubmit = form.submit((values) =>
+const handleSubmit = LoginForm.submit((values) =>
   Effect.log(`Login: ${values.email}`),
 )
 
 function LoginPage() {
   return (
-    <form.Form
+    <LoginForm.Form
       defaultValues={{ email: "", password: "" }}
       onSubmit={handleSubmit}
     >
-      <form.email />
-      <form.password />
-      <form.Subscribe>
+      <LoginForm.email />
+      <LoginForm.password />
+      <LoginForm.Subscribe>
         {({ submit, isDirty }) => (
           <button onClick={submit} disabled={!isDirty}>
             Login
           </button>
         )}
-      </form.Subscribe>
-    </form.Form>
+      </LoginForm.Subscribe>
+    </LoginForm.Form>
   )
 }
 ```
@@ -91,17 +86,15 @@ function LoginPage() {
 ## 2. Array Fields
 
 ```tsx
-// Define fields for order form
-const TitleField = Form.makeField("title", Schema.String)
-const ItemsArrayField = Form.makeArrayField(
+const TitleField = Field.makeField("title", Schema.String)
+const ItemsArrayField = Field.makeArrayField(
   "items",
   Schema.Struct({ name: Schema.String }),
 )
 
-// Build order form
-const orderForm = Form.empty.addField(TitleField).addField(ItemsArrayField)
+const orderFormBuilder = Form.empty.addField(TitleField).addField(ItemsArrayField)
 
-const form = FormReact.build(orderForm, {
+const OrderForm = FormReact.build(orderFormBuilder, {
   runtime,
   fields: {
     title: TitleInput,
@@ -111,22 +104,22 @@ const form = FormReact.build(orderForm, {
 
 function OrderPage() {
   return (
-    <form.Form defaultValues={{ title: "", items: [] }} onSubmit={handleSubmit}>
-      <form.title />
-      <form.items>
+    <OrderForm.Form defaultValues={{ title: "", items: [] }} onSubmit={handleSubmit}>
+      <OrderForm.title />
+      <OrderForm.items>
         {({ items, append, remove, swap, move }) => (
           <>
             {items.map((_, index) => (
-              <form.items.Item key={index} index={index}>
+              <OrderForm.items.Item key={index} index={index}>
                 {({ remove }) => (
                   <div>
-                    <form.items.name />
+                    <OrderForm.items.name />
                     <button type="button" onClick={remove}>
                       Remove
                     </button>
                   </div>
                 )}
-              </form.items.Item>
+              </OrderForm.items.Item>
             ))}
             <button type="button" onClick={() => append()}>
               Add Item
@@ -139,8 +132,8 @@ function OrderPage() {
             </button>
           </>
         )}
-      </form.items>
-    </form.Form>
+      </OrderForm.items>
+    </OrderForm.Form>
   )
 }
 ```
@@ -148,24 +141,17 @@ function OrderPage() {
 ## 3. Validation Modes
 
 ```tsx
-// Default: validate on submit only
 FormReact.build(form, { runtime, fields, mode: "onSubmit" })
-
-// Validate on blur
 FormReact.build(form, { runtime, fields, mode: "onBlur" })
-
-// Validate on change (immediate)
 FormReact.build(form, { runtime, fields, mode: "onChange" })
 ```
 
 ## 4. Cross-Field Validation (Sync Refinements)
 
 ```tsx
-// Define fields
-const PasswordField = Form.makeField("password", Schema.String)
-const ConfirmPasswordField = Form.makeField("confirmPassword", Schema.String)
+const PasswordField = Field.makeField("password", Schema.String)
+const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String)
 
-// Build form with cross-field validation
 const signupForm = Form.empty
   .addField(PasswordField)
   .addField(ConfirmPasswordField)
@@ -179,15 +165,13 @@ const signupForm = Form.empty
 ## 5. Async Refinements
 
 ```tsx
-// Define field
-const UsernameField = Form.makeField("username", Schema.String)
+const UsernameField = Field.makeField("username", Schema.String)
 
-// Build form with async validation
 const usernameForm = Form.empty
   .addField(UsernameField)
   .refineEffect((values) =>
     Effect.gen(function* () {
-      yield* Effect.sleep("100 millis") // Simulate API call
+      yield* Effect.sleep("100 millis")
       const isTaken = values.username === "taken"
       if (isTaken) {
         return { path: ["username"], message: "Username is already taken" }
@@ -201,28 +185,24 @@ const usernameForm = Form.empty
 ```tsx
 import * as Context from "effect/Context"
 
-// Define a service for validation
 class UsernameValidator extends Context.Tag("UsernameValidator")<
   UsernameValidator,
   { readonly isTaken: (username: string) => Effect.Effect<boolean> }
 >() {}
 
-// Create service implementation
 const UsernameValidatorLive = Layer.succeed(UsernameValidator, {
   isTaken: (username) =>
     Effect.gen(function* () {
-      yield* Effect.sleep("100 millis") // Simulate API call
+      yield* Effect.sleep("100 millis")
       return username === "taken"
     }),
 })
 
-// Create runtime with the service layer
 const runtime = Atom.runtime(UsernameValidatorLive)
 
-// Define form with async validation using the service
-const UsernameField = Form.makeField("username", Schema.String)
+const UsernameField = Field.makeField("username", Schema.String)
 
-const signupForm = Form.empty
+const signupFormBuilder = Form.empty
   .addField(UsernameField)
   .refineEffect((values) =>
     Effect.gen(function* () {
@@ -234,8 +214,7 @@ const signupForm = Form.empty
     }),
   )
 
-// Build form - the runtime provides the service
-const form = FormReact.build(signupForm, {
+const SignupForm = FormReact.build(signupFormBuilder, {
   runtime,
   fields: { username: UsernameInput },
 })
@@ -245,36 +224,22 @@ const form = FormReact.build(signupForm, {
 
 ```tsx
 function FormControls() {
-  const { setValue, setValues } = form.useForm()
+  const { setValue, setValues } = LoginForm.useForm()
 
   return (
     <>
-      {/* Update single field */}
-      <button onClick={() => setValue(form.fields.email, "new@email.com")}>
+      <button onClick={() => setValue(LoginForm.fields.email, "new@email.com")}>
         Set Email
       </button>
 
-      {/* Update with callback */}
       <button
         onClick={() =>
-          setValue(form.fields.count, (prev) => String(Number(prev) + 1))
+          setValue(LoginForm.fields.password, (prev) => prev.toUpperCase())
         }
       >
-        Increment
+        Uppercase Password
       </button>
 
-      {/* Filter array items */}
-      <button
-        onClick={() =>
-          setValue(form.fields.items, (items) =>
-            items.filter((i) => i.name !== ""),
-          )
-        }
-      >
-        Remove Empty
-      </button>
-
-      {/* Replace all values */}
       <button
         onClick={() => setValues({ email: "reset@email.com", password: "" })}
       >
@@ -288,14 +253,12 @@ function FormControls() {
 ## 8. Auto-Submit Mode
 
 ```tsx
-// Auto-submit on change (debounced)
 FormReact.build(form, {
   runtime,
   fields,
   mode: { onChange: { debounce: "300 millis", autoSubmit: true } },
 })
 
-// Auto-submit on blur
 FormReact.build(form, {
   runtime,
   fields,
@@ -306,7 +269,6 @@ FormReact.build(form, {
 ## 9. Debounced Validation
 
 ```tsx
-// Debounce validation without auto-submit
 FormReact.build(form, {
   runtime,
   fields,
@@ -318,7 +280,7 @@ FormReact.build(form, {
 
 ```tsx
 function FormStatus() {
-  const { isDirty, reset } = form.useForm()
+  const { isDirty, reset } = LoginForm.useForm()
 
   return (
     <>
@@ -330,7 +292,6 @@ function FormStatus() {
   )
 }
 
-// Per-field isDirty
 const EmailInput: React.FC<
   FormReact.FieldComponentProps<typeof Schema.String>
 > = ({ value, onChange, onBlur, isDirty }) => (
@@ -345,10 +306,29 @@ const EmailInput: React.FC<
 )
 ```
 
-## 11. Error Display Patterns
+## 11. Subscribing to Form State
 
 ```tsx
-// Field component with all error-related props
+import { useAtomSubscribe } from "@effect-atom/atom-react"
+
+function FormSideEffects() {
+  useAtomSubscribe(
+    LoginForm.atom,
+    (state) => {
+      if (Option.isSome(state)) {
+        console.log("Form values changed:", state.value.values)
+      }
+    },
+    { immediate: false },
+  )
+
+  return null
+}
+```
+
+## 12. Error Display Patterns
+
+```tsx
 const TextInput: React.FC<
   FormReact.FieldComponentProps<typeof Schema.String>
 > = ({ value, onChange, onBlur, error, isTouched, isValidating }) => (
@@ -363,11 +343,10 @@ const TextInput: React.FC<
   </div>
 )
 
-// Submit result handling
 import * as Result from "@effect-atom/atom/Result"
 
 function SubmitStatus() {
-  const { submitResult } = form.useForm()
+  const { submitResult } = LoginForm.useForm()
 
   if (submitResult.waiting) return <span>Submitting...</span>
   if (Result.isSuccess(submitResult)) return <span>Success!</span>
