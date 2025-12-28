@@ -18,12 +18,12 @@ import { createContext, useContext } from "react"
 import { useDebounced } from "./internal/use-debounced.js"
 
 /**
- * Props passed to field components.
+ * Form-controlled state passed to field components.
  *
  * @since 1.0.0
  * @category Models
  */
-export interface FieldComponentProps<S extends Schema.Schema.Any> {
+export interface FieldState<S extends Schema.Schema.Any> {
   readonly value: Schema.Schema.Encoded<S>
   readonly onChange: (value: Schema.Schema.Encoded<S>) => void
   readonly onBlur: () => void
@@ -34,6 +34,31 @@ export interface FieldComponentProps<S extends Schema.Schema.Any> {
 }
 
 /**
+ * Props passed to field components.
+ * Contains form-controlled state in `field` and user-defined props in `props`.
+ *
+ * @since 1.0.0
+ * @category Models
+ */
+export interface FieldComponentProps<
+  S extends Schema.Schema.Any,
+  P extends Record<string, unknown> = Record<string, never>
+> {
+  readonly field: FieldState<S>
+  readonly props: P
+}
+
+/**
+ * Extracts the extra props type from a field component.
+ *
+ * @since 1.0.0
+ * @category Type-level utilities
+ */
+export type ExtractExtraProps<C> = C extends React.FC<FieldComponentProps<any, infer P>>
+  ? P
+  : Record<string, never>
+
+/**
  * Extracts field component map for array item schemas.
  * - For Struct schemas: returns a map of field names to components
  * - For primitive schemas: returns a single component
@@ -42,9 +67,11 @@ export interface FieldComponentProps<S extends Schema.Schema.Any> {
  * @category Models
  */
 export type ArrayItemComponentMap<S extends Schema.Schema.Any> = S extends Schema.Struct<infer Fields> ? {
-    readonly [K in keyof Fields]: Fields[K] extends Schema.Schema.Any ? React.FC<FieldComponentProps<Fields[K]>> : never
+    readonly [K in keyof Fields]: Fields[K] extends Schema.Schema.Any
+      ? React.FC<FieldComponentProps<Fields[K], any>>
+      : never
   }
-  : React.FC<FieldComponentProps<S>>
+  : React.FC<FieldComponentProps<S, any>>
 
 /**
  * Maps field names to their React components.
@@ -53,7 +80,8 @@ export type ArrayItemComponentMap<S extends Schema.Schema.Any> = S extends Schem
  * @category Models
  */
 export type FieldComponentMap<TFields extends Field.FieldsRecord> = {
-  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S> ? React.FC<FieldComponentProps<S>>
+  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S>
+    ? React.FC<FieldComponentProps<S, any>>
     : TFields[K] extends Field.ArrayFieldDef<any, infer S> ? ArrayItemComponentMap<S>
     : never
 }
@@ -106,7 +134,11 @@ export interface SubscribeState<TFields extends Field.FieldsRecord> {
  * @since 1.0.0
  * @category Models
  */
-export type BuiltForm<TFields extends Field.FieldsRecord, R> = {
+export type BuiltForm<
+  TFields extends Field.FieldsRecord,
+  R,
+  CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>
+> = {
   readonly atom: Atom.Writable<
     Option.Option<FormBuilder.FormState<TFields>>,
     Option.Option<FormBuilder.FormState<TFields>>
@@ -144,15 +176,21 @@ export type BuiltForm<TFields extends Field.FieldsRecord, R> = {
     A extends Effect.Effect<infer T, any, any> ? T : A,
     A extends Effect.Effect<any, infer E, any> ? E : never
   >
-} & FieldComponents<TFields>
+} & FieldComponents<TFields, CM>
 
-type FieldComponents<TFields extends Field.FieldsRecord> = {
-  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, any> ? React.FC
-    : TFields[K] extends Field.ArrayFieldDef<any, infer S> ? ArrayFieldComponent<S>
-    : never
+type FieldComponents<TFields extends Field.FieldsRecord, CM extends FieldComponentMap<TFields>> = {
+  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, any>
+    ? React.FC<ExtractExtraProps<CM[K]>>
+    : TFields[K] extends Field.ArrayFieldDef<any, infer S>
+      ? ArrayFieldComponent<S, ExtractArrayItemExtraProps<CM[K], S>>
+      : never
 }
 
-type ArrayFieldComponent<S extends Schema.Schema.Any> =
+type ExtractArrayItemExtraProps<CM, S extends Schema.Schema.Any> = S extends Schema.Struct<infer Fields>
+  ? { readonly [K in keyof Fields]: CM extends { readonly [P in K]: infer C } ? ExtractExtraProps<C> : never }
+  : CM extends React.FC<FieldComponentProps<any, infer P>> ? P : never
+
+type ArrayFieldComponent<S extends Schema.Schema.Any, ExtraPropsMap> =
   & React.FC<{
     readonly children: (ops: ArrayFieldOperations<Schema.Schema.Encoded<S>>) => React.ReactNode
   }>
@@ -162,7 +200,11 @@ type ArrayFieldComponent<S extends Schema.Schema.Any> =
       readonly children: React.ReactNode | ((props: { readonly remove: () => void }) => React.ReactNode)
     }>
   }
-  & (S extends Schema.Struct<infer Fields> ? { readonly [K in keyof Fields]: React.FC }
+  & (S extends Schema.Struct<infer Fields> ? {
+      readonly [K in keyof Fields]: React.FC<
+        ExtraPropsMap extends { readonly [P in K]: infer EP } ? EP : Record<string, never>
+      >
+    }
     : unknown)
 
 interface ArrayItemContextValue {
@@ -173,7 +215,7 @@ interface ArrayItemContextValue {
 const ArrayItemContext = createContext<ArrayItemContextValue | null>(null)
 const AutoSubmitContext = createContext<(() => void) | null>(null)
 
-const makeFieldComponent = <S extends Schema.Schema.Any>(
+const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string, unknown>>(
   fieldKey: string,
   fieldDef: Field.FieldDef<string, S>,
   crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>,
@@ -185,9 +227,9 @@ const makeFieldComponent = <S extends Schema.Schema.Any>(
     schema: Schema.Schema.Any,
   ) => Atom.AtomResultFn<unknown, void, ParseResult.ParseError>,
   getOrCreateFieldAtoms: (fieldPath: string) => FormAtoms.FieldAtoms,
-  Component: React.FC<FieldComponentProps<S>>,
-): React.FC => {
-  const FieldComponent: React.FC = React.memo(() => {
+  Component: React.FC<FieldComponentProps<S, P>>,
+): React.FC<P> => {
+  const FieldComponent: React.FC<P> = (extraProps) => {
     const arrayCtx = useContext(ArrayItemContext)
     const autoSubmitOnBlur = useContext(AutoSubmitContext)
     const fieldPath = arrayCtx ? `${arrayCtx.parentPath}.${fieldKey}` : fieldKey
@@ -276,20 +318,20 @@ const makeFieldComponent = <S extends Schema.Schema.Any>(
     const isValidating = validationResult.waiting
     const shouldShowError = isTouched || submitCount > 0
 
-    return (
-      <Component
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        error={shouldShowError ? validationError : Option.none<string>()}
-        isTouched={isTouched}
-        isValidating={isValidating}
-        isDirty={isDirty}
-      />
-    )
-  })
+    const fieldState: FieldState<S> = React.useMemo(() => ({
+      value,
+      onChange,
+      onBlur,
+      error: shouldShowError ? validationError : Option.none<string>(),
+      isTouched,
+      isValidating,
+      isDirty,
+    }), [value, onChange, onBlur, shouldShowError, validationError, isTouched, isValidating, isDirty])
 
-  return FieldComponent
+    return <Component field={fieldState} props={extraProps} />
+  }
+
+  return React.memo(FieldComponent) as React.FC<P>
 }
 
 const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
@@ -307,7 +349,7 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
   getOrCreateFieldAtoms: (fieldPath: string) => FormAtoms.FieldAtoms,
   operations: FormAtoms.FormOperations<any>,
   componentMap: ArrayItemComponentMap<S>,
-): ArrayFieldComponent<S> => {
+): ArrayFieldComponent<S, any> => {
   const isStructSchema = AST.isTypeLiteral(def.itemSchema.ast)
 
   const ArrayWrapper: React.FC<{
@@ -398,7 +440,7 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
       const itemKey = prop.name as string
       const itemSchema = { ast: prop.type } as Schema.Schema.Any
       const itemDef = Field.makeField(itemKey, itemSchema)
-      const itemComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any>>>)[itemKey]
+      const itemComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any, any>>>)[itemKey]
       itemFieldComponents[itemKey] = makeFieldComponent(
         itemKey,
         itemDef,
@@ -425,10 +467,13 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
       }
       return Reflect.get(target, prop)
     },
-  }) as ArrayFieldComponent<S>
+  }) as ArrayFieldComponent<S, any>
 }
 
-const makeFieldComponents = <TFields extends Field.FieldsRecord>(
+const makeFieldComponents = <
+  TFields extends Field.FieldsRecord,
+  CM extends FieldComponentMap<TFields>
+>(
   fields: TFields,
   stateAtom: Atom.Writable<
     Option.Option<FormBuilder.FormState<TFields>>,
@@ -444,8 +489,8 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord>(
   ) => Atom.AtomResultFn<unknown, void, ParseResult.ParseError>,
   getOrCreateFieldAtoms: (fieldPath: string) => FormAtoms.FieldAtoms,
   operations: FormAtoms.FormOperations<TFields>,
-  componentMap: FieldComponentMap<TFields>,
-): FieldComponents<TFields> => {
+  componentMap: CM,
+): FieldComponents<TFields, CM> => {
   const components: Record<string, any> = {}
 
   for (const [key, def] of Object.entries(fields)) {
@@ -465,7 +510,7 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord>(
         arrayComponentMap,
       )
     } else if (Field.isFieldDef(def)) {
-      const fieldComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any>>>)[key]
+      const fieldComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any, any>>>)[key]
       components[key] = makeFieldComponent(
         key,
         def,
@@ -480,7 +525,7 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord>(
     }
   }
 
-  return components as FieldComponents<TFields>
+  return components as FieldComponents<TFields, CM>
 }
 
 /**
@@ -531,14 +576,19 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord>(
  * @since 1.0.0
  * @category Constructors
  */
-export const build = <TFields extends Field.FieldsRecord, R, ER = never>(
+export const build = <
+  TFields extends Field.FieldsRecord,
+  R,
+  ER = never,
+  CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>
+>(
   self: FormBuilder.FormBuilder<TFields, R>,
   options: {
     readonly runtime: Atom.AtomRuntime<R, ER>
-    readonly fields: FieldComponentMap<TFields>
+    readonly fields: CM
     readonly mode?: Mode.FormMode
   },
-): BuiltForm<TFields, R> => {
+): BuiltForm<TFields, R, CM> => {
   const { fields: components, mode, runtime } = options
   const parsedMode = Mode.parse(mode)
   const { fields } = self
@@ -817,5 +867,34 @@ export const build = <TFields extends Field.FieldsRecord, R, ER = never>(
     useForm: useFormHook,
     submit: submitHelper,
     ...fieldComponents,
-  } as BuiltForm<TFields, R>
+  } as BuiltForm<TFields, R, CM>
 }
+
+/**
+ * A curried helper that infers the schema type from the field definition.
+ * Provides ergonomic type inference when defining field components.
+ *
+ * @example
+ * ```tsx
+ * import { FormReact } from "@lucas-barake/effect-form-react"
+ *
+ * // Without extra props - schema inferred from field
+ * const TextInput = FormReact.forField(EmailField)(({ field }) => (
+ *   <input value={field.value} onChange={e => field.onChange(e.target.value)} />
+ * ))
+ *
+ * // With extra props - just specify the props type
+ * const TextInput = FormReact.forField(EmailField)<{ placeholder?: string }>(({ field, props }) => (
+ *   <input value={field.value} placeholder={props.placeholder} ... />
+ * ))
+ * ```
+ *
+ * @since 1.0.0
+ * @category Constructors
+ */
+export const forField = <K extends string, S extends Schema.Schema.Any>(
+  _field: Field.FieldDef<K, S>,
+) =>
+<P extends Record<string, unknown> = Record<string, never>>(
+  component: React.FC<FieldComponentProps<S, P>>,
+): React.FC<FieldComponentProps<S, P>> => component

@@ -34,25 +34,25 @@ const loginFormBuilder = FormBuilder.empty.addField(EmailField).addField(Passwor
 const LoginForm = FormReact.build(loginFormBuilder, {
   runtime,
   fields: {
-    email: ({ value, onChange, onBlur, error }) => (
+    email: ({ field }) => (
       <div>
         <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
         />
-        {Option.isSome(error) && <span className="error">{error.value}</span>}
+        {Option.isSome(field.error) && <span className="error">{field.error.value}</span>}
       </div>
     ),
-    password: ({ value, onChange, onBlur, error }) => (
+    password: ({ field }) => (
       <div>
         <input
           type="password"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
         />
-        {Option.isSome(error) && <span className="error">{error.value}</span>}
+        {Option.isSome(field.error) && <span className="error">{field.error.value}</span>}
       </div>
     ),
   },
@@ -293,14 +293,14 @@ function FormStatus() {
 
 const EmailInput: React.FC<
   FormReact.FieldComponentProps<typeof Schema.String>
-> = ({ value, onChange, onBlur, isDirty }) => (
+> = ({ field }) => (
   <div>
     <input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={onBlur}
+      value={field.value}
+      onChange={(e) => field.onChange(e.target.value)}
+      onBlur={field.onBlur}
     />
-    {isDirty && <span>*</span>}
+    {field.isDirty && <span>*</span>}
   </div>
 )
 ```
@@ -378,15 +378,15 @@ function FormSideEffects() {
 ```tsx
 const TextInput: React.FC<
   FormReact.FieldComponentProps<typeof Schema.String>
-> = ({ value, onChange, onBlur, error, isTouched, isValidating }) => (
+> = ({ field }) => (
   <div>
     <input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={onBlur}
+      value={field.value}
+      onChange={(e) => field.onChange(e.target.value)}
+      onBlur={field.onBlur}
     />
-    {isValidating && <span>Validating...</span>}
-    {Option.isSome(error) && <span className="error">{error.value}</span>}
+    {field.isValidating && <span>Validating...</span>}
+    {Option.isSome(field.error) && <span className="error">{field.error.value}</span>}
   </div>
 )
 
@@ -405,7 +405,7 @@ function SubmitStatus() {
 ## Field Component Props Reference
 
 ```ts
-interface FieldComponentProps<S extends Schema.Schema.Any> {
+interface FieldState<S extends Schema.Schema.Any> {
   value: Schema.Schema.Encoded<S> // Current field value
   onChange: (value: Schema.Schema.Encoded<S>) => void
   onBlur: () => void
@@ -414,6 +414,32 @@ interface FieldComponentProps<S extends Schema.Schema.Any> {
   isValidating: boolean // Async validation in progress
   isDirty: boolean // Value differs from initial
 }
+
+interface FieldComponentProps<
+  S extends Schema.Schema.Any,
+  P extends Record<string, unknown> = Record<string, never>
+> {
+  field: FieldState<S> // Form-controlled state
+  props: P // Custom props passed at render time
+}
+```
+
+### Passing Custom Props
+
+```tsx
+// Define component with extra props
+const TextInput: React.FC<
+  FormReact.FieldComponentProps<typeof Schema.String, { placeholder?: string }>
+> = ({ field, props }) => (
+  <input
+    value={field.value}
+    onChange={(e) => field.onChange(e.target.value)}
+    placeholder={props.placeholder}
+  />
+)
+
+// Pass props at render time
+<LoginForm.email placeholder="Enter email" />
 ```
 
 ## License

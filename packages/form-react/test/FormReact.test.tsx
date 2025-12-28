@@ -14,21 +14,16 @@ import { describe, expect, it, vi } from "vitest"
 
 const createRuntime = () => Atom.runtime(Layer.empty)
 
-const TextInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-  error,
-  onBlur,
-  onChange,
-  value,
-}) => (
+const TextInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
   <div>
     <input
       type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={onBlur}
+      value={field.value}
+      onChange={(e) => field.onChange(e.target.value)}
+      onBlur={field.onBlur}
       data-testid="text-input"
     />
-    {Option.isSome(error) && <span data-testid="error">{error.value}</span>}
+    {Option.isSome(field.error) && <span data-testid="error">{field.error.value}</span>}
   </div>
 )
 
@@ -219,27 +214,24 @@ describe("FormReact.build", () => {
       const LastNameField = Field.makeField("lastName", Schema.String)
       const formBuilder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField)
 
-      const NamedInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String> & { name: string }> = ({
-        name,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const NamedInput: React.FC<
+        FormReact.FieldComponentProps<typeof Schema.String, { name: string }>
+      > = ({ field, props }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          data-testid={name}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
+          data-testid={props.name}
         />
       )
 
-      const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = (props) => (
-        <NamedInput {...props} name="firstName" />
+      const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+        <NamedInput field={field} props={{ name: "firstName" }} />
       )
 
-      const LastNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = (props) => (
-        <NamedInput {...props} name="lastName" />
+      const LastNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+        <NamedInput field={field} props={{ name: "lastName" }} />
       )
 
       const form = FormReact.build(formBuilder, {
@@ -275,30 +267,22 @@ describe("FormReact.build", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(TitleField).addField(ItemsArrayField)
 
-      const TitleInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const TitleInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
           data-testid="title"
         />
       )
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
           data-testid="item-name"
         />
       )
@@ -352,16 +336,12 @@ describe("FormReact.build", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
           data-testid="item-name"
         />
       )
@@ -419,16 +399,12 @@ describe("FormReact.build", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
           data-testid="item-name"
         />
       )
@@ -483,16 +459,12 @@ describe("FormReact.build", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
           data-testid="item-name"
         />
       )
@@ -543,16 +515,12 @@ describe("FormReact.build", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
           data-testid="item-name"
         />
       )
@@ -647,21 +615,16 @@ describe("FormReact.build", () => {
         Schema.filterEffect(() => Effect.succeed(true).pipe(Effect.delay("100 millis"))),
       )
 
-      const ValidatingInput: React.FC<FormReact.FieldComponentProps<typeof AsyncField>> = ({
-        isValidating,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ValidatingInput: React.FC<FormReact.FieldComponentProps<typeof AsyncField>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="async-input"
           />
-          <span data-testid="is-validating">{String(isValidating)}</span>
+          <span data-testid="is-validating">{String(field.isValidating)}</span>
         </div>
       )
 
@@ -703,39 +666,29 @@ describe("FormReact.build", () => {
     it("FormBuilder.refine validates across fields and routes error to specific field", async () => {
       const user = userEvent.setup()
 
-      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="password"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="password"
           />
-          {Option.isSome(error) && <span data-testid="password-error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="password-error">{field.error.value}</span>}
         </div>
       )
 
-      const ConfirmPasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ConfirmPasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="password"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="confirm-password"
           />
-          {Option.isSome(error) && <span data-testid="confirm-password-error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="confirm-password-error">{field.error.value}</span>}
         </div>
       )
 
@@ -784,21 +737,16 @@ describe("FormReact.build", () => {
     it("refineEffect performs async cross-field validation", async () => {
       const user = userEvent.setup()
 
-      const UsernameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const UsernameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="username"
           />
-          {Option.isSome(error) && <span data-testid="username-error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="username-error">{field.error.value}</span>}
         </div>
       )
 
@@ -853,21 +801,16 @@ describe("FormReact.build", () => {
         isTaken: (username) => Effect.succeed(username === "taken"),
       })
 
-      const UsernameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const UsernameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="username"
           />
-          {Option.isSome(error) && <span data-testid="username-error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="username-error">{field.error.value}</span>}
         </div>
       )
 
@@ -915,30 +858,27 @@ describe("FormReact.build", () => {
     it("multiple chained refine() calls are all executed", async () => {
       const user = userEvent.setup()
 
-      const FieldInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String> & { testId: string }> = ({
-        error,
-        onBlur,
-        onChange,
-        testId,
-        value,
+      const FieldInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String, { testId: string }>> = ({
+        field,
+        props,
       }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
-            data-testid={testId}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
+            data-testid={props.testId}
           />
-          {Option.isSome(error) && <span data-testid={`${testId}-error`}>{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid={`${props.testId}-error`}>{field.error.value}</span>}
         </div>
       )
 
-      const FieldAInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = (props) => (
-        <FieldInput {...props} testId="fieldA" />
+      const FieldAInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+        <FieldInput field={field} props={{ testId: "fieldA" }} />
       )
-      const FieldBInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = (props) => (
-        <FieldInput {...props} testId="fieldB" />
+      const FieldBInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+        <FieldInput field={field} props={{ testId: "fieldB" }} />
       )
 
       const FieldAField = Field.makeField("fieldA", Schema.String)
@@ -1004,30 +944,27 @@ describe("FormReact.build", () => {
     it("cross-field error clears when field value changes", async () => {
       const user = userEvent.setup()
 
-      const FieldInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String> & { testId: string }> = ({
-        error,
-        onBlur,
-        onChange,
-        testId,
-        value,
+      const FieldInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String, { testId: string }>> = ({
+        field,
+        props,
       }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
-            data-testid={testId}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
+            data-testid={props.testId}
           />
-          {Option.isSome(error) && <span data-testid={`${testId}-error`}>{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid={`${props.testId}-error`}>{field.error.value}</span>}
         </div>
       )
 
-      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = (props) => (
-        <FieldInput {...props} testId="password" />
+      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+        <FieldInput field={field} props={{ testId: "password" }} />
       )
-      const ConfirmInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = (props) => (
-        <FieldInput {...props} testId="confirm" />
+      const ConfirmInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+        <FieldInput field={field} props={{ testId: "confirm" }} />
       )
 
       const PasswordField = Field.makeField("password", Schema.String)
@@ -1079,21 +1016,16 @@ describe("FormReact.build", () => {
     it("routes cross-field errors to nested array item fields", async () => {
       const user = userEvent.setup()
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="item-name"
           />
-          {Option.isSome(error) && <span data-testid="item-name-error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="item-name-error">{field.error.value}</span>}
         </div>
       )
 
@@ -1766,21 +1698,16 @@ describe("FormReact.build", () => {
       const CountField = Field.makeField("count", Schema.NumberFromString)
       const formBuilder = FormBuilder.empty.addField(CountField)
 
-      const NumberInput: React.FC<FormReact.FieldComponentProps<typeof Schema.NumberFromString>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const NumberInput: React.FC<FormReact.FieldComponentProps<typeof Schema.NumberFromString>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="number-input"
           />
-          {Option.isSome(error) && <span data-testid="error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="error">{field.error.value}</span>}
         </div>
       )
 
@@ -1832,29 +1759,21 @@ describe("FormReact.build", () => {
       )
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
         />
       )
 
-      const ItemIdInput: React.FC<FormReact.FieldComponentProps<typeof Schema.NumberFromString>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemIdInput: React.FC<FormReact.FieldComponentProps<typeof Schema.NumberFromString>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
         />
       )
 
@@ -2024,39 +1943,29 @@ describe("FormReact.build", () => {
         .addField(NameField)
         .addField(AddressesArrayField)
 
-      const StreetInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        isDirty,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const StreetInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="street-input"
           />
-          {isDirty && <span data-testid="street-dirty">dirty</span>}
+          {field.isDirty && <span data-testid="street-dirty">dirty</span>}
         </div>
       )
 
-      const CityInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        isDirty,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const CityInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="city-input"
           />
-          {isDirty && <span data-testid="city-dirty">dirty</span>}
+          {field.isDirty && <span data-testid="city-dirty">dirty</span>}
         </div>
       )
 
@@ -2131,23 +2040,17 @@ describe("FormReact.build", () => {
     it("does not mark as touched by default", async () => {
       const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
 
-      const TouchedInput: React.FC<FormReact.FieldComponentProps<typeof NonEmpty>> = ({
-        error,
-        isTouched,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const TouchedInput: React.FC<FormReact.FieldComponentProps<typeof NonEmpty>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="text-input"
           />
-          {isTouched && <span data-testid="touched">touched</span>}
-          {Option.isSome(error) && <span data-testid="error">{error.value}</span>}
+          {field.isTouched && <span data-testid="touched">touched</span>}
+          {Option.isSome(field.error) && <span data-testid="error">{field.error.value}</span>}
         </div>
       )
 
@@ -2253,37 +2156,28 @@ describe("FormReact.build", () => {
           return undefined
         })
 
-      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="password"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="password-input"
           />
         </div>
       )
 
-      const ConfirmPasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ConfirmPasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="password"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="confirm-password-input"
           />
-          {Option.isSome(error) && <span data-testid="error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="error">{field.error.value}</span>}
         </div>
       )
 
@@ -2346,30 +2240,22 @@ describe("FormReact.build", () => {
         .addField(FirstNameField)
         .addField(LastNameField)
 
-      const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
           data-testid="first-name-input"
         />
       )
 
-      const LastNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const LastNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
           data-testid="last-name-input"
         />
       )
@@ -2429,39 +2315,29 @@ describe("FormReact.build", () => {
         .addField(FirstNameField)
         .addField(LastNameField)
 
-      const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        isDirty,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="first-name-input"
           />
-          {isDirty && <span data-testid="first-name-dirty">dirty</span>}
+          {field.isDirty && <span data-testid="first-name-dirty">dirty</span>}
         </div>
       )
 
-      const LastNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        isDirty,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const LastNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="last-name-input"
           />
-          {isDirty && <span data-testid="last-name-dirty">dirty</span>}
+          {field.isDirty && <span data-testid="last-name-dirty">dirty</span>}
         </div>
       )
 
@@ -2536,35 +2412,26 @@ describe("FormReact.build", () => {
           return undefined
         })
 
-      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <input
           type="password"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
           data-testid="password-input"
         />
       )
 
-      const ConfirmPasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ConfirmPasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="password"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="confirm-password-input"
           />
-          {Option.isSome(error) && <span data-testid="error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="error">{field.error.value}</span>}
         </div>
       )
 
@@ -2621,21 +2488,16 @@ describe("FormReact.build", () => {
     it("triggers validation for all mounted fields (onChange mode)", async () => {
       const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
 
-      const ErrorInput: React.FC<FormReact.FieldComponentProps<Schema.Schema<string, string, never>>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ErrorInput: React.FC<FormReact.FieldComponentProps<Schema.Schema<string, string, never>>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="text-input"
           />
-          {Option.isSome(error) && <span data-testid="error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="error">{field.error.value}</span>}
         </div>
       )
 
@@ -2690,21 +2552,16 @@ describe("FormReact.build", () => {
     it("routes cross-field errors to specific array item fields (items[1].name)", async () => {
       const user = userEvent.setup()
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="item-name"
           />
-          {Option.isSome(error) && <span data-testid="item-name-error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="item-name-error">{field.error.value}</span>}
         </div>
       )
 
@@ -2787,21 +2644,16 @@ describe("FormReact.build", () => {
     it("clears array item cross-field errors when value changes", async () => {
       const user = userEvent.setup()
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="item-name"
           />
-          {Option.isSome(error) && <span data-testid="item-name-error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="item-name-error">{field.error.value}</span>}
         </div>
       )
 
@@ -2866,21 +2718,16 @@ describe("FormReact.build", () => {
     it("handles async cross-field validation on array item paths", async () => {
       const user = userEvent.setup()
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="item-name"
           />
-          {Option.isSome(error) && <span data-testid="item-name-error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="item-name-error">{field.error.value}</span>}
         </div>
       )
 
@@ -2939,21 +2786,16 @@ describe("FormReact.build", () => {
     it("routes schema validation errors to correct array item paths", async () => {
       const user = userEvent.setup()
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<Schema.Schema<string, string, never>>> = ({
-        error,
-        onBlur,
-        onChange,
-        value,
-      }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<Schema.Schema<string, string, never>>> = ({ field }) => (
         <div>
           <input
             type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="item-name"
           />
-          {Option.isSome(error) && <span data-testid="item-name-error">{error.value}</span>}
+          {Option.isSome(field.error) && <span data-testid="item-name-error">{field.error.value}</span>}
         </div>
       )
 
@@ -3657,35 +3499,26 @@ describe("FormReact.build", () => {
             }
           })
 
-        const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-          onBlur,
-          onChange,
-          value,
-        }) => (
+        const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
           <input
             type="password"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={onBlur}
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
             data-testid="password"
           />
         )
 
-        const ConfirmInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
-          error,
-          onBlur,
-          onChange,
-          value,
-        }) => (
+        const ConfirmInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
           <div>
             <input
               type="password"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              onBlur={onBlur}
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              onBlur={field.onBlur}
               data-testid="confirm"
             />
-            {Option.isSome(error) && <span data-testid="error">{error.value}</span>}
+            {Option.isSome(field.error) && <span data-testid="error">{field.error.value}</span>}
           </div>
         )
 

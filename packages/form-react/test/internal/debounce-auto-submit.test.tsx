@@ -12,26 +12,28 @@ import { describe, expect, it, vi } from "vitest"
 const createRuntime = () => Atom.runtime(Layer.empty)
 
 const TextInput: React.FC<
-  FormReact.FieldComponentProps<typeof Schema.String> & { readonly testId?: string }
-> = ({ error, onBlur, onChange, testId = "text-input", value }) => (
+  FormReact.FieldComponentProps<typeof Schema.String, { readonly testId?: string }>
+> = ({ field, props }) => (
   <div>
     <input
       type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={onBlur}
-      data-testid={testId}
+      value={field.value}
+      onChange={(e) => field.onChange(e.target.value)}
+      onBlur={field.onBlur}
+      data-testid={props.testId ?? "text-input"}
     />
-    {Option.isSome(error) && <span data-testid={`${testId}-error`}>{error.value}</span>}
+    {Option.isSome(field.error) && (
+      <span data-testid={`${props.testId ?? "text-input"}-error`}>{field.error.value}</span>
+    )}
   </div>
 )
 
-const NameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = (props) => (
-  <TextInput {...props} testId="name-input" />
+const NameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+  <TextInput field={field} props={{ testId: "name-input" }} />
 )
 
-const AgeInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = (props) => (
-  <TextInput {...props} testId="age-input" />
+const AgeInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+  <TextInput field={field} props={{ testId: "age-input" }} />
 )
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
