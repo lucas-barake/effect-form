@@ -121,7 +121,7 @@ export type BuiltForm<
   // Atoms for fine-grained subscriptions (use with useAtomValue)
   readonly isDirty: Atom.Atom<boolean>
   readonly hasChangedSinceSubmit: Atom.Atom<boolean>
-  readonly lastSubmittedValues: Atom.Atom<Option.Option<Field.EncodedFromFields<TFields>>>
+  readonly lastSubmittedValues: Atom.Atom<Option.Option<FormBuilder.SubmittedValues<TFields>>>
   readonly submitCount: Atom.Atom<number>
 
   readonly schema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
@@ -595,15 +595,11 @@ export const build = <
     const state = useAtomValue(stateAtom)
     const setFormState = useAtomSet(stateAtom)
     const callSubmit = useAtomSet(submitAtom)
-    // Prevents auto-submit from firing on mount when initial state is set
     const isInitializedRef = React.useRef(false)
 
     React.useEffect(() => {
       setFormState(Option.some(operations.createInitialState(defaultValues)))
-      // Microtask ensures state update completes before enabling auto-submit
-      queueMicrotask(() => {
-        isInitializedRef.current = true
-      })
+      isInitializedRef.current = true
       // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
     }, [])
 
@@ -616,7 +612,6 @@ export const build = <
     useAtomSubscribe(
       stateAtom,
       React.useCallback(() => {
-        // Skip auto-submit for initial state set
         if (!isInitializedRef.current) return
         if (parsedMode.autoSubmit && parsedMode.validation === "onChange") {
           debouncedAutoSubmit()

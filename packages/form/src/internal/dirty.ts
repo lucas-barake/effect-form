@@ -17,17 +17,23 @@ export const recalculateDirtyFieldsForArray = (
   arrayPath: string,
   newItems: ReadonlyArray<unknown>,
 ): ReadonlySet<string> => {
+  const initialItems = (getNestedValue(initialValues, arrayPath) ?? []) as ReadonlyArray<unknown>
+
+  if (newItems === initialItems) {
+    return dirtyFields
+  }
+
   const nextDirty = new Set(
     Array.from(dirtyFields).filter((path) => !isPathUnderRoot(path, arrayPath)),
   )
-
-  const initialItems = (getNestedValue(initialValues, arrayPath) ?? []) as ReadonlyArray<unknown>
 
   const loopLength = Math.max(newItems.length, initialItems.length)
   for (let i = 0; i < loopLength; i++) {
     const itemPath = `${arrayPath}[${i}]`
     const newItem = newItems[i]
     const initialItem = initialItems[i]
+
+    if (newItem === initialItem) continue
 
     const isEqual = Utils.structuralRegion(() => Equal.equals(newItem, initialItem))
     if (!isEqual) {
@@ -56,6 +62,25 @@ export const recalculateDirtySubtree = (
   allValues: unknown,
   rootPath: string = "",
 ): ReadonlySet<string> => {
+  const targetValue = rootPath ? getNestedValue(allValues, rootPath) : allValues
+  const targetInitial = rootPath ? getNestedValue(allInitial, rootPath) : allInitial
+
+  if (targetValue === targetInitial) {
+    if (rootPath === "") {
+      return new Set()
+    }
+
+    let changed = false
+    const nextDirty = new Set(currentDirty)
+    for (const path of currentDirty) {
+      if (isPathUnderRoot(path, rootPath)) {
+        nextDirty.delete(path)
+        changed = true
+      }
+    }
+    return changed ? nextDirty : currentDirty
+  }
+
   const nextDirty = new Set(currentDirty)
 
   if (rootPath === "") {
@@ -68,10 +93,9 @@ export const recalculateDirtySubtree = (
     }
   }
 
-  const targetValue = rootPath ? getNestedValue(allValues, rootPath) : allValues
-  const targetInitial = rootPath ? getNestedValue(allInitial, rootPath) : allInitial
-
   const recurse = (current: unknown, initial: unknown, path: string): void => {
+    if (current === initial) return
+
     if (Array.isArray(current)) {
       const initialArr = (initial ?? []) as ReadonlyArray<unknown>
       for (let i = 0; i < Math.max(current.length, initialArr.length); i++) {
@@ -79,9 +103,13 @@ export const recalculateDirtySubtree = (
       }
     } else if (current !== null && typeof current === "object") {
       const initialObj = (initial ?? {}) as Record<string, unknown>
-      const allKeys = new Set([...Object.keys(current as object), ...Object.keys(initialObj)])
-      for (const key of allKeys) {
+      for (const key in current as object) {
         recurse((current as Record<string, unknown>)[key], initialObj[key], path ? `${path}.${key}` : key)
+      }
+      for (const key in initialObj) {
+        if (!(key in (current as object))) {
+          recurse(undefined, initialObj[key], path ? `${path}.${key}` : key)
+        }
       }
     } else {
       const isEqual = Utils.structuralRegion(() => Equal.equals(current, initial))

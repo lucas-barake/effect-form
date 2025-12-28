@@ -65,7 +65,7 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly isDirtyAtom: Atom.Atom<boolean>
   readonly submitCountAtom: Atom.Atom<number>
-  readonly lastSubmittedValuesAtom: Atom.Atom<Option.Option<Field.EncodedFromFields<TFields>>>
+  readonly lastSubmittedValuesAtom: Atom.Atom<Option.Option<FormBuilder.SubmittedValues<TFields>>>
   readonly changedSinceSubmitFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly hasChangedSinceSubmitAtom: Atom.Atom<boolean>
 
@@ -216,14 +216,14 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
     const state = Option.getOrThrow(get(stateAtom))
     return Option.match(state.lastSubmittedValues, {
       onNone: () => new Set<string>(),
-      onSome: (lastSubmitted) => recalculateDirtySubtree(new Set(), lastSubmitted, state.values, ""),
+      onSome: (lastSubmitted) => recalculateDirtySubtree(new Set(), lastSubmitted.encoded, state.values, ""),
     })
   }).pipe(Atom.setIdleTTL(0))
 
   const hasChangedSinceSubmitAtom = Atom.readable((get) => {
     const state = Option.getOrThrow(get(stateAtom))
     if (Option.isNone(state.lastSubmittedValues)) return false
-    if (state.values === state.lastSubmittedValues.value) return false
+    if (state.values === state.lastSubmittedValues.value.encoded) return false
     return get(changedSinceSubmitFieldsAtom).size > 0
   }).pipe(Atom.setIdleTTL(0))
 
@@ -256,20 +256,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
       (get) => getNestedValue(Option.getOrThrow(get(stateAtom)).values, fieldPath),
       (ctx, value) => {
         const currentState = Option.getOrThrow(ctx.get(stateAtom))
-        const newValues = setNestedValue(currentState.values, fieldPath, value)
-        ctx.set(
-          stateAtom,
-          Option.some({
-            ...currentState,
-            values: newValues,
-            dirtyFields: recalculateDirtySubtree(
-              currentState.dirtyFields,
-              currentState.initialValues,
-              newValues,
-              fieldPath,
-            ),
-          }),
-        )
+        ctx.set(stateAtom, Option.some(operations.setFieldValue(currentState, fieldPath, value)))
       },
     ).pipe(Atom.setIdleTTL(0))
 
@@ -330,7 +317,14 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
           })
         ),
       )
-      get.set(stateAtom, Option.some(operations.createSubmitState(state.value)))
+      const submitState = operations.createSubmitState(state.value)
+      get.set(
+        stateAtom,
+        Option.some({
+          ...submitState,
+          lastSubmittedValues: Option.some({ encoded: values, decoded }),
+        }),
+      )
       const result = config.onSubmit(decoded, get)
       if (Effect.isEffect(result)) {
         return yield* (result as Effect.Effect<A, E, R>)
@@ -364,7 +358,6 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
 
     createSubmitState: (state) => ({
       ...state,
-      lastSubmittedValues: Option.some(state.values),
       touched: Field.createTouchedRecord(fields, true) as { readonly [K in keyof TFields]: boolean },
       submitCount: state.submitCount + 1,
     }),
@@ -468,20 +461,21 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
         return state
       }
 
-      if (state.values === state.lastSubmittedValues.value) {
+      const lastEncoded = state.lastSubmittedValues.value.encoded
+      if (state.values === lastEncoded) {
         return state
       }
 
       const newDirtyFields = recalculateDirtySubtree(
         state.dirtyFields,
         state.initialValues,
-        state.lastSubmittedValues.value,
+        lastEncoded,
         "",
       )
 
       return {
         ...state,
-        values: state.lastSubmittedValues.value,
+        values: lastEncoded,
         dirtyFields: newDirtyFields,
       }
     },
