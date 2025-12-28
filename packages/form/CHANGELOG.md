@@ -1,5 +1,15 @@
 # @lucas-barake/effect-form
 
+## 0.9.0
+
+### Minor Changes
+
+- [#21](https://github.com/lucas-barake/effect-form/pull/21) [`ab80237`](https://github.com/lucas-barake/effect-form/commit/ab80237b5c7a338bf3e300ef539421cbef2438ce) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Expose Path module as public API
+
+  The Path utilities (`schemaPathToFieldPath`, `isPathUnderRoot`, `isPathOrParentDirty`, `getNestedValue`, `setNestedValue`) are now exported as a public module via `@lucas-barake/effect-form/Path`.
+
+  This fixes an issue where `form-react` was importing from an unexported internal path, causing bundler errors in consuming applications.
+
 ## 0.8.0
 
 ### Minor Changes
