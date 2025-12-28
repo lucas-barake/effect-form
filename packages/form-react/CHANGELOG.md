@@ -1,5 +1,29 @@
 # @lucas-barake/effect-form-react
 
+## 0.6.0
+
+### Minor Changes
+
+- [#10](https://github.com/lucas-barake/effect-form/pull/10) [`aa80cc6`](https://github.com/lucas-barake/effect-form/commit/aa80cc66505d230b3ca0cf51419a89afd2dd4255) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Move onSubmit to build options and expose fine-grained atoms
+
+  **Breaking Changes:**
+  - `onSubmit` moved from `Initialize` props to `build()` options
+  - Removed `useForm` hook and `Subscribe` component in favor of direct atom access
+
+  **New API:**
+  - Atoms: `isDirty`, `hasChangedSinceSubmit`, `lastSubmittedValues`, `submitCount`, `submit`
+  - Operations: `reset`, `revertToLastSubmit`, `setValue`, `setValues`
+
+  **Improvements:**
+  - Fixed auto-submit race condition by freezing onSubmit at build time
+  - Added `isPathUnderRoot` utility for consistent path-prefix matching
+  - Aligned error clearing behavior between UI onChange and programmatic setValue
+
+### Patch Changes
+
+- Updated dependencies [[`aa80cc6`](https://github.com/lucas-barake/effect-form/commit/aa80cc66505d230b3ca0cf51419a89afd2dd4255)]:
+  - @lucas-barake/effect-form@0.5.0
+
 ## 0.5.0
 
 ### Minor Changes
