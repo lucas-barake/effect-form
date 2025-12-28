@@ -1,6 +1,3 @@
-/**
- * @since 1.0.0
- */
 import type * as Registry from "@effect-atom/atom/Registry"
 import type * as Effect from "effect/Effect"
 import type * as Option from "effect/Option"
@@ -18,7 +15,6 @@ import type {
 import { isArrayFieldDef, isFieldDef } from "./Field.js"
 
 /**
- * @since 1.0.0
  * @category Models
  */
 export interface SubmittedValues<TFields extends FieldsRecord> {
@@ -29,14 +25,12 @@ export interface SubmittedValues<TFields extends FieldsRecord> {
 /**
  * Unique identifier for Field references.
  *
- * @since 1.0.0
  * @category Symbols
  * @internal
  */
 export const FieldTypeId: unique symbol = Symbol.for("@lucas-barake/effect-form/Field")
 
 /**
- * @since 1.0.0
  * @category Symbols
  * @internal
  */
@@ -45,7 +39,6 @@ export type FieldTypeId = typeof FieldTypeId
 /**
  * A field reference carrying type and path info for type-safe setValue operations.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FieldRef<S> {
@@ -57,7 +50,6 @@ export interface FieldRef<S> {
 /**
  * Creates a field reference for type-safe setValue operations.
  *
- * @since 1.0.0
  * @category Constructors
  * @internal
  */
@@ -74,13 +66,11 @@ export const makeFieldRef = <S>(key: string): FieldRef<S> => ({
 /**
  * Unique identifier for FormBuilder instances.
  *
- * @since 1.0.0
  * @category Symbols
  */
 export const TypeId: unique symbol = Symbol.for("@lucas-barake/effect-form/Form")
 
 /**
- * @since 1.0.0
  * @category Symbols
  */
 export type TypeId = typeof TypeId
@@ -88,7 +78,6 @@ export type TypeId = typeof TypeId
 /**
  * The state of a form at runtime.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FormState<TFields extends FieldsRecord> {
@@ -121,7 +110,6 @@ type Refinement = SyncRefinement | AsyncRefinement
  * includes a Schema for validation. The builder accumulates field definitions
  * and context requirements (`R`) from schemas that use Effect services.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FormBuilder<TFields extends FieldsRecord, R> {
@@ -281,7 +269,6 @@ const FormBuilderProto = {
  * // Output: false
  * ```
  *
- * @since 1.0.0
  * @category Guards
  */
 export const isFormBuilder = (u: unknown): u is FormBuilder<any, any> => Predicate.hasProperty(u, TypeId)
@@ -307,7 +294,6 @@ export const isFormBuilder = (u: unknown): u is FormBuilder<any, any> => Predica
  *   .addField(PasswordField)
  * ```
  *
- * @since 1.0.0
  * @category Constructors
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -321,7 +307,6 @@ export const empty: FormBuilder<{}, never> = (() => {
 /**
  * Builds a combined Schema from a FormBuilder's field definitions.
  *
- * @since 1.0.0
  * @category Schema
  */
 export const buildSchema = <TFields extends FieldsRecord, R>(

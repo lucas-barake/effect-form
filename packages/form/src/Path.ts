@@ -1,7 +1,5 @@
 /**
- * Internal path utilities for form field operations.
- *
- * @internal
+ * Path utilities for form field operations.
  */
 
 const BRACKET_NOTATION_REGEX = /\[(\d+)\]/g

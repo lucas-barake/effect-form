@@ -1,16 +1,13 @@
 /**
  * Validation utilities for form error handling.
- *
- * @since 1.0.0
  */
 import * as Option from "effect/Option"
 import * as ParseResult from "effect/ParseResult"
-import { schemaPathToFieldPath } from "./internal/path.js"
+import { schemaPathToFieldPath } from "./Path.js"
 
 /**
  * Extracts the first error message from a ParseError.
  *
- * @since 1.0.0
  * @category Error Handling
  */
 export const extractFirstError = (error: ParseResult.ParseError): Option.Option<string> => {
@@ -25,7 +22,6 @@ export const extractFirstError = (error: ParseResult.ParseError): Option.Option<
  * Routes validation errors from a ParseError to a map of field paths to error messages.
  * Used for cross-field validation where schema errors need to be displayed on specific fields.
  *
- * @since 1.0.0
  * @category Error Handling
  */
 export const routeErrors = (error: ParseResult.ParseError): Map<string, string> => {

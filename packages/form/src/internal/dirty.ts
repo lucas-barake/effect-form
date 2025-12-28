@@ -5,7 +5,7 @@
  */
 import * as Equal from "effect/Equal"
 import * as Utils from "effect/Utils"
-import { getNestedValue, isPathUnderRoot } from "./path.js"
+import { getNestedValue, isPathUnderRoot } from "../Path.js"
 
 /**
  * Recalculates dirty fields for an array after mutation.

@@ -1,7 +1,5 @@
 /**
  * Form validation mode configuration.
- *
- * @since 1.0.0
  */
 import * as Duration from "effect/Duration"
 
@@ -17,7 +15,6 @@ import * as Duration from "effect/Duration"
  * - `{ onChange: { debounce, autoSubmit? } }`: Debounced validation, optional auto-submit
  * - `{ onBlur: { autoSubmit: true } }`: Validate on blur, auto-submit when valid
  *
- * @since 1.0.0
  * @category Models
  */
 export type FormMode =
@@ -32,7 +29,6 @@ export type FormMode =
  * Form mode without auto-submit options.
  * Used when SubmitArgs is not void, since auto-submit cannot provide custom arguments.
  *
- * @since 1.0.0
  * @category Models
  */
 export type FormModeWithoutAutoSubmit =
@@ -44,7 +40,6 @@ export type FormModeWithoutAutoSubmit =
 /**
  * Parsed form mode with resolved values.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface ParsedMode {
@@ -56,7 +51,6 @@ export interface ParsedMode {
 /**
  * Parses a FormMode into a normalized ParsedMode.
  *
- * @since 1.0.0
  * @category Parsing
  */
 export const parse = (mode: FormMode = "onSubmit"): ParsedMode => {

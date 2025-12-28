@@ -1,20 +1,16 @@
 /**
  * Field definitions for type-safe forms.
- *
- * @since 1.0.0
  */
 import * as Schema from "effect/Schema"
 
 /**
  * Unique identifier for Field instances.
  *
- * @since 1.0.0
  * @category Symbols
  */
 export const TypeId: unique symbol = Symbol.for("@lucas-barake/effect-form/Field")
 
 /**
- * @since 1.0.0
  * @category Symbols
  */
 export type TypeId = typeof TypeId
@@ -22,7 +18,6 @@ export type TypeId = typeof TypeId
 /**
  * A scalar field definition containing the key and schema.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FieldDef<K extends string, S extends Schema.Schema.Any> {
@@ -34,7 +29,6 @@ export interface FieldDef<K extends string, S extends Schema.Schema.Any> {
 /**
  * An array field definition containing a schema for items.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface ArrayFieldDef<K extends string, S extends Schema.Schema.Any> {
@@ -46,7 +40,6 @@ export interface ArrayFieldDef<K extends string, S extends Schema.Schema.Any> {
 /**
  * Union of all field definition types.
  *
- * @since 1.0.0
  * @category Models
  */
 export type AnyFieldDef = FieldDef<string, Schema.Schema.Any> | ArrayFieldDef<string, Schema.Schema.Any>
@@ -54,7 +47,6 @@ export type AnyFieldDef = FieldDef<string, Schema.Schema.Any> | ArrayFieldDef<st
 /**
  * A record of field definitions.
  *
- * @since 1.0.0
  * @category Models
  */
 export type FieldsRecord = Record<string, AnyFieldDef>
@@ -62,7 +54,6 @@ export type FieldsRecord = Record<string, AnyFieldDef>
 /**
  * Checks if a field definition is an array field.
  *
- * @since 1.0.0
  * @category Guards
  */
 export const isArrayFieldDef = (def: AnyFieldDef): def is ArrayFieldDef<string, Schema.Schema.Any> =>
@@ -71,7 +62,6 @@ export const isArrayFieldDef = (def: AnyFieldDef): def is ArrayFieldDef<string, 
 /**
  * Checks if a field definition is a scalar field.
  *
- * @since 1.0.0
  * @category Guards
  */
 export const isFieldDef = (def: AnyFieldDef): def is FieldDef<string, Schema.Schema.Any> => def._tag === "field"
@@ -87,7 +77,6 @@ export const isFieldDef = (def: AnyFieldDef): def is FieldDef<string, Schema.Sch
  * const NameField = Field.makeField("name", Schema.String)
  * ```
  *
- * @since 1.0.0
  * @category Constructors
  */
 export const makeField = <K extends string, S extends Schema.Schema.Any>(
@@ -117,7 +106,6 @@ export const makeField = <K extends string, S extends Schema.Schema.Any>(
  * }))
  * ```
  *
- * @since 1.0.0
  * @category Constructors
  */
 export const makeArrayField = <K extends string, S extends Schema.Schema.Any>(
@@ -132,7 +120,6 @@ export const makeArrayField = <K extends string, S extends Schema.Schema.Any>(
 /**
  * Extracts the encoded (input) type from a fields record.
  *
- * @since 1.0.0
  * @category Type Helpers
  */
 export type EncodedFromFields<T extends FieldsRecord> = {
@@ -144,7 +131,6 @@ export type EncodedFromFields<T extends FieldsRecord> = {
 /**
  * Extracts the decoded (output) type from a fields record.
  *
- * @since 1.0.0
  * @category Type Helpers
  */
 export type DecodedFromFields<T extends FieldsRecord> = {
@@ -156,7 +142,6 @@ export type DecodedFromFields<T extends FieldsRecord> = {
 /**
  * Gets a default encoded value from a schema.
  *
- * @since 1.0.0
  * @category Helpers
  */
 export const getDefaultFromSchema = (schema: Schema.Schema.Any): unknown => {
@@ -190,7 +175,6 @@ export const getDefaultFromSchema = (schema: Schema.Schema.Any): unknown => {
 /**
  * Gets default encoded values for a fields record.
  *
- * @since 1.0.0
  * @category Helpers
  */
 export const getDefaultEncodedValues = (fields: FieldsRecord): Record<string, unknown> => {
@@ -208,7 +192,6 @@ export const getDefaultEncodedValues = (fields: FieldsRecord): Record<string, un
 /**
  * Creates a touched record with all fields set to the given value.
  *
- * @since 1.0.0
  * @category Helpers
  */
 export const createTouchedRecord = (fields: FieldsRecord, value: boolean): Record<string, boolean> => {

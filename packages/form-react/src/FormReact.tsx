@@ -1,11 +1,8 @@
-/**
- * @since 1.0.0
- */
 import { RegistryContext, useAtom, useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
 import type * as Atom from "@effect-atom/atom/Atom"
 import { Field, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
 import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
-import { getNestedValue, isPathOrParentDirty, isPathUnderRoot } from "@lucas-barake/effect-form/internal/path"
+import { getNestedValue, isPathOrParentDirty, isPathUnderRoot } from "@lucas-barake/effect-form/Path"
 import * as Cause from "effect/Cause"
 import type * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
@@ -19,7 +16,6 @@ import { useDebounced } from "./internal/use-debounced.js"
 /**
  * Form-controlled state passed to field components.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FieldState<S extends Schema.Schema.Any> {
@@ -36,7 +32,6 @@ export interface FieldState<S extends Schema.Schema.Any> {
  * Props passed to field components.
  * Contains form-controlled state in `field` and user-defined props in `props`.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FieldComponentProps<
@@ -50,7 +45,6 @@ export interface FieldComponentProps<
 /**
  * Extracts the extra props type from a field component.
  *
- * @since 1.0.0
  * @category Type-level utilities
  */
 export type ExtractExtraProps<C> = C extends React.FC<FieldComponentProps<any, infer P>> ? P
@@ -61,7 +55,6 @@ export type ExtractExtraProps<C> = C extends React.FC<FieldComponentProps<any, i
  * - For Struct schemas: returns a map of field names to components
  * - For primitive schemas: returns a single component
  *
- * @since 1.0.0
  * @category Models
  */
 export type ArrayItemComponentMap<S extends Schema.Schema.Any> = S extends Schema.Struct<infer Fields> ? {
@@ -73,7 +66,6 @@ export type ArrayItemComponentMap<S extends Schema.Schema.Any> = S extends Schem
 /**
  * Maps field names to their React components.
  *
- * @since 1.0.0
  * @category Models
  */
 export type FieldComponentMap<TFields extends Field.FieldsRecord> = {
@@ -85,7 +77,6 @@ export type FieldComponentMap<TFields extends Field.FieldsRecord> = {
 /**
  * Maps field names to their type-safe Field references for setValue operations.
  *
- * @since 1.0.0
  * @category Models
  */
 export type FieldRefs<TFields extends Field.FieldsRecord> = FormAtoms.FieldRefs<TFields>
@@ -93,7 +84,6 @@ export type FieldRefs<TFields extends Field.FieldsRecord> = FormAtoms.FieldRefs<
 /**
  * Operations available for array fields.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface ArrayFieldOperations<TItem> {
@@ -108,7 +98,6 @@ export interface ArrayFieldOperations<TItem> {
  * The result of building a form, containing all components and utilities needed
  * for form rendering and submission.
  *
- * @since 1.0.0
  * @category Models
  */
 export type BuiltForm<
@@ -540,7 +529,6 @@ const makeFieldComponents = <
  * }
  * ```
  *
- * @since 1.0.0
  * @category Constructors
  */
 export const build = <
@@ -705,7 +693,6 @@ export const build = <
  * ))
  * ```
  *
- * @since 1.0.0
  * @category Constructors
  */
 export const forField = <K extends string, S extends Schema.Schema.Any>(

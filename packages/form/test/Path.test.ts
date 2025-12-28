@@ -1,5 +1,10 @@
+import {
+  getNestedValue,
+  isPathOrParentDirty,
+  schemaPathToFieldPath,
+  setNestedValue,
+} from "@lucas-barake/effect-form/Path"
 import { describe, expect, it } from "vitest"
-import { getNestedValue, isPathOrParentDirty, schemaPathToFieldPath, setNestedValue } from "../../src/internal/path.js"
 
 describe("path utilities", () => {
   describe("schemaPathToFieldPath", () => {

@@ -7,14 +7,13 @@ import * as Schema from "effect/Schema"
 import * as Field from "./Field.js"
 import * as FormBuilder from "./FormBuilder.js"
 import { recalculateDirtyFieldsForArray, recalculateDirtySubtree } from "./internal/dirty.js"
-import { getNestedValue, isPathUnderRoot, setNestedValue } from "./internal/path.js"
 import { createWeakRegistry, type WeakRegistry } from "./internal/weak-registry.js"
+import { getNestedValue, isPathUnderRoot, setNestedValue } from "./Path.js"
 import * as Validation from "./Validation.js"
 
 /**
  * Atoms for a single field.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FieldAtoms {
@@ -27,7 +26,6 @@ export interface FieldAtoms {
 /**
  * Configuration for creating form atoms.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void> {
@@ -46,7 +44,6 @@ export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, Su
 /**
  * Maps field names to their type-safe Field references for setValue operations.
  *
- * @since 1.0.0
  * @category Models
  */
 export type FieldRefs<TFields extends Field.FieldsRecord> = {
@@ -60,7 +57,6 @@ export type FieldRefs<TFields extends Field.FieldsRecord> = {
 /**
  * The complete form atoms infrastructure.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = never, SubmitArgs = void> {
@@ -106,7 +102,6 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
 /**
  * Pure state operations for form manipulation.
  *
- * @since 1.0.0
  * @category Models
  */
 export interface FormOperations<TFields extends Field.FieldsRecord> {
@@ -190,7 +185,6 @@ export interface FormOperations<TFields extends Field.FieldsRecord> {
  * })
  * ```
  *
- * @since 1.0.0
  * @category Constructors
  */
 export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void>(
