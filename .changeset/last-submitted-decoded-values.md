@@ -1,6 +1,6 @@
 ---
-"@effect-form/form": minor
-"@effect-form/form-react": minor
+"@lucas-barake/effect-form": minor
+"@lucas-barake/effect-form-react": minor
 ---
 
 Store both encoded and decoded values in lastSubmittedValues
