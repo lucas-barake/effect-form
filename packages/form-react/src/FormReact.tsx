@@ -678,29 +678,42 @@ export const build = <
 }
 
 /**
- * A curried helper that infers the schema type from the field definition.
+ * A curried helper that infers the schema type from a field definition or field reference.
  * Provides ergonomic type inference when defining field components.
  *
  * @example
  * ```tsx
  * import { FormReact } from "@lucas-barake/effect-form-react"
  *
- * // Without extra props - schema inferred from field
+ * // Using a FieldRef from the built form
+ * const TextInput = FormReact.forField(form.fields.email)(({ field }) => (
+ *   <input value={field.value} onChange={e => field.onChange(e.target.value)} />
+ * ))
+ *
+ * // Using a FieldDef (for reusable fields)
+ * const EmailField = Field.makeField("email", Schema.String)
  * const TextInput = FormReact.forField(EmailField)(({ field }) => (
  *   <input value={field.value} onChange={e => field.onChange(e.target.value)} />
  * ))
  *
  * // With extra props - just specify the props type
- * const TextInput = FormReact.forField(EmailField)<{ placeholder?: string }>(({ field, props }) => (
+ * const TextInput = FormReact.forField(form.fields.email)<{ placeholder?: string }>(({ field, props }) => (
  *   <input value={field.value} placeholder={props.placeholder} ... />
  * ))
  * ```
  *
  * @category Constructors
  */
-export const forField = <K extends string, S extends Schema.Schema.Any>(
-  _field: Field.FieldDef<K, S>,
-) =>
-<P extends Record<string, unknown> = Record<string, never>>(
-  component: React.FC<FieldComponentProps<S, P>>,
-): React.FC<FieldComponentProps<S, P>> => component
+export const forField: {
+  <S>(
+    _field: FormBuilder.FieldRef<S>,
+  ): <P extends Record<string, unknown> = Record<string, never>>(
+    component: React.FC<FieldComponentProps<Schema.Schema<S, S, never>, P>>,
+  ) => React.FC<FieldComponentProps<Schema.Schema<S, S, never>, P>>
+
+  <K extends string, S extends Schema.Schema.Any>(
+    _field: Field.FieldDef<K, S>,
+  ): <P extends Record<string, unknown> = Record<string, never>>(
+    component: React.FC<FieldComponentProps<S, P>>,
+  ) => React.FC<FieldComponentProps<S, P>>
+} = (_field: unknown) => (component: unknown) => component as any

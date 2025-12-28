@@ -561,9 +561,8 @@ interface FieldComponentProps<
 Use `FormReact.forField()` for ergonomic component definition with full type inference:
 
 ```tsx
-// Basic field component - schema type inferred from field definition
-const EmailField = Field.makeField("email", Schema.String)
-const TextInput = FormReact.forField(EmailField)(({ field }) => (
+// Using a FieldRef from the built form
+const TextInput = FormReact.forField(LoginForm.fields.email)(({ field }) => (
   <input
     value={field.value}
     onChange={(e) => field.onChange(e.target.value)}
@@ -572,7 +571,7 @@ const TextInput = FormReact.forField(EmailField)(({ field }) => (
 ))
 
 // With custom props - just specify the props type
-const TextInput = FormReact.forField(EmailField)<{ placeholder?: string }>(({ field, props }) => (
+const TextInput = FormReact.forField(LoginForm.fields.email)<{ placeholder?: string }>(({ field, props }) => (
   <input
     value={field.value}
     onChange={(e) => field.onChange(e.target.value)}
@@ -582,6 +581,10 @@ const TextInput = FormReact.forField(EmailField)<{ placeholder?: string }>(({ fi
 
 // Pass props at render time
 <LoginForm.email placeholder="Enter email" />
+
+// Also works with reusable FieldDefs
+const EmailField = Field.makeField("email", Schema.String)
+const TextInput = FormReact.forField(EmailField)(({ field }) => ...)
 ```
 
 ## License
