@@ -3,7 +3,7 @@ import * as Registry from "@effect-atom/atom/Registry"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import * as Field from "../src/Field.js"
 import * as FormAtoms from "../src/FormAtoms.js"
 import * as FormBuilder from "../src/FormBuilder.js"
@@ -84,6 +84,14 @@ describe("FormAtoms", () => {
 
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       state = atoms.operations.createSubmitState(state)
+      // Simulate successful validation setting lastSubmittedValues
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       expect(Option.isSome(state.lastSubmittedValues)).toBe(true)
 
       const resetState = atoms.operations.createResetState(state)
@@ -115,7 +123,7 @@ describe("FormAtoms", () => {
       expect(submitState.values).toEqual(initialState.values)
     })
 
-    it("captures current values as lastSubmittedValues", () => {
+    it("does not set lastSubmittedValues", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
@@ -129,11 +137,7 @@ describe("FormAtoms", () => {
 
       const submitState = atoms.operations.createSubmitState(modifiedState)
 
-      expect(Option.isSome(submitState.lastSubmittedValues)).toBe(true)
-      expect(Option.getOrThrow(submitState.lastSubmittedValues)).toEqual({
-        name: "Jane",
-        email: "john@test.com",
-      })
+      expect(Option.isNone(submitState.lastSubmittedValues)).toBe(true)
     })
 
     it("increments submit count on subsequent submits", () => {
@@ -485,6 +489,14 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
+      // Simulate successful validation setting lastSubmittedValues
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       const revertedState = atoms.operations.revertToLastSubmit(state)
 
       expect(revertedState).toBe(state)
@@ -502,6 +514,13 @@ describe("FormAtoms", () => {
 
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       state = atoms.operations.setFieldValue(state, "name", "Bob")
       expect(state.values.name).toBe("Bob")
       expect(state.dirtyFields.has("name")).toBe(true)
@@ -523,6 +542,13 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       expect(state.dirtyFields.has("name")).toBe(true)
 
@@ -651,10 +677,17 @@ describe("FormAtoms", () => {
       registry.set(atoms.stateAtom, Option.some(initialState))
       expect(Option.isNone(registry.get(atoms.lastSubmittedValuesAtom))).toBe(true)
 
-      const submitState = atoms.operations.createSubmitState(initialState)
+      let submitState = atoms.operations.createSubmitState(initialState)
+      submitState = {
+        ...submitState,
+        lastSubmittedValues: Option.some({
+          encoded: submitState.values,
+          decoded: submitState.values,
+        }),
+      }
       registry.set(atoms.stateAtom, Option.some(submitState))
       expect(Option.isSome(registry.get(atoms.lastSubmittedValuesAtom))).toBe(true)
-      expect(Option.getOrThrow(registry.get(atoms.lastSubmittedValuesAtom))).toEqual({
+      expect(Option.getOrThrow(registry.get(atoms.lastSubmittedValuesAtom)).encoded).toEqual({
         name: "John",
         email: "test@test.com",
       })
@@ -688,6 +721,13 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       registry.set(atoms.stateAtom, Option.some(state))
       expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(false)
     })
@@ -704,6 +744,13 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       registry.set(atoms.stateAtom, Option.some(state))
       expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(true)
@@ -721,6 +768,13 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       registry.set(atoms.stateAtom, Option.some(state))
 
@@ -741,6 +795,13 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       state = atoms.operations.setFieldValue(state, "items[1].name", "Item C")
       registry.set(atoms.stateAtom, Option.some(state))
 
@@ -765,6 +826,13 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       state = atoms.operations.appendArrayItem(state, "items", ItemSchema, { name: "Item B" })
       registry.set(atoms.stateAtom, Option.some(state))
 
@@ -783,11 +851,25 @@ describe("FormAtoms", () => {
 
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       state = atoms.operations.createSubmitState(state)
-      expect(Option.getOrThrow(state.lastSubmittedValues).name).toBe("Jane")
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
+      expect(Option.getOrThrow(state.lastSubmittedValues).encoded.name).toBe("Jane")
 
       state = atoms.operations.setFieldValue(state, "name", "Bob")
       state = atoms.operations.createSubmitState(state)
-      expect(Option.getOrThrow(state.lastSubmittedValues).name).toBe("Bob")
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
+      expect(Option.getOrThrow(state.lastSubmittedValues).encoded.name).toBe("Bob")
 
       state = atoms.operations.setFieldValue(state, "name", "Charlie")
       expect(state.values.name).toBe("Charlie")
@@ -809,6 +891,13 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
 
       state = atoms.operations.setFieldValue(state, "items[0].name", "Updated")
       registry.set(atoms.stateAtom, Option.some(state))
@@ -833,6 +922,13 @@ describe("FormAtoms", () => {
 
       let state = atoms.operations.setFieldValue(initialState, "name", "Jane")
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       registry.set(atoms.stateAtom, Option.some(state))
       registry.set(atoms.crossFieldErrorsAtom, new Map([["name", "Some error"]]))
 
@@ -864,6 +960,13 @@ describe("FormAtoms", () => {
       })
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values,
+        }),
+      }
       registry.set(atoms.stateAtom, Option.some(state))
 
       state = atoms.operations.setFieldValue(state, "name", "Bob")
@@ -987,6 +1090,99 @@ describe("FormAtoms", () => {
       expect(errors.has("items[0]")).toBe(false)
       expect(errors.has("items[0].name")).toBe(false)
       expect(errors.has("title")).toBe(true)
+    })
+  })
+
+  describe("submitAtom", () => {
+    it("does not set lastSubmittedValues on validation failure", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const EmailField = Field.makeField(
+        "email",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" })),
+      )
+      const form = FormBuilder.empty.addField(EmailField)
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({ email: "" })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+      registry.mount(atoms.stateAtom)
+
+      const stateBefore = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(Option.isNone(stateBefore.lastSubmittedValues)).toBe(true)
+
+      registry.mount(atoms.submitAtom)
+      registry.set(atoms.submitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(onSubmit).not.toHaveBeenCalled()
+      const stateAfter = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(Option.isNone(stateAfter.lastSubmittedValues)).toBe(true)
+    })
+
+    it("sets lastSubmittedValues with encoded and decoded on successful validation", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const EmailField = Field.makeField(
+        "email",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" })),
+      )
+      const form = FormBuilder.empty.addField(EmailField)
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({ email: "test@example.com" })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+      registry.mount(atoms.stateAtom)
+
+      expect(Option.isNone(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).lastSubmittedValues)).toBe(true)
+
+      registry.mount(atoms.submitAtom)
+      registry.set(atoms.submitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(onSubmit).toHaveBeenCalledWith({ email: "test@example.com" }, expect.anything())
+      expect(Option.isSome(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).lastSubmittedValues)).toBe(true)
+    })
+
+    it("preserves previous lastSubmittedValues when subsequent submit fails", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const EmailField = Field.makeField(
+        "email",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" })),
+      )
+      const form = FormBuilder.empty.addField(EmailField)
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ email: "first@example.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.stateAtom)
+      registry.mount(atoms.submitAtom)
+      registry.set(atoms.submitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      state = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(Option.isSome(state.lastSubmittedValues)).toBe(true)
+      expect(Option.getOrThrow(state.lastSubmittedValues).encoded.email).toBe("first@example.com")
+      expect(Option.getOrThrow(state.lastSubmittedValues).decoded.email).toBe("first@example.com")
+
+      state = atoms.operations.setFieldValue(state, "email", "")
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.set(atoms.submitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      const finalState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(Option.isSome(finalState.lastSubmittedValues)).toBe(true)
+      expect(Option.getOrThrow(finalState.lastSubmittedValues).encoded.email).toBe("first@example.com")
     })
   })
 })

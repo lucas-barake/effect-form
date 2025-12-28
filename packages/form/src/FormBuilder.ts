@@ -17,6 +17,15 @@ import type {
 import { isArrayFieldDef, isFieldDef } from "./Field.js"
 
 /**
+ * @since 1.0.0
+ * @category Models
+ */
+export interface SubmittedValues<TFields extends FieldsRecord> {
+  readonly encoded: EncodedFromFields<TFields>
+  readonly decoded: DecodedFromFields<TFields>
+}
+
+/**
  * Unique identifier for Field references.
  *
  * @since 1.0.0
@@ -84,7 +93,7 @@ export type TypeId = typeof TypeId
 export interface FormState<TFields extends FieldsRecord> {
   readonly values: EncodedFromFields<TFields>
   readonly initialValues: EncodedFromFields<TFields>
-  readonly lastSubmittedValues: Option.Option<EncodedFromFields<TFields>>
+  readonly lastSubmittedValues: Option.Option<SubmittedValues<TFields>>
   readonly touched: { readonly [K in keyof TFields]: boolean }
   readonly submitCount: number
   readonly dirtyFields: ReadonlySet<string>
