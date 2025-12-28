@@ -1,5 +1,38 @@
 # @lucas-barake/effect-form-react
 
+## 0.4.0
+
+### Minor Changes
+
+- [#6](https://github.com/lucas-barake/effect-form/pull/6) [`046ec9f`](https://github.com/lucas-barake/effect-form/commit/046ec9f410161927bc38f767db63c4e1304f7a64) Thanks [@lucas-barake](https://github.com/lucas-barake)! - feat: support non-Effect return values in submit callback
+
+  The `submit` helper now accepts callbacks that return plain values (not just `Effect`). This is checked at runtime using `Effect.isEffect` and wrapped with `Effect.succeed` if needed.
+
+  ```tsx
+  // Now works - plain value
+  const handleSubmit = MyForm.submit((values) => {
+    console.log(values)
+    return { success: true }
+  })
+
+  // Still works - Effect
+  const handleSubmit = MyForm.submit((values) =>
+    Effect.log(`Submitted: ${values.email}`),
+  )
+  ```
+
+  BREAKING CHANGE: Renamed `Form` module to `FormBuilder` to avoid namespace conflicts with user components. Also renamed `Form.Field<S>` to `FormBuilder.FieldRef<S>`.
+
+  Migration:
+  - `import { Form } from "@lucas-barake/effect-form"` → `import { FormBuilder } from "@lucas-barake/effect-form"`
+  - `Form.empty` → `FormBuilder.empty`
+  - `Form.Field<S>` → `FormBuilder.FieldRef<S>`
+
+### Patch Changes
+
+- Updated dependencies [[`046ec9f`](https://github.com/lucas-barake/effect-form/commit/046ec9f410161927bc38f767db63c4e1304f7a64)]:
+  - @lucas-barake/effect-form@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
