@@ -1,5 +1,6 @@
 import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
 import * as Atom from "@effect-atom/atom/Atom"
+import * as Registry from "@effect-atom/atom/Registry"
 import * as Result from "@effect-atom/atom/Result"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import { render, screen, waitFor } from "@testing-library/react"
@@ -828,6 +829,10 @@ describe("FormReact.build", () => {
         .addField(UsernameField)
         .refineEffect((values) =>
           Effect.gen(function*() {
+            // AtomRegistry is auto-provided by runtime, so this should work
+            const registry = yield* Registry.AtomRegistry
+            expect(typeof registry.get).toBe("function")
+
             const validator = yield* UsernameValidator
             const isTaken = yield* validator.isTaken(values.username)
             if (isTaken) {
