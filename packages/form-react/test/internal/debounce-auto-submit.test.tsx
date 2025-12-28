@@ -2,7 +2,6 @@ import * as Atom from "@effect-atom/atom/Atom"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import { render, screen, waitFor } from "@testing-library/react"
 import { userEvent } from "@testing-library/user-event"
-import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
@@ -54,18 +53,19 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameFieldMinLength)
 
+      const onSubmit = () => {}
+
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "300 millis" } },
+        onSubmit,
       })
 
-      const onSubmit = form.submit(() => Effect.void)
-
       render(
-        <form.Form defaultValues={{ name: "Valid" }} onSubmit={onSubmit}>
+        <form.Initialize defaultValues={{ name: "Valid" }}>
           <form.name />
-        </form.Form>,
+        </form.Initialize>,
       )
 
       const input = screen.getByTestId("text-input")
@@ -95,18 +95,19 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameField)
 
+      const onSubmit = (values: Record<string, string>) => submitHandler(values)
+
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
+        onSubmit,
       })
 
-      const onSubmit = form.submit((values) => Effect.sync(() => submitHandler(values)))
-
       render(
-        <form.Form defaultValues={{ name: "" }} onSubmit={onSubmit}>
+        <form.Initialize defaultValues={{ name: "" }}>
           <form.name />
-        </form.Form>,
+        </form.Initialize>,
       )
 
       const input = screen.getByTestId("text-input")
@@ -133,19 +134,20 @@ describe("Debounce and Auto-Submit", () => {
         .addField(NameField)
         .addField(AgeField)
 
+      const onSubmit = (values: Record<string, string>) => submitHandler(values)
+
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: NameInput, age: AgeInput },
         mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
+        onSubmit,
       })
 
-      const onSubmit = form.submit((values) => Effect.sync(() => submitHandler(values)))
-
       render(
-        <form.Form defaultValues={{ name: "", age: "" }} onSubmit={onSubmit}>
+        <form.Initialize defaultValues={{ name: "", age: "" }}>
           <form.name />
           <form.age />
-        </form.Form>,
+        </form.Initialize>,
       )
 
       const nameInput = screen.getByTestId("name-input")
@@ -175,18 +177,19 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameFieldMinLength)
 
+      const onSubmit = (values: Record<string, string>) => submitHandler(values)
+
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "50 millis", autoSubmit: true } },
+        onSubmit,
       })
 
-      const onSubmit = form.submit((values) => Effect.sync(() => submitHandler(values)))
-
       render(
-        <form.Form defaultValues={{ name: "" }} onSubmit={onSubmit}>
+        <form.Initialize defaultValues={{ name: "" }}>
           <form.name />
-        </form.Form>,
+        </form.Initialize>,
       )
 
       const input = screen.getByTestId("text-input")
@@ -216,18 +219,19 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameField)
 
+      const onSubmit = (values: Record<string, string>) => submitHandler(values)
+
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
+        onSubmit,
       })
 
-      const onSubmit = form.submit((values) => Effect.sync(() => submitHandler(values)))
-
       const { unmount } = render(
-        <form.Form defaultValues={{ name: "" }} onSubmit={onSubmit}>
+        <form.Initialize defaultValues={{ name: "" }}>
           <form.name />
-        </form.Form>,
+        </form.Initialize>,
       )
 
       const input = screen.getByTestId("text-input")
@@ -249,18 +253,19 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameField)
 
+      const onSubmit = (values: Record<string, string>) => submitHandler(values)
+
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onBlur: { autoSubmit: true } },
+        onSubmit,
       })
 
-      const onSubmit = form.submit((values) => Effect.sync(() => submitHandler(values)))
-
       render(
-        <form.Form defaultValues={{ name: "" }} onSubmit={onSubmit}>
+        <form.Initialize defaultValues={{ name: "" }}>
           <form.name />
-        </form.Form>,
+        </form.Initialize>,
       )
 
       const input = screen.getByTestId("text-input")
@@ -286,18 +291,19 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameFieldMinLength)
 
+      const onSubmit = () => {}
+
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onChange",
+        onSubmit,
       })
 
-      const onSubmit = form.submit(() => Effect.void)
-
       render(
-        <form.Form defaultValues={{ name: "Valid" }} onSubmit={onSubmit}>
+        <form.Initialize defaultValues={{ name: "Valid" }}>
           <form.name />
-        </form.Form>,
+        </form.Initialize>,
       )
 
       const input = screen.getByTestId("text-input")

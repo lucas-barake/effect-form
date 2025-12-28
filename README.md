@@ -12,6 +12,7 @@ pnpm add @lucas-barake/effect-form-react
 
 ```tsx
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
+import { useAtomValue, useAtomSet } from "@effect-atom/atom-react"
 import * as Atom from "@effect-atom/atom/Atom"
 import * as Schema from "effect/Schema"
 import * as Effect from "effect/Effect"
@@ -56,28 +57,28 @@ const LoginForm = FormReact.build(loginFormBuilder, {
       </div>
     ),
   },
+  onSubmit: (values) => Effect.log(`Login: ${values.email}`),
 })
 
-const handleSubmit = LoginForm.submit((values) =>
-  Effect.log(`Login: ${values.email}`),
-)
+// Subscribe to atoms anywhere in the tree
+function SubmitButton() {
+  const isDirty = useAtomValue(LoginForm.isDirty)
+  const submitResult = useAtomValue(LoginForm.submit)
+  const submit = useAtomSet(LoginForm.submit)
+  return (
+    <button onClick={() => submit()} disabled={!isDirty || submitResult.waiting}>
+      Login
+    </button>
+  )
+}
 
 function LoginPage() {
   return (
-    <LoginForm.Form
-      defaultValues={{ email: "", password: "" }}
-      onSubmit={handleSubmit}
-    >
+    <LoginForm.Initialize defaultValues={{ email: "", password: "" }}>
       <LoginForm.email />
       <LoginForm.password />
-      <LoginForm.Subscribe>
-        {({ submit, isDirty }) => (
-          <button onClick={submit} disabled={!isDirty}>
-            Login
-          </button>
-        )}
-      </LoginForm.Subscribe>
-    </LoginForm.Form>
+      <SubmitButton />
+    </LoginForm.Initialize>
   )
 }
 ```
@@ -99,11 +100,12 @@ const OrderForm = FormReact.build(orderFormBuilder, {
     title: TitleInput,
     items: { name: ItemNameInput },
   },
+  onSubmit: (values) => Effect.log(`Order: ${values.title}`),
 })
 
 function OrderPage() {
   return (
-    <OrderForm.Form defaultValues={{ title: "", items: [] }} onSubmit={handleSubmit}>
+    <OrderForm.Initialize defaultValues={{ title: "", items: [] }}>
       <OrderForm.title />
       <OrderForm.items>
         {({ items, append, remove, swap, move }) => (
@@ -132,7 +134,7 @@ function OrderPage() {
           </>
         )}
       </OrderForm.items>
-    </OrderForm.Form>
+    </OrderForm.Initialize>
   )
 }
 ```
@@ -140,9 +142,9 @@ function OrderPage() {
 ## 3. Validation Modes
 
 ```tsx
-FormReact.build(form, { runtime, fields, mode: "onSubmit" })
-FormReact.build(form, { runtime, fields, mode: "onBlur" })
-FormReact.build(form, { runtime, fields, mode: "onChange" })
+FormReact.build(form, { runtime, fields, mode: "onSubmit", onSubmit })
+FormReact.build(form, { runtime, fields, mode: "onBlur", onSubmit })
+FormReact.build(form, { runtime, fields, mode: "onChange", onSubmit })
 ```
 
 ## 4. Cross-Field Validation (Sync Refinements)
@@ -216,32 +218,31 @@ const signupFormBuilder = FormBuilder.empty
 const SignupForm = FormReact.build(signupFormBuilder, {
   runtime,
   fields: { username: UsernameInput },
+  onSubmit: (values) => Effect.log(`Signup: ${values.username}`),
 })
 ```
 
 ## 7. setValue and setValues
 
+Operations are AtomResultFns - use `useAtomSet` to call them:
+
 ```tsx
 function FormControls() {
-  const { setValue, setValues } = LoginForm.useForm()
+  const setEmail = useAtomSet(LoginForm.setValue(LoginForm.fields.email))
+  const setPassword = useAtomSet(LoginForm.setValue(LoginForm.fields.password))
+  const setAllValues = useAtomSet(LoginForm.setValues)
 
   return (
     <>
-      <button onClick={() => setValue(LoginForm.fields.email, "new@email.com")}>
+      <button onClick={() => setEmail("new@email.com")}>
         Set Email
       </button>
 
-      <button
-        onClick={() =>
-          setValue(LoginForm.fields.password, (prev) => prev.toUpperCase())
-        }
-      >
+      <button onClick={() => setPassword((prev) => prev.toUpperCase())}>
         Uppercase Password
       </button>
 
-      <button
-        onClick={() => setValues({ email: "reset@email.com", password: "" })}
-      >
+      <button onClick={() => setAllValues({ email: "reset@email.com", password: "" })}>
         Reset to Defaults
       </button>
     </>
@@ -256,12 +257,14 @@ FormReact.build(form, {
   runtime,
   fields,
   mode: { onChange: { debounce: "300 millis", autoSubmit: true } },
+  onSubmit,
 })
 
 FormReact.build(form, {
   runtime,
   fields,
   mode: { onBlur: { autoSubmit: true } },
+  onSubmit,
 })
 ```
 
@@ -272,6 +275,7 @@ FormReact.build(form, {
   runtime,
   fields,
   mode: { onChange: { debounce: "300 millis" } },
+  onSubmit,
 })
 ```
 
@@ -279,12 +283,13 @@ FormReact.build(form, {
 
 ```tsx
 function FormStatus() {
-  const { isDirty, reset } = LoginForm.useForm()
+  const isDirty = useAtomValue(LoginForm.isDirty)
+  const reset = useAtomSet(LoginForm.reset)
 
   return (
     <>
       {isDirty && <span>You have unsaved changes</span>}
-      <button onClick={reset} disabled={!isDirty}>
+      <button onClick={() => reset()} disabled={!isDirty}>
         Reset
       </button>
     </>
@@ -311,15 +316,16 @@ Track whether form values differ from the last submitted state. Useful for "reve
 
 ```tsx
 function FormStatus() {
-  const { hasChangedSinceSubmit, lastSubmittedValues, revertToLastSubmit } =
-    LoginForm.useForm()
+  const hasChangedSinceSubmit = useAtomValue(LoginForm.hasChangedSinceSubmit)
+  const lastSubmittedValues = useAtomValue(LoginForm.lastSubmittedValues)
+  const revertToLastSubmit = useAtomSet(LoginForm.revertToLastSubmit)
 
   return (
     <>
       {hasChangedSinceSubmit && (
         <div>
           <span>You have unsaved changes since last submit</span>
-          <button onClick={revertToLastSubmit}>Revert to Last Submit</button>
+          <button onClick={() => revertToLastSubmit()}>Revert to Last Submit</button>
         </div>
       )}
       {Option.isSome(lastSubmittedValues) && (
@@ -328,18 +334,6 @@ function FormStatus() {
     </>
   )
 }
-```
-
-The same properties are available in the Subscribe component:
-
-```tsx
-<LoginForm.Subscribe>
-  {({ hasChangedSinceSubmit, revertToLastSubmit }) => (
-    <button onClick={revertToLastSubmit} disabled={!hasChangedSinceSubmit}>
-      Revert Changes
-    </button>
-  )}
-</LoginForm.Subscribe>
 ```
 
 **State Lifecycle:**
@@ -355,16 +349,32 @@ The same properties are available in the Subscribe component:
 
 ## 12. Subscribing to Form State
 
-```tsx
-import { useAtomSubscribe } from "@effect-atom/atom-react"
+Subscribe to fine-grained atoms anywhere in the tree:
 
+```tsx
+import { useAtomValue, useAtomSubscribe } from "@effect-atom/atom-react"
+
+// Read atoms directly
+function FormDebug() {
+  const isDirty = useAtomValue(LoginForm.isDirty)
+  const submitCount = useAtomValue(LoginForm.submitCount)
+  const submitResult = useAtomValue(LoginForm.submit)
+
+  return (
+    <pre>
+      isDirty: {String(isDirty)}
+      submitCount: {submitCount}
+      waiting: {String(submitResult.waiting)}
+    </pre>
+  )
+}
+
+// Subscribe to changes with side effects
 function FormSideEffects() {
   useAtomSubscribe(
-    LoginForm.atom,
-    (state) => {
-      if (Option.isSome(state)) {
-        console.log("Form values changed:", state.value.values)
-      }
+    LoginForm.isDirty,
+    (isDirty) => {
+      console.log("Dirty state changed:", isDirty)
     },
     { immediate: false },
   )
@@ -393,13 +403,52 @@ const TextInput: React.FC<
 import * as Result from "@effect-atom/atom/Result"
 
 function SubmitStatus() {
-  const { submitResult } = LoginForm.useForm()
+  const submitResult = useAtomValue(LoginForm.submit)
 
   if (submitResult.waiting) return <span>Submitting...</span>
   if (Result.isSuccess(submitResult)) return <span>Success!</span>
   if (Result.isFailure(submitResult)) return <span>Failed</span>
   return null
 }
+
+// For side effects after submit (navigation, close dialog, etc.):
+function FormWithSideEffects({ onClose }: { onClose: () => void }) {
+  useAtomSubscribe(
+    LoginForm.submit,
+    (result) => {
+      if (Result.isSuccess(result)) {
+        onClose()
+      }
+    },
+    { immediate: false },
+  )
+
+  return <LoginForm.Initialize defaultValues={{ email: "", password: "" }}>...</LoginForm.Initialize>
+}
+```
+
+## Available Atoms
+
+All forms expose these atoms for fine-grained subscriptions:
+
+```ts
+form.isDirty                 // Atom<boolean> - values differ from initial
+form.hasChangedSinceSubmit   // Atom<boolean> - values differ from last submit
+form.lastSubmittedValues     // Atom<Option<Values>> - last submitted values
+form.submitCount             // Atom<number> - number of submit attempts
+form.submit                  // AtomResultFn<void, A, E | ParseError> - submit with .waiting, ._tag
+```
+
+## Available Operations
+
+Operations are AtomResultFns - use `useAtomSet` to invoke:
+
+```ts
+form.reset                         // AtomResultFn<void> - reset to initial values
+form.revertToLastSubmit            // AtomResultFn<void> - revert to last submit
+form.setValues                     // AtomResultFn<Values> - set all values
+form.setValue(field)               // (FieldRef) => AtomResultFn<T | (T => T)> - set single field
+form.submit                        // AtomResultFn<void, A, E> - trigger submit (handler defined at build)
 ```
 
 ## Field Component Props Reference
@@ -424,19 +473,28 @@ interface FieldComponentProps<
 }
 ```
 
-### Passing Custom Props
+### Defining Field Components with `forField`
+
+Use `FormReact.forField()` for ergonomic component definition with full type inference:
 
 ```tsx
-// Define component with extra props
-const TextInput: React.FC<
-  FormReact.FieldComponentProps<typeof Schema.String, { placeholder?: string }>
-> = ({ field, props }) => (
+// Basic field component - schema type inferred from field definition
+const TextInput = FormReact.forField(EmailField)(({ field }) => (
+  <input
+    value={field.value}
+    onChange={(e) => field.onChange(e.target.value)}
+    onBlur={field.onBlur}
+  />
+))
+
+// With custom props - just specify the props type
+const TextInput = FormReact.forField(EmailField)<{ placeholder?: string }>(({ field, props }) => (
   <input
     value={field.value}
     onChange={(e) => field.onChange(e.target.value)}
     placeholder={props.placeholder}
   />
-)
+))
 
 // Pass props at render time
 <LoginForm.email placeholder="Enter email" />

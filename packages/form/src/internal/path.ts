@@ -28,6 +28,18 @@ export const schemaPathToFieldPath = (path: ReadonlyArray<PropertyKey>): string 
 }
 
 /**
+ * Checks if a path matches a root path or is a descendant of it.
+ * Handles both dot notation (root.child) and bracket notation (root[0]).
+ *
+ * @example
+ * isPathUnderRoot("items[0].name", "items[0]") // true
+ * isPathUnderRoot("items[0].name", "items") // true
+ * isPathUnderRoot("other", "items") // false
+ */
+export const isPathUnderRoot = (path: string, rootPath: string): boolean =>
+  path === rootPath || path.startsWith(rootPath + ".") || path.startsWith(rootPath + "[")
+
+/**
  * Checks if a field path or any of its parent paths are in the dirty set.
  */
 export const isPathOrParentDirty = (dirtyFields: ReadonlySet<string>, path: string): boolean => {

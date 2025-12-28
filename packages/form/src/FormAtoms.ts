@@ -1,13 +1,4 @@
-/**
- * Atom infrastructure for form state management.
- *
- * This module provides the core atom infrastructure that framework adapters
- * (React, Vue, Svelte, Solid) can use to build reactive form components.
- *
- * @since 1.0.0
- */
 import * as Atom from "@effect-atom/atom/Atom"
-import type * as Registry from "@effect-atom/atom/Registry"
 import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
 import * as Option from "effect/Option"
@@ -16,8 +7,9 @@ import * as Schema from "effect/Schema"
 import * as Field from "./Field.js"
 import * as FormBuilder from "./FormBuilder.js"
 import { recalculateDirtyFieldsForArray, recalculateDirtySubtree } from "./internal/dirty.js"
-import { getNestedValue, setNestedValue } from "./internal/path.js"
+import { getNestedValue, isPathUnderRoot, setNestedValue } from "./internal/path.js"
 import { createWeakRegistry, type WeakRegistry } from "./internal/weak-registry.js"
+import * as Validation from "./Validation.js"
 
 /**
  * Atoms for a single field.
@@ -38,9 +30,10 @@ export interface FieldAtoms {
  * @since 1.0.0
  * @category Models
  */
-export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R> {
+export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E> {
   readonly runtime: Atom.AtomRuntime<R, any>
   readonly formBuilder: FormBuilder.FormBuilder<TFields, R>
+  readonly onSubmit: (decoded: Field.DecodedFromFields<TFields>, get: Atom.FnContext) => A | Effect.Effect<A, E, R>
 }
 
 /**
@@ -63,7 +56,7 @@ export type FieldRefs<TFields extends Field.FieldsRecord> = {
  * @since 1.0.0
  * @category Models
  */
-export interface FormAtoms<TFields extends Field.FieldsRecord, R> {
+export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = never> {
   readonly stateAtom: Atom.Writable<
     Option.Option<FormBuilder.FormState<TFields>>,
     Option.Option<FormBuilder.FormState<TFields>>
@@ -75,12 +68,8 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R> {
   readonly lastSubmittedValuesAtom: Atom.Atom<Option.Option<Field.EncodedFromFields<TFields>>>
   readonly changedSinceSubmitFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly hasChangedSinceSubmitAtom: Atom.Atom<boolean>
-  readonly onSubmitAtom: Atom.Writable<
-    Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown> | null,
-    Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown> | null
-  >
 
-  readonly decodeAndSubmit: Atom.AtomResultFn<Field.EncodedFromFields<TFields>, unknown, unknown>
+  readonly submitAtom: Atom.AtomResultFn<void, A, E | ParseResult.ParseError>
 
   readonly combinedSchema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
 
@@ -96,9 +85,14 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R> {
 
   readonly getOrCreateFieldAtoms: (fieldPath: string) => FieldAtoms
 
-  readonly resetValidationAtoms: (registry: Registry.Registry) => void
+  readonly resetValidationAtoms: (ctx: { set: <R, W>(atom: Atom.Writable<R, W>, value: W) => void }) => void
 
   readonly operations: FormOperations<TFields>
+
+  readonly resetAtom: Atom.Writable<void, void>
+  readonly revertToLastSubmitAtom: Atom.Writable<void, void>
+  readonly setValuesAtom: Atom.Writable<void, Field.EncodedFromFields<TFields>>
+  readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
 }
 
 /**
@@ -191,9 +185,9 @@ export interface FormOperations<TFields extends Field.FieldsRecord> {
  * @since 1.0.0
  * @category Constructors
  */
-export const make = <TFields extends Field.FieldsRecord, R>(
-  config: FormAtomsConfig<TFields, R>,
-): FormAtoms<TFields, R> => {
+export const make = <TFields extends Field.FieldsRecord, R, A, E>(
+  config: FormAtomsConfig<TFields, R, A, E>,
+): FormAtoms<TFields, R, A, E> => {
   const { formBuilder, runtime } = config
   const { fields } = formBuilder
 
@@ -232,10 +226,6 @@ export const make = <TFields extends Field.FieldsRecord, R>(
     if (state.values === state.lastSubmittedValues.value) return false
     return get(changedSinceSubmitFieldsAtom).size > 0
   }).pipe(Atom.setIdleTTL(0))
-
-  const onSubmitAtom = Atom.make<Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown> | null>(
-    null,
-  ).pipe(Atom.setIdleTTL(0))
 
   const validationAtomsRegistry = createWeakRegistry<Atom.AtomResultFn<unknown, void, ParseResult.ParseError>>()
   const fieldAtomsRegistry = createWeakRegistry<FieldAtoms>()
@@ -312,26 +302,42 @@ export const make = <TFields extends Field.FieldsRecord, R>(
     return atoms
   }
 
-  const resetValidationAtoms = (registry: Registry.Registry) => {
+  const resetValidationAtoms = (ctx: { set: <R, W>(atom: Atom.Writable<R, W>, value: W) => void }) => {
     for (const validationAtom of validationAtomsRegistry.values()) {
-      registry.set(validationAtom, Atom.Reset)
+      ctx.set(validationAtom, Atom.Reset)
     }
     validationAtomsRegistry.clear()
     fieldAtomsRegistry.clear()
   }
 
-  const decodeAndSubmit = runtime.fn<Field.EncodedFromFields<TFields>>()((values, get) =>
+  const submitAtom = runtime.fn<void>()((_void, get) =>
     Effect.gen(function*() {
-      const decoded = yield* Schema.decodeUnknown(combinedSchema)(values) as Effect.Effect<
-        Field.DecodedFromFields<TFields>,
-        ParseResult.ParseError,
-        R
-      >
-      const onSubmit = get(onSubmitAtom)!
-      get.set(onSubmit, decoded)
-      return yield* get.result(onSubmit, { suspendOnWaiting: true })
+      const state = get(stateAtom)
+      if (Option.isNone(state)) return yield* Effect.die("Form not initialized")
+      const values = state.value.values
+      get.set(crossFieldErrorsAtom, new Map())
+      const decoded = yield* pipe(
+        Schema.decodeUnknown(combinedSchema)(values) as Effect.Effect<
+          Field.DecodedFromFields<TFields>,
+          ParseResult.ParseError,
+          R
+        >,
+        Effect.tapError((parseError) =>
+          Effect.sync(() => {
+            const routedErrors = Validation.routeErrors(parseError)
+            get.set(crossFieldErrorsAtom, routedErrors)
+            get.set(stateAtom, Option.some(operations.createSubmitState(state.value)))
+          })
+        ),
+      )
+      get.set(stateAtom, Option.some(operations.createSubmitState(state.value)))
+      const result = config.onSubmit(decoded, get)
+      if (Effect.isEffect(result)) {
+        return yield* (result as Effect.Effect<A, E, R>)
+      }
+      return result as A
     })
-  ).pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<Field.EncodedFromFields<TFields>, unknown, unknown>
+  ).pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<void, A, E | ParseResult.ParseError>
 
   const fieldRefs = Object.fromEntries(
     Object.keys(fields).map((key) => [key, FormBuilder.makeFieldRef(key)]),
@@ -481,6 +487,62 @@ export const make = <TFields extends Field.FieldsRecord, R>(
     },
   }
 
+  const resetAtom = Atom.fnSync<void>()((_: void, get) => {
+    const state = get(stateAtom)
+    if (Option.isNone(state)) return
+    get.set(stateAtom, Option.some(operations.createResetState(state.value)))
+    get.set(crossFieldErrorsAtom, new Map())
+    resetValidationAtoms(get)
+    get.set(submitAtom, Atom.Reset)
+  }, { initialValue: undefined as void }).pipe(Atom.setIdleTTL(0))
+
+  const revertToLastSubmitAtom = Atom.fnSync<void>()((_: void, get) => {
+    const state = get(stateAtom)
+    if (Option.isNone(state)) return
+    get.set(stateAtom, Option.some(operations.revertToLastSubmit(state.value)))
+    get.set(crossFieldErrorsAtom, new Map())
+  }, { initialValue: undefined as void }).pipe(Atom.setIdleTTL(0))
+
+  const setValuesAtom = Atom.fnSync<Field.EncodedFromFields<TFields>>()((_values, get) => {
+    const state = get(stateAtom)
+    if (Option.isNone(state)) return
+    get.set(stateAtom, Option.some(operations.setFormValues(state.value, _values)))
+    get.set(crossFieldErrorsAtom, new Map())
+  }, { initialValue: undefined as void }).pipe(Atom.setIdleTTL(0))
+
+  const setValueAtomsRegistry = createWeakRegistry<Atom.Writable<void, any>>()
+
+  const setValue = <S>(field: FormBuilder.FieldRef<S>): Atom.Writable<void, S | ((prev: S) => S)> => {
+    const cached = setValueAtomsRegistry.get(field.key)
+    if (cached) return cached
+
+    const atom = Atom.fnSync<S | ((prev: S) => S)>()((update, get) => {
+      const state = get(stateAtom)
+      if (Option.isNone(state)) return
+
+      const currentValue = getNestedValue(state.value.values, field.key) as S
+      const newValue = typeof update === "function"
+        ? (update as (prev: S) => S)(currentValue)
+        : update
+
+      get.set(stateAtom, Option.some(operations.setFieldValue(state.value, field.key, newValue)))
+
+      const currentErrors = get(crossFieldErrorsAtom)
+      const nextErrors = new Map<string, string>()
+      for (const [errorPath, message] of currentErrors) {
+        if (!isPathUnderRoot(errorPath, field.key)) {
+          nextErrors.set(errorPath, message)
+        }
+      }
+      if (nextErrors.size !== currentErrors.size) {
+        get.set(crossFieldErrorsAtom, nextErrors)
+      }
+    }, { initialValue: undefined as void }).pipe(Atom.setIdleTTL(0))
+
+    setValueAtomsRegistry.set(field.key, atom)
+    return atom
+  }
+
   return {
     stateAtom,
     crossFieldErrorsAtom,
@@ -490,8 +552,7 @@ export const make = <TFields extends Field.FieldsRecord, R>(
     lastSubmittedValuesAtom,
     changedSinceSubmitFieldsAtom,
     hasChangedSinceSubmitAtom,
-    onSubmitAtom,
-    decodeAndSubmit,
+    submitAtom,
     combinedSchema,
     fieldRefs,
     validationAtomsRegistry,
@@ -500,5 +561,9 @@ export const make = <TFields extends Field.FieldsRecord, R>(
     getOrCreateFieldAtoms,
     resetValidationAtoms,
     operations,
-  } as FormAtoms<TFields, R>
+    resetAtom,
+    revertToLastSubmitAtom,
+    setValuesAtom,
+    setValue,
+  } as FormAtoms<TFields, R, A, E>
 }

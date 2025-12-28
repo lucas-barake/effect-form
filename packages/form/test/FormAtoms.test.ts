@@ -26,7 +26,7 @@ describe("FormAtoms", () => {
     it("builds combined schema from form builder", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const result = Schema.decodeUnknownSync(atoms.combinedSchema)({
         name: "John",
@@ -41,7 +41,7 @@ describe("FormAtoms", () => {
     it("creates correct initial state from default values", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const defaultValues = { name: "John", email: "john@test.com" }
       const state = atoms.operations.createInitialState(defaultValues)
@@ -57,7 +57,7 @@ describe("FormAtoms", () => {
     it("creates initial state for array form", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const defaultValues = {
         title: "My List",
@@ -75,7 +75,7 @@ describe("FormAtoms", () => {
     it("resets all state including lastSubmittedValues", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -101,7 +101,7 @@ describe("FormAtoms", () => {
     it("marks all fields as touched and increments submit count", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -118,7 +118,7 @@ describe("FormAtoms", () => {
     it("captures current values as lastSubmittedValues", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -139,7 +139,7 @@ describe("FormAtoms", () => {
     it("increments submit count on subsequent submits", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -161,7 +161,7 @@ describe("FormAtoms", () => {
     it("updates value and marks field as dirty", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -179,7 +179,7 @@ describe("FormAtoms", () => {
     it("removes field from dirty set when value matches initial", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -196,7 +196,7 @@ describe("FormAtoms", () => {
     it("updates nested array field values", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -214,7 +214,7 @@ describe("FormAtoms", () => {
     it("updates all values and recalculates dirty fields", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -232,7 +232,7 @@ describe("FormAtoms", () => {
     it("clears dirty fields when values match initial", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialValues = { name: "John", email: "john@test.com" }
       const initialState = atoms.operations.createInitialState(initialValues)
@@ -252,7 +252,7 @@ describe("FormAtoms", () => {
     it("marks field as touched", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -268,7 +268,7 @@ describe("FormAtoms", () => {
     it("can unmark field as touched", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -291,7 +291,7 @@ describe("FormAtoms", () => {
       const ItemsField = Field.makeArrayField("items", ItemSchema)
       const form = FormBuilder.empty.addField(TitleField).addField(ItemsField)
 
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -317,7 +317,7 @@ describe("FormAtoms", () => {
       const ItemsField = Field.makeArrayField("items", ItemSchema)
       const form = FormBuilder.empty.addField(TitleField).addField(ItemsField)
 
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -335,7 +335,7 @@ describe("FormAtoms", () => {
     it("removes item from array and updates dirty fields", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -352,7 +352,7 @@ describe("FormAtoms", () => {
     it("handles out of bounds index gracefully (no items match filter)", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -370,7 +370,7 @@ describe("FormAtoms", () => {
     it("swaps two items in array", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -387,7 +387,7 @@ describe("FormAtoms", () => {
     it("returns same state when indices are out of bounds or equal", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -406,7 +406,7 @@ describe("FormAtoms", () => {
     it("moves item from one position to another", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -424,7 +424,7 @@ describe("FormAtoms", () => {
     it("handles moving from end to beginning", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -441,7 +441,7 @@ describe("FormAtoms", () => {
     it("returns same state when indices are out of bounds or equal", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         title: "My List",
@@ -460,7 +460,7 @@ describe("FormAtoms", () => {
     it("returns same state when lastSubmittedValues is None", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -477,7 +477,7 @@ describe("FormAtoms", () => {
     it("returns same state when values already match lastSubmittedValues", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -494,7 +494,7 @@ describe("FormAtoms", () => {
     it("restores values to lastSubmittedValues and recalculates dirtyFields", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -517,7 +517,7 @@ describe("FormAtoms", () => {
     it("clears dirtyFields when reverting makes values match initial", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -540,7 +540,7 @@ describe("FormAtoms", () => {
     it("creates all expected field atoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       registry.set(
@@ -561,7 +561,7 @@ describe("FormAtoms", () => {
     it("clears both registries", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       registry.set(
@@ -586,7 +586,7 @@ describe("FormAtoms", () => {
     it("dirtyFieldsAtom reflects state", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       const initialState = atoms.operations.createInitialState({
@@ -605,7 +605,7 @@ describe("FormAtoms", () => {
     it("isDirtyAtom reflects dirty state", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       const initialState = atoms.operations.createInitialState({
@@ -624,7 +624,7 @@ describe("FormAtoms", () => {
     it("submitCountAtom reflects submit count", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       const initialState = atoms.operations.createInitialState({
@@ -643,7 +643,7 @@ describe("FormAtoms", () => {
     it("lastSubmittedValuesAtom reflects lastSubmittedValues", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       const initialState = atoms.operations.createInitialState({
@@ -666,7 +666,7 @@ describe("FormAtoms", () => {
     it("hasChangedSinceSubmitAtom returns false before first submit", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       const initialState = atoms.operations.createInitialState({
@@ -682,7 +682,7 @@ describe("FormAtoms", () => {
     it("hasChangedSinceSubmitAtom returns false right after submit", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({
@@ -698,7 +698,7 @@ describe("FormAtoms", () => {
     it("hasChangedSinceSubmitAtom returns true after changes post-submit", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({
@@ -715,7 +715,7 @@ describe("FormAtoms", () => {
     it("changedSinceSubmitFieldsAtom returns correct fields after changes post-submit", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({
@@ -735,7 +735,7 @@ describe("FormAtoms", () => {
     it("changedSinceSubmitFieldsAtom tracks array item changes after submit", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({
@@ -759,7 +759,7 @@ describe("FormAtoms", () => {
       const ItemSchema = Schema.Struct({ name: Schema.String })
       const ItemsField = Field.makeArrayField("items", ItemSchema)
       const form = FormBuilder.empty.addField(TitleField).addField(ItemsField)
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({
@@ -777,7 +777,7 @@ describe("FormAtoms", () => {
     it("revertToLastSubmit restores to most recent submit (not earlier ones)", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -806,7 +806,7 @@ describe("FormAtoms", () => {
     it("changedSinceSubmitFieldsAtom handles nested object changes", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({
@@ -821,6 +821,200 @@ describe("FormAtoms", () => {
 
       expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(true)
       expect(registry.get(atoms.changedSinceSubmitFieldsAtom).has("items[0].name")).toBe(true)
+    })
+  })
+
+  describe("resetAtom", () => {
+    it("resets form to initial state and clears cross-field errors", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      // Set up initial state
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      // Modify and submit
+      let state = atoms.operations.setFieldValue(initialState, "name", "Jane")
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.set(atoms.crossFieldErrorsAtom, new Map([["name", "Some error"]]))
+
+      expect(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).values.name).toBe("Jane")
+      expect(Option.isSome(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).lastSubmittedValues)).toBe(true)
+      expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(1)
+
+      // Run reset (fnSync executes on read, mount triggers read)
+      registry.mount(atoms.resetAtom)
+      registry.set(atoms.resetAtom, undefined)
+
+      // Verify reset
+      const resetState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(resetState.values.name).toBe("John")
+      expect(Option.isNone(resetState.lastSubmittedValues)).toBe(true)
+      expect(resetState.submitCount).toBe(0)
+      expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(0)
+    })
+  })
+
+  describe("revertToLastSubmitAtom", () => {
+    it("reverts form values to last submitted state and clears cross-field errors", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      // Set up initial state, modify and submit
+      let state = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      // Modify after submit
+      state = atoms.operations.setFieldValue(state, "name", "Bob")
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.set(atoms.crossFieldErrorsAtom, new Map([["name", "Validation error"]]))
+
+      expect(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).values.name).toBe("Bob")
+
+      // Run revert (fnSync executes on read, mount triggers read)
+      registry.mount(atoms.revertToLastSubmitAtom)
+      registry.set(atoms.revertToLastSubmitAtom, undefined)
+
+      // Verify revert - should go back to "Jane" (last submitted)
+      const revertedState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(revertedState.values.name).toBe("Jane")
+      expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(0)
+    })
+  })
+
+  describe("setValuesAtom", () => {
+    it("sets all form values and clears cross-field errors", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      // Set up initial state
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+      registry.set(atoms.crossFieldErrorsAtom, new Map([["email", "Invalid email"]]))
+
+      // Run setValues (fnSync executes on read, mount triggers read)
+      registry.mount(atoms.setValuesAtom)
+      registry.set(atoms.setValuesAtom, { name: "Alice", email: "alice@test.com" })
+
+      // Verify
+      const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(newState.values.name).toBe("Alice")
+      expect(newState.values.email).toBe("alice@test.com")
+      expect(newState.dirtyFields.has("name")).toBe(true)
+      expect(newState.dirtyFields.has("email")).toBe(true)
+      expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(0)
+    })
+  })
+
+  describe("setValue", () => {
+    it("sets a single field value", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      // Set up initial state
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      // Get setValue atom for name field
+      const setNameAtom = atoms.setValue(atoms.fieldRefs.name)
+
+      // Run setValue (fnSync executes on read, mount triggers read)
+      registry.mount(setNameAtom)
+      registry.set(setNameAtom, "Alice")
+
+      // Verify
+      const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(newState.values.name).toBe("Alice")
+      expect(newState.values.email).toBe("john@test.com")
+      expect(newState.dirtyFields.has("name")).toBe(true)
+      expect(newState.dirtyFields.has("email")).toBe(false)
+    })
+
+    it("supports functional updates", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      // Set up initial state
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      // Get setValue atom for name field
+      const setNameAtom = atoms.setValue(atoms.fieldRefs.name)
+
+      // Run setValue with function (fnSync executes on read, mount triggers read)
+      registry.mount(setNameAtom)
+      registry.set(setNameAtom, (prev: string) => prev.toUpperCase())
+
+      // Verify
+      const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(newState.values.name).toBe("JOHN")
+    })
+
+    it("clears cross-field errors for the updated path and nested paths", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeArrayTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      // Set up initial state
+      const initialState = atoms.operations.createInitialState({
+        title: "My List",
+        items: [{ name: "Item 1" }],
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      // Set cross-field errors for items path and nested paths
+      registry.set(
+        atoms.crossFieldErrorsAtom,
+        new Map([
+          ["items", "Array error"],
+          ["items[0]", "Item error"],
+          ["items[0].name", "Name error"],
+          ["title", "Title error"],
+        ]),
+      )
+
+      // Get setValue atom for items field
+      const setItemsAtom = atoms.setValue(atoms.fieldRefs.items)
+
+      // Run setValue (fnSync executes on read, mount triggers read)
+      registry.mount(setItemsAtom)
+      registry.set(setItemsAtom, [{ name: "Updated Item" }])
+
+      // Verify - items and nested paths should be cleared, title should remain
+      const errors = registry.get(atoms.crossFieldErrorsAtom)
+      expect(errors.has("items")).toBe(false)
+      expect(errors.has("items[0]")).toBe(false)
+      expect(errors.has("items[0].name")).toBe(false)
+      expect(errors.has("title")).toBe(true)
     })
   })
 })
