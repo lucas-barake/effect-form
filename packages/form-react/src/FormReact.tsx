@@ -2,13 +2,12 @@
  * @since 1.0.0
  */
 import { RegistryContext, useAtom, useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
-import * as Atom from "@effect-atom/atom/Atom"
-import type * as Result from "@effect-atom/atom/Result"
+import type * as Atom from "@effect-atom/atom/Atom"
 import { Field, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
 import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
-import { getNestedValue, isPathOrParentDirty, schemaPathToFieldPath } from "@lucas-barake/effect-form/internal/path"
+import { getNestedValue, isPathOrParentDirty, isPathUnderRoot } from "@lucas-barake/effect-form/internal/path"
 import * as Cause from "effect/Cause"
-import * as Effect from "effect/Effect"
+import type * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as ParseResult from "effect/ParseResult"
 import type * as Schema from "effect/Schema"
@@ -106,25 +105,6 @@ export interface ArrayFieldOperations<TItem> {
 }
 
 /**
- * State exposed to form.Subscribe render prop.
- *
- * @since 1.0.0
- * @category Models
- */
-export interface SubscribeState<TFields extends Field.FieldsRecord> {
-  readonly values: Field.EncodedFromFields<TFields>
-  readonly isDirty: boolean
-  readonly hasChangedSinceSubmit: boolean
-  readonly lastSubmittedValues: Option.Option<Field.EncodedFromFields<TFields>>
-  readonly submitResult: Result.Result<unknown, unknown>
-  readonly submit: () => void
-  readonly reset: () => void
-  readonly revertToLastSubmit: () => void
-  readonly setValue: <S>(field: FormBuilder.FieldRef<S>, update: S | ((prev: S) => S)) => void
-  readonly setValues: (values: Field.EncodedFromFields<TFields>) => void
-}
-
-/**
  * The result of building a form, containing all components and utilities needed
  * for form rendering and submission.
  *
@@ -134,45 +114,29 @@ export interface SubscribeState<TFields extends Field.FieldsRecord> {
 export type BuiltForm<
   TFields extends Field.FieldsRecord,
   R,
+  A = void,
+  E = never,
   CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
 > = {
-  readonly atom: Atom.Writable<
-    Option.Option<FormBuilder.FormState<TFields>>,
-    Option.Option<FormBuilder.FormState<TFields>>
-  >
+  // Atoms for fine-grained subscriptions (use with useAtomValue)
+  readonly isDirty: Atom.Atom<boolean>
+  readonly hasChangedSinceSubmit: Atom.Atom<boolean>
+  readonly lastSubmittedValues: Atom.Atom<Option.Option<Field.EncodedFromFields<TFields>>>
+  readonly submitCount: Atom.Atom<number>
+
   readonly schema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
   readonly fields: FieldRefs<TFields>
 
-  readonly Form: React.FC<{
+  readonly Initialize: React.FC<{
     readonly defaultValues: Field.EncodedFromFields<TFields>
-    readonly onSubmit: Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown>
     readonly children: React.ReactNode
   }>
 
-  readonly Subscribe: React.FC<{
-    readonly children: (state: SubscribeState<TFields>) => React.ReactNode
-  }>
-
-  readonly useForm: () => {
-    readonly submit: () => void
-    readonly reset: () => void
-    readonly revertToLastSubmit: () => void
-    readonly isDirty: boolean
-    readonly hasChangedSinceSubmit: boolean
-    readonly lastSubmittedValues: Option.Option<Field.EncodedFromFields<TFields>>
-    readonly submitResult: Result.Result<unknown, unknown>
-    readonly values: Field.EncodedFromFields<TFields>
-    readonly setValue: <S>(field: FormBuilder.FieldRef<S>, update: S | ((prev: S) => S)) => void
-    readonly setValues: (values: Field.EncodedFromFields<TFields>) => void
-  }
-
-  readonly submit: <A>(
-    fn: (values: Field.DecodedFromFields<TFields>, get: Atom.FnContext) => A,
-  ) => Atom.AtomResultFn<
-    Field.DecodedFromFields<TFields>,
-    A extends Effect.Effect<infer T, any, any> ? T : A,
-    A extends Effect.Effect<any, infer E, any> ? E : never
-  >
+  readonly submit: Atom.AtomResultFn<void, A, E | ParseResult.ParseError>
+  readonly reset: Atom.Writable<void, void>
+  readonly revertToLastSubmit: Atom.Writable<void, void>
+  readonly setValues: Atom.Writable<void, Field.EncodedFromFields<TFields>>
+  readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
 } & FieldComponents<TFields, CM>
 
 type FieldComponents<TFields extends Field.FieldsRecord, CM extends FieldComponentMap<TFields>> = {
@@ -285,12 +249,13 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string
       (newValue: Schema.Schema.Encoded<S>) => {
         setValue(newValue)
         setCrossFieldErrors((prev) => {
-          if (prev.has(fieldPath)) {
-            const next = new Map(prev)
-            next.delete(fieldPath)
-            return next
+          const next = new Map<string, string>()
+          for (const [errorPath, message] of prev) {
+            if (!isPathUnderRoot(errorPath, fieldPath)) {
+              next.set(errorPath, message)
+            }
           }
-          return prev
+          return next.size !== prev.size ? next : prev
         })
         if (parsedMode.validation === "onChange") {
           validate(newValue)
@@ -457,6 +422,7 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
     ...itemFieldComponents,
   }
 
+  // Proxy enables <Form.items.Item> and <Form.items.name> syntax
   return new Proxy(ArrayWrapper, {
     get(target, prop) {
       if (prop in properties) {
@@ -530,11 +496,11 @@ const makeFieldComponents = <
  *
  * @example
  * ```tsx
- * import { Form } from "@lucas-barake/effect-form"
+ * import { FormBuilder } from "@lucas-barake/effect-form"
  * import { FormReact } from "@lucas-barake/effect-form-react"
+ * import { useAtomValue, useAtomSet } from "@effect-atom/atom-react"
  * import * as Atom from "@effect-atom/atom/Atom"
  * import * as Schema from "effect/Schema"
- * import * as Effect from "effect/Effect"
  * import * as Layer from "effect/Layer"
  *
  * const runtime = Atom.runtime(Layer.empty)
@@ -546,26 +512,28 @@ const makeFieldComponents = <
  * const form = FormReact.build(loginForm, {
  *   runtime,
  *   fields: { email: TextInput, password: PasswordInput },
+ *   onSubmit: (values) => Effect.log(`Login: ${values.email}`),
  * })
  *
- * function LoginDialog({ onClose }) {
- *   const handleSubmit = form.submit((values) =>
- *     Effect.gen(function* () {
- *       yield* saveUser(values)
- *       onClose()
- *     })
- *   )
- *
+ * // Subscribe to atoms anywhere in the tree
+ * function SubmitButton() {
+ *   const isDirty = useAtomValue(form.isDirty)
+ *   const submit = useAtomValue(form.submit)
+ *   const callSubmit = useAtomSet(form.submit)
  *   return (
- *     <form.Form defaultValues={{ email: "", password: "" }} onSubmit={handleSubmit}>
+ *     <button onClick={() => callSubmit()} disabled={!isDirty || submit.waiting}>
+ *       {submit.waiting ? "Validating..." : "Login"}
+ *     </button>
+ *   )
+ * }
+ *
+ * function LoginDialog({ onClose }) {
+ *   return (
+ *     <form.Initialize defaultValues={{ email: "", password: "" }}>
  *       <form.email />
  *       <form.password />
- *       <form.Subscribe>
- *         {({ isDirty, submit }) => (
- *           <button onClick={submit} disabled={!isDirty}>Login</button>
- *         )}
- *       </form.Subscribe>
- *     </form.Form>
+ *       <SubmitButton />
+ *     </form.Initialize>
  *   )
  * }
  * ```
@@ -576,6 +544,8 @@ const makeFieldComponents = <
 export const build = <
   TFields extends Field.FieldsRecord,
   R,
+  A,
+  E,
   ER = never,
   CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
 >(
@@ -584,21 +554,22 @@ export const build = <
     readonly runtime: Atom.AtomRuntime<R, ER>
     readonly fields: CM
     readonly mode?: Mode.FormMode
+    readonly onSubmit: (decoded: Field.DecodedFromFields<TFields>, get: Atom.FnContext) => A | Effect.Effect<A, E, R>
   },
-): BuiltForm<TFields, R, CM> => {
-  const { fields: components, mode, runtime } = options
+): BuiltForm<TFields, R, A, E, CM> => {
+  const { fields: components, mode, onSubmit, runtime } = options
   const parsedMode = Mode.parse(mode)
   const { fields } = self
 
-  const formAtoms: FormAtoms.FormAtoms<TFields, R> = FormAtoms.make({
+  const formAtoms: FormAtoms.FormAtoms<TFields, R, A, E> = FormAtoms.make({
     formBuilder: self,
     runtime,
+    onSubmit,
   })
 
   const {
     combinedSchema,
     crossFieldErrorsAtom,
-    decodeAndSubmit,
     dirtyFieldsAtom,
     fieldRefs,
     getOrCreateFieldAtoms,
@@ -606,42 +577,47 @@ export const build = <
     hasChangedSinceSubmitAtom,
     isDirtyAtom,
     lastSubmittedValuesAtom,
-    onSubmitAtom,
     operations,
-    resetValidationAtoms,
+    resetAtom,
+    revertToLastSubmitAtom,
+    setValue,
+    setValuesAtom,
     stateAtom,
+    submitAtom,
     submitCountAtom,
   } = formAtoms
 
-  const FormComponent: React.FC<{
+  const InitializeComponent: React.FC<{
     readonly defaultValues: Field.EncodedFromFields<TFields>
-    readonly onSubmit: Atom.AtomResultFn<Field.DecodedFromFields<TFields>, unknown, unknown>
     readonly children: React.ReactNode
-  }> = ({ children, defaultValues, onSubmit }) => {
+  }> = ({ children, defaultValues }) => {
     const registry = React.useContext(RegistryContext)
     const state = useAtomValue(stateAtom)
     const setFormState = useAtomSet(stateAtom)
-    const setOnSubmit = useAtomSet(onSubmitAtom)
-    const callDecodeAndSubmit = useAtomSet(decodeAndSubmit)
-
-    React.useEffect(() => {
-      setOnSubmit(onSubmit)
-    }, [onSubmit, setOnSubmit])
+    const callSubmit = useAtomSet(submitAtom)
+    // Prevents auto-submit from firing on mount when initial state is set
+    const isInitializedRef = React.useRef(false)
 
     React.useEffect(() => {
       setFormState(Option.some(operations.createInitialState(defaultValues)))
+      // Microtask ensures state update completes before enabling auto-submit
+      queueMicrotask(() => {
+        isInitializedRef.current = true
+      })
       // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
     }, [])
 
     const debouncedAutoSubmit = useDebounced(() => {
       const stateOption = registry.get(stateAtom)
       if (Option.isNone(stateOption)) return
-      callDecodeAndSubmit(stateOption.value.values)
+      callSubmit()
     }, parsedMode.autoSubmit && parsedMode.validation === "onChange" ? parsedMode.debounce : null)
 
     useAtomSubscribe(
       stateAtom,
       React.useCallback(() => {
+        // Skip auto-submit for initial state set
+        if (!isInitializedRef.current) return
         if (parsedMode.autoSubmit && parsedMode.validation === "onChange") {
           debouncedAutoSubmit()
         }
@@ -653,9 +629,9 @@ export const build = <
       if (parsedMode.autoSubmit && parsedMode.validation === "onBlur") {
         const stateOption = registry.get(stateAtom)
         if (Option.isNone(stateOption)) return
-        callDecodeAndSubmit(stateOption.value.values)
+        callSubmit()
       }
-    }, [registry, callDecodeAndSubmit])
+    }, [registry, callSubmit])
 
     if (Option.isNone(state)) return null
 
@@ -673,175 +649,6 @@ export const build = <
     )
   }
 
-  const useFormHook = () => {
-    const registry = React.useContext(RegistryContext)
-    const formValues = Option.getOrThrow(useAtomValue(stateAtom)).values
-    const setFormState = useAtomSet(stateAtom)
-    const setCrossFieldErrors = useAtomSet(crossFieldErrorsAtom)
-    const [decodeAndSubmitResult, callDecodeAndSubmit] = useAtom(decodeAndSubmit)
-    const isDirty = useAtomValue(isDirtyAtom)
-    const hasChangedSinceSubmit = useAtomValue(hasChangedSinceSubmitAtom)
-    const lastSubmittedValues = useAtomValue(lastSubmittedValuesAtom)
-
-    React.useEffect(() => {
-      if (decodeAndSubmitResult._tag === "Failure") {
-        const parseError = Cause.failureOption(decodeAndSubmitResult.cause)
-        if (Option.isSome(parseError) && ParseResult.isParseError(parseError.value)) {
-          const issues = ParseResult.ArrayFormatter.formatErrorSync(parseError.value)
-
-          const fieldErrors = new Map<string, string>()
-          for (const issue of issues) {
-            if (issue.path.length > 0) {
-              const fieldPath = schemaPathToFieldPath(issue.path)
-              if (!fieldErrors.has(fieldPath)) {
-                fieldErrors.set(fieldPath, issue.message)
-              }
-            }
-          }
-
-          if (fieldErrors.size > 0) {
-            setCrossFieldErrors(fieldErrors)
-          }
-        }
-      }
-    }, [decodeAndSubmitResult, setCrossFieldErrors])
-
-    const submit = React.useCallback(() => {
-      const stateOption = registry.get(stateAtom)
-      if (Option.isNone(stateOption)) return
-
-      setCrossFieldErrors(new Map())
-
-      setFormState((prev) => {
-        if (Option.isNone(prev)) return prev
-        return Option.some(operations.createSubmitState(prev.value))
-      })
-
-      callDecodeAndSubmit(stateOption.value.values)
-    }, [setFormState, callDecodeAndSubmit, setCrossFieldErrors, registry])
-
-    const reset = React.useCallback(() => {
-      setFormState((prev) => {
-        if (Option.isNone(prev)) return prev
-        return Option.some(operations.createResetState(prev.value))
-      })
-      setCrossFieldErrors(new Map())
-      resetValidationAtoms(registry)
-      callDecodeAndSubmit(Atom.Reset)
-    }, [setFormState, setCrossFieldErrors, callDecodeAndSubmit, registry])
-
-    const revertToLastSubmit = React.useCallback(() => {
-      setFormState((prev) => {
-        if (Option.isNone(prev)) return prev
-        return Option.some(operations.revertToLastSubmit(prev.value))
-      })
-      setCrossFieldErrors(new Map())
-    }, [setFormState, setCrossFieldErrors])
-
-    const setValue = React.useCallback(<S,>(
-      field: FormBuilder.FieldRef<S>,
-      update: S | ((prev: S) => S),
-    ) => {
-      const path = field.key
-
-      setFormState((prev) => {
-        if (Option.isNone(prev)) return prev
-        const state = prev.value
-
-        const currentValue = getNestedValue(state.values, path) as S
-        const newValue = typeof update === "function"
-          ? (update as (prev: S) => S)(currentValue)
-          : update
-
-        return Option.some(operations.setFieldValue(state, path, newValue))
-      })
-
-      setCrossFieldErrors((prev) => {
-        let changed = false
-        const next = new Map(prev)
-        for (const errorPath of prev.keys()) {
-          if (errorPath === path || errorPath.startsWith(path + ".") || errorPath.startsWith(path + "[")) {
-            next.delete(errorPath)
-            changed = true
-          }
-        }
-        return changed ? next : prev
-      })
-    }, [setFormState, setCrossFieldErrors])
-
-    const setValues = React.useCallback((values: Field.EncodedFromFields<TFields>) => {
-      setFormState((prev) => {
-        if (Option.isNone(prev)) return prev
-        return Option.some(operations.setFormValues(prev.value, values))
-      })
-
-      setCrossFieldErrors(new Map())
-    }, [setFormState, setCrossFieldErrors])
-
-    return {
-      submit,
-      reset,
-      revertToLastSubmit,
-      isDirty,
-      hasChangedSinceSubmit,
-      lastSubmittedValues,
-      submitResult: decodeAndSubmitResult,
-      values: formValues,
-      setValue,
-      setValues,
-    }
-  }
-
-  const SubscribeComponent: React.FC<{
-    readonly children: (state: SubscribeState<TFields>) => React.ReactNode
-  }> = ({ children }) => {
-    const {
-      hasChangedSinceSubmit,
-      isDirty,
-      lastSubmittedValues,
-      reset,
-      revertToLastSubmit,
-      setValue,
-      setValues,
-      submit,
-      submitResult,
-      values,
-    } = useFormHook()
-
-    return (
-      <>
-        {children({
-          hasChangedSinceSubmit,
-          isDirty,
-          lastSubmittedValues,
-          reset,
-          revertToLastSubmit,
-          setValue,
-          setValues,
-          submit,
-          submitResult,
-          values,
-        })}
-      </>
-    )
-  }
-
-  const submitHelper = <A,>(
-    fn: (values: Field.DecodedFromFields<TFields>, get: Atom.FnContext) => A,
-  ) =>
-    runtime.fn<Field.DecodedFromFields<TFields>>()((values, get) => {
-      const result = fn(values, get)
-      return (Effect.isEffect(result) ? result : Effect.succeed(result)) as Effect.Effect<
-        A extends Effect.Effect<infer T, any, any> ? T : A,
-        A extends Effect.Effect<any, infer E, any> ? E : never,
-        R
-      >
-    }) as Atom.AtomResultFn<
-      Field.DecodedFromFields<TFields>,
-      A extends Effect.Effect<infer T, any, any> ? T : A,
-      A extends Effect.Effect<any, infer E, any> ? E : never
-    >
-
   const fieldComponents = makeFieldComponents(
     fields,
     stateAtom,
@@ -856,15 +663,20 @@ export const build = <
   )
 
   return {
-    atom: stateAtom,
+    isDirty: isDirtyAtom,
+    hasChangedSinceSubmit: hasChangedSinceSubmitAtom,
+    lastSubmittedValues: lastSubmittedValuesAtom,
+    submitCount: submitCountAtom,
     schema: combinedSchema,
     fields: fieldRefs,
-    Form: FormComponent,
-    Subscribe: SubscribeComponent,
-    useForm: useFormHook,
-    submit: submitHelper,
+    Initialize: InitializeComponent,
+    submit: submitAtom,
+    reset: resetAtom,
+    revertToLastSubmit: revertToLastSubmitAtom,
+    setValues: setValuesAtom,
+    setValue,
     ...fieldComponents,
-  } as BuiltForm<TFields, R, CM>
+  } as BuiltForm<TFields, R, A, E, CM>
 }
 
 /**

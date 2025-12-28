@@ -5,7 +5,7 @@
  */
 import * as Equal from "effect/Equal"
 import * as Utils from "effect/Utils"
-import { getNestedValue } from "./path.js"
+import { getNestedValue, isPathUnderRoot } from "./path.js"
 
 /**
  * Recalculates dirty fields for an array after mutation.
@@ -18,9 +18,7 @@ export const recalculateDirtyFieldsForArray = (
   newItems: ReadonlyArray<unknown>,
 ): ReadonlySet<string> => {
   const nextDirty = new Set(
-    Array.from(dirtyFields).filter(
-      (path) => path !== arrayPath && !path.startsWith(arrayPath + ".") && !path.startsWith(arrayPath + "["),
-    ),
+    Array.from(dirtyFields).filter((path) => !isPathUnderRoot(path, arrayPath)),
   )
 
   const initialItems = (getNestedValue(initialValues, arrayPath) ?? []) as ReadonlyArray<unknown>
@@ -64,7 +62,7 @@ export const recalculateDirtySubtree = (
     nextDirty.clear()
   } else {
     for (const path of nextDirty) {
-      if (path === rootPath || path.startsWith(rootPath + ".") || path.startsWith(rootPath + "[")) {
+      if (isPathUnderRoot(path, rootPath)) {
         nextDirty.delete(path)
       }
     }
