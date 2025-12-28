@@ -19,6 +19,29 @@ describe("Form", () => {
       expect(builder.fields.email._tag).toBe("field")
     })
 
+    it("addField accepts inline key and schema", () => {
+      const builder = FormBuilder.empty
+        .addField("email", Schema.String)
+        .addField("age", Schema.Number)
+
+      expect(FormBuilder.isFormBuilder(builder)).toBe(true)
+      expect(builder.fields).toHaveProperty("email")
+      expect(builder.fields).toHaveProperty("age")
+      expect(builder.fields.email._tag).toBe("field")
+      expect(builder.fields.age._tag).toBe("field")
+    })
+
+    it("addField inline syntax builds correct schema", () => {
+      const builder = FormBuilder.empty
+        .addField("name", Schema.String)
+        .addField("age", Schema.Number)
+
+      const schema = FormBuilder.buildSchema(builder)
+      const result = Schema.decodeUnknownSync(schema)({ name: "John", age: 30 })
+
+      expect(result).toEqual({ name: "John", age: 30 })
+    })
+
     it("addArray adds an array field", () => {
       const NameField = Field.makeField("name", Schema.String)
       const AddressesField = Field.makeArrayField(

@@ -1091,6 +1091,63 @@ describe("FormAtoms", () => {
     })
   })
 
+  describe("getFieldAtom", () => {
+    it("returns the value atom for a field", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name)
+
+      expect(registry.get(nameAtom)).toBe("John")
+    })
+
+    it("updates when field value changes", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name)
+      expect(registry.get(nameAtom)).toBe("John")
+
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      expect(registry.get(nameAtom)).toBe("Jane")
+    })
+
+    it("returns same atom instance for same field", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      registry.set(
+        atoms.stateAtom,
+        Option.some(atoms.operations.createInitialState({ name: "John", email: "john@test.com" })),
+      )
+
+      const nameAtom1 = atoms.getFieldAtom(atoms.fieldRefs.name)
+      const nameAtom2 = atoms.getFieldAtom(atoms.fieldRefs.name)
+
+      expect(nameAtom1).toBe(nameAtom2)
+    })
+  })
+
   describe("submitAtom", () => {
     it("does not set lastSubmittedValues on validation failure", async () => {
       const runtime = Atom.runtime(Layer.empty)

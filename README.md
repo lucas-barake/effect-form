@@ -11,7 +11,7 @@ pnpm add @lucas-barake/effect-form-react
 ## 1. Basic Form Setup
 
 ```tsx
-import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
+import { FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import { useAtomValue, useAtomSet } from "@effect-atom/atom-react"
 import * as Atom from "@effect-atom/atom/Atom"
 import * as Schema from "effect/Schema"
@@ -21,16 +21,9 @@ import * as Layer from "effect/Layer"
 
 const runtime = Atom.runtime(Layer.empty)
 
-const EmailField = Field.makeField(
-  "email",
-  Schema.String.pipe(Schema.nonEmptyString()),
-)
-const PasswordField = Field.makeField(
-  "password",
-  Schema.String.pipe(Schema.minLength(8)),
-)
-
-const loginFormBuilder = FormBuilder.empty.addField(EmailField).addField(PasswordField)
+const loginFormBuilder = FormBuilder.empty
+  .addField("email", Schema.String.pipe(Schema.nonEmptyString()))
+  .addField("password", Schema.String.pipe(Schema.minLength(8)))
 
 const LoginForm = FormReact.build(loginFormBuilder, {
   runtime,
@@ -86,13 +79,11 @@ function LoginPage() {
 ## 2. Array Fields
 
 ```tsx
-const TitleField = Field.makeField("title", Schema.String)
-const ItemsArrayField = Field.makeArrayField(
-  "items",
-  Schema.Struct({ name: Schema.String }),
-)
+import { Field } from "@lucas-barake/effect-form-react"
 
-const orderFormBuilder = FormBuilder.empty.addField(TitleField).addField(ItemsArrayField)
+const orderFormBuilder = FormBuilder.empty
+  .addField("title", Schema.String)
+  .addField(Field.makeArrayField("items", Schema.Struct({ name: Schema.String })))
 
 const OrderForm = FormReact.build(orderFormBuilder, {
   runtime,
@@ -150,12 +141,9 @@ FormReact.build(form, { runtime, fields, mode: "onChange", onSubmit })
 ## 4. Cross-Field Validation (Sync Refinements)
 
 ```tsx
-const PasswordField = Field.makeField("password", Schema.String)
-const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String)
-
 const signupForm = FormBuilder.empty
-  .addField(PasswordField)
-  .addField(ConfirmPasswordField)
+  .addField("password", Schema.String)
+  .addField("confirmPassword", Schema.String)
   .refine((values) => {
     if (values.password !== values.confirmPassword) {
       return { path: ["confirmPassword"], message: "Passwords must match" }
@@ -166,10 +154,8 @@ const signupForm = FormBuilder.empty
 ## 5. Async Refinements
 
 ```tsx
-const UsernameField = Field.makeField("username", Schema.String)
-
 const usernameForm = FormBuilder.empty
-  .addField(UsernameField)
+  .addField("username", Schema.String)
   .refineEffect((values) =>
     Effect.gen(function* () {
       yield* Effect.sleep("100 millis")
@@ -201,10 +187,8 @@ const UsernameValidatorLive = Layer.succeed(UsernameValidator, {
 
 const runtime = Atom.runtime(UsernameValidatorLive)
 
-const UsernameField = Field.makeField("username", Schema.String)
-
 const signupFormBuilder = FormBuilder.empty
-  .addField(UsernameField)
+  .addField("username", Schema.String)
   .refineEffect((values) =>
     Effect.gen(function* () {
       const validator = yield* UsernameValidator
@@ -383,7 +367,30 @@ function FormSideEffects() {
 }
 ```
 
-## 13. Error Display Patterns
+## 13. Subscribing to Individual Field Values
+
+Use `getFieldAtom` to subscribe to a specific field's value without re-rendering when other fields change:
+
+```tsx
+function EmailDisplay() {
+  // Only re-renders when email changes, not when password changes
+  const emailAtom = LoginForm.getFieldAtom(LoginForm.fields.email)
+  const email = useAtomValue(emailAtom)
+
+  return <span>Current email: {email}</span>
+}
+
+// Useful for derived state based on a single field
+function PasswordStrength() {
+  const passwordAtom = LoginForm.getFieldAtom(LoginForm.fields.password)
+  const password = useAtomValue(passwordAtom)
+
+  const strength = password.length < 8 ? "weak" : password.length < 12 ? "medium" : "strong"
+  return <span>Password strength: {strength}</span>
+}
+```
+
+## 14. Error Display Patterns
 
 ```tsx
 const TextInput: React.FC<
@@ -427,7 +434,7 @@ function FormWithSideEffects({ onClose }: { onClose: () => void }) {
 }
 ```
 
-## 14. Custom Submit Arguments
+## 15. Custom Submit Arguments
 
 Pass custom arguments to `onSubmit` by annotating the first parameter:
 
@@ -455,6 +462,50 @@ The `onSubmit` callback receives:
 
 > **Note:** Auto-submit mode is only available when `args` is `void`. TypeScript will prevent using `autoSubmit: true` with custom arguments since there's no way to provide them automatically.
 
+## 16. Reusable Field Definitions
+
+For fields shared across multiple forms, use `Field.makeField` to define them once:
+
+```tsx
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
+
+// Define reusable field
+const EmailField = Field.makeField(
+  "email",
+  Schema.String.pipe(Schema.pattern(/@/), Schema.nonEmptyString()),
+)
+
+// Use in multiple forms
+const loginForm = FormBuilder.empty
+  .addField(EmailField)
+  .addField("password", Schema.String)
+
+const signupForm = FormBuilder.empty
+  .addField(EmailField)
+  .addField("password", Schema.String)
+  .addField("name", Schema.String)
+
+const newsletterForm = FormBuilder.empty
+  .addField(EmailField)
+```
+
+You can also compose reusable field groups using `merge`:
+
+```tsx
+const addressFields = FormBuilder.empty
+  .addField("street", Schema.String)
+  .addField("city", Schema.String)
+  .addField("zip", Schema.String)
+
+const shippingForm = FormBuilder.empty
+  .addField("name", Schema.String)
+  .merge(addressFields)
+
+const billingForm = FormBuilder.empty
+  .addField("cardNumber", Schema.String)
+  .merge(addressFields)
+```
+
 ## Available Atoms
 
 All forms expose these atoms for fine-grained subscriptions:
@@ -466,6 +517,7 @@ form.hasChangedSinceSubmit   // Atom<boolean> - values differ from last submit
 form.lastSubmittedValues     // Atom<Option<SubmittedValues>> - last submitted values
 form.submitCount             // Atom<number> - number of submit attempts
 form.submit                  // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
+form.getFieldAtom(fieldRef)  // Atom<FieldValue> - subscribe to individual field values
 ```
 
 > **Why `Option` for `values`?** Returns `None` before the form is initialized, `Some(values)` after. This allows parent components to safely subscribe and wait for initialization without throwing.
@@ -510,6 +562,7 @@ Use `FormReact.forField()` for ergonomic component definition with full type inf
 
 ```tsx
 // Basic field component - schema type inferred from field definition
+const EmailField = Field.makeField("email", Schema.String)
 const TextInput = FormReact.forField(EmailField)(({ field }) => (
   <input
     value={field.value}
