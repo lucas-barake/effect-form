@@ -202,36 +202,52 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     Atom.setIdleTTL(0),
   )
 
-  const dirtyFieldsAtom = Atom.readable((get) => Option.getOrThrow(get(stateAtom)).dirtyFields).pipe(
-    Atom.setIdleTTL(0),
-  )
-
-  const isDirtyAtom = Atom.readable((get) => Option.getOrThrow(get(stateAtom)).dirtyFields.size > 0).pipe(
-    Atom.setIdleTTL(0),
-  )
-
-  const submitCountAtom = Atom.readable((get) => Option.getOrThrow(get(stateAtom)).submitCount).pipe(
-    Atom.setIdleTTL(0),
-  )
-
-  const lastSubmittedValuesAtom = Atom.readable(
-    (get) => Option.getOrThrow(get(stateAtom)).lastSubmittedValues,
+  const dirtyFieldsAtom = Atom.readable((get) =>
+    Option.match(get(stateAtom), {
+      onNone: () => new Set<string>(),
+      onSome: (state) => state.dirtyFields,
+    })
   ).pipe(Atom.setIdleTTL(0))
 
-  const changedSinceSubmitFieldsAtom = Atom.readable((get) => {
-    const state = Option.getOrThrow(get(stateAtom))
-    return Option.match(state.lastSubmittedValues, {
-      onNone: () => new Set<string>(),
-      onSome: (lastSubmitted) => recalculateDirtySubtree(new Set(), lastSubmitted.encoded, state.values, ""),
+  const isDirtyAtom = Atom.readable((get) =>
+    Option.match(get(stateAtom), {
+      onNone: () => false,
+      onSome: (state) => state.dirtyFields.size > 0,
     })
-  }).pipe(Atom.setIdleTTL(0))
+  ).pipe(Atom.setIdleTTL(0))
 
-  const hasChangedSinceSubmitAtom = Atom.readable((get) => {
-    const state = Option.getOrThrow(get(stateAtom))
-    if (Option.isNone(state.lastSubmittedValues)) return false
-    if (state.values === state.lastSubmittedValues.value.encoded) return false
-    return get(changedSinceSubmitFieldsAtom).size > 0
-  }).pipe(Atom.setIdleTTL(0))
+  const submitCountAtom = Atom.readable((get) =>
+    Option.match(get(stateAtom), {
+      onNone: () => 0,
+      onSome: (state) => state.submitCount,
+    })
+  ).pipe(Atom.setIdleTTL(0))
+
+  const lastSubmittedValuesAtom = Atom.readable((get) =>
+    Option.flatMap(get(stateAtom), (state) => state.lastSubmittedValues)
+  ).pipe(Atom.setIdleTTL(0))
+
+  const changedSinceSubmitFieldsAtom = Atom.readable((get) =>
+    Option.match(get(stateAtom), {
+      onNone: () => new Set<string>(),
+      onSome: (state) =>
+        Option.match(state.lastSubmittedValues, {
+          onNone: () => new Set<string>(),
+          onSome: (lastSubmitted) => recalculateDirtySubtree(new Set(), lastSubmitted.encoded, state.values, ""),
+        }),
+    })
+  ).pipe(Atom.setIdleTTL(0))
+
+  const hasChangedSinceSubmitAtom = Atom.readable((get) =>
+    Option.match(get(stateAtom), {
+      onNone: () => false,
+      onSome: (state) => {
+        if (Option.isNone(state.lastSubmittedValues)) return false
+        if (state.values === state.lastSubmittedValues.value.encoded) return false
+        return get(changedSinceSubmitFieldsAtom).size > 0
+      },
+    })
+  ).pipe(Atom.setIdleTTL(0))
 
   const validationAtomsRegistry = createWeakRegistry<Atom.AtomResultFn<unknown, void, ParseResult.ParseError>>()
   const fieldAtomsRegistry = createWeakRegistry<FieldAtoms>()
