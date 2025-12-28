@@ -27,7 +27,7 @@ jobs:
       - run: pnpm build
       - run: pnpm circular
       - name: Create Release Pull Request or Publish
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         id: changesets
         uses: changesets/action@v1
         with:
