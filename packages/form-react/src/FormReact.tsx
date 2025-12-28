@@ -42,7 +42,7 @@ export interface FieldState<S extends Schema.Schema.Any> {
  */
 export interface FieldComponentProps<
   S extends Schema.Schema.Any,
-  P extends Record<string, unknown> = Record<string, never>
+  P extends Record<string, unknown> = Record<string, never>,
 > {
   readonly field: FieldState<S>
   readonly props: P
@@ -54,8 +54,7 @@ export interface FieldComponentProps<
  * @since 1.0.0
  * @category Type-level utilities
  */
-export type ExtractExtraProps<C> = C extends React.FC<FieldComponentProps<any, infer P>>
-  ? P
+export type ExtractExtraProps<C> = C extends React.FC<FieldComponentProps<any, infer P>> ? P
   : Record<string, never>
 
 /**
@@ -67,8 +66,7 @@ export type ExtractExtraProps<C> = C extends React.FC<FieldComponentProps<any, i
  * @category Models
  */
 export type ArrayItemComponentMap<S extends Schema.Schema.Any> = S extends Schema.Struct<infer Fields> ? {
-    readonly [K in keyof Fields]: Fields[K] extends Schema.Schema.Any
-      ? React.FC<FieldComponentProps<Fields[K], any>>
+    readonly [K in keyof Fields]: Fields[K] extends Schema.Schema.Any ? React.FC<FieldComponentProps<Fields[K], any>>
       : never
   }
   : React.FC<FieldComponentProps<S, any>>
@@ -80,8 +78,7 @@ export type ArrayItemComponentMap<S extends Schema.Schema.Any> = S extends Schem
  * @category Models
  */
 export type FieldComponentMap<TFields extends Field.FieldsRecord> = {
-  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S>
-    ? React.FC<FieldComponentProps<S, any>>
+  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S> ? React.FC<FieldComponentProps<S, any>>
     : TFields[K] extends Field.ArrayFieldDef<any, infer S> ? ArrayItemComponentMap<S>
     : never
 }
@@ -137,7 +134,7 @@ export interface SubscribeState<TFields extends Field.FieldsRecord> {
 export type BuiltForm<
   TFields extends Field.FieldsRecord,
   R,
-  CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>
+  CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
 > = {
   readonly atom: Atom.Writable<
     Option.Option<FormBuilder.FormState<TFields>>,
@@ -179,16 +176,16 @@ export type BuiltForm<
 } & FieldComponents<TFields, CM>
 
 type FieldComponents<TFields extends Field.FieldsRecord, CM extends FieldComponentMap<TFields>> = {
-  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, any>
-    ? React.FC<ExtractExtraProps<CM[K]>>
+  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, any> ? React.FC<ExtractExtraProps<CM[K]>>
     : TFields[K] extends Field.ArrayFieldDef<any, infer S>
       ? ArrayFieldComponent<S, ExtractArrayItemExtraProps<CM[K], S>>
-      : never
+    : never
 }
 
 type ExtractArrayItemExtraProps<CM, S extends Schema.Schema.Any> = S extends Schema.Struct<infer Fields>
   ? { readonly [K in keyof Fields]: CM extends { readonly [P in K]: infer C } ? ExtractExtraProps<C> : never }
-  : CM extends React.FC<FieldComponentProps<any, infer P>> ? P : never
+  : CM extends React.FC<FieldComponentProps<any, infer P>> ? P
+  : never
 
 type ArrayFieldComponent<S extends Schema.Schema.Any, ExtraPropsMap> =
   & React.FC<{
@@ -472,7 +469,7 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
 
 const makeFieldComponents = <
   TFields extends Field.FieldsRecord,
-  CM extends FieldComponentMap<TFields>
+  CM extends FieldComponentMap<TFields>,
 >(
   fields: TFields,
   stateAtom: Atom.Writable<
@@ -580,7 +577,7 @@ export const build = <
   TFields extends Field.FieldsRecord,
   R,
   ER = never,
-  CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>
+  CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
 >(
   self: FormBuilder.FormBuilder<TFields, R>,
   options: {

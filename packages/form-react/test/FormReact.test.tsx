@@ -2786,7 +2786,9 @@ describe("FormReact.build", () => {
     it("routes schema validation errors to correct array item paths", async () => {
       const user = userEvent.setup()
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<Schema.Schema<string, string, never>>> = ({ field }) => (
+      const ItemNameInput: React.FC<FormReact.FieldComponentProps<Schema.Schema<string, string, never>>> = (
+        { field },
+      ) => (
         <div>
           <input
             type="text"
