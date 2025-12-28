@@ -84,7 +84,6 @@ describe("FormAtoms", () => {
 
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       state = atoms.operations.createSubmitState(state)
-      // Simulate successful validation setting lastSubmittedValues
       state = {
         ...state,
         lastSubmittedValues: Option.some({
@@ -489,7 +488,6 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
-      // Simulate successful validation setting lastSubmittedValues
       state = {
         ...state,
         lastSubmittedValues: Option.some({
