@@ -1,5 +1,14 @@
 # @lucas-barake/effect-form
 
+## 0.8.0
+
+### Minor Changes
+
+- [#19](https://github.com/lucas-barake/effect-form/pull/19) [`9affd2b`](https://github.com/lucas-barake/effect-form/commit/9affd2bf87c1f0c910ca419d82c16e873cbf56ab) Thanks [@lucas-barake](https://github.com/lucas-barake)! - feat: add custom submit arguments support
+  - Add `SubmitArgs` type parameter to `onSubmit` (defaults to `void` for backwards compatibility)
+  - New signature: `onSubmit: (args, { decoded, encoded, get }) => ...`
+  - Auto-submit is restricted at the type level when `SubmitArgs` is not `void`
+
 ## 0.7.0
 
 ### Minor Changes
