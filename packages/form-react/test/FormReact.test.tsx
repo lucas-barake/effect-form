@@ -3760,4 +3760,78 @@ describe("FormReact.build", () => {
       })
     })
   })
+
+  describe("submit helper", () => {
+    it("supports callbacks that return plain values (non-Effect)", async () => {
+      const user = userEvent.setup()
+
+      const NameField = Field.makeField("name", Schema.String)
+      const formBuilder = Form.empty.addField(NameField)
+
+      const runtime = createRuntime()
+      const form = FormReact.build(formBuilder, {
+        runtime,
+        fields: { name: TextInput },
+      })
+
+      let submittedValue: string | undefined
+
+      const onSubmit = form.submit((values) => {
+        submittedValue = values.name
+        return { success: true }
+      })
+
+      render(
+        <form.Form defaultValues={{ name: "test-value" }} onSubmit={onSubmit}>
+          <form.name />
+          <form.Subscribe>
+            {({ submit }) => <button onClick={submit} data-testid="submit">Submit</button>}
+          </form.Subscribe>
+        </form.Form>,
+      )
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(submittedValue).toBe("test-value")
+      })
+    })
+
+    it("supports callbacks that return Effect", async () => {
+      const user = userEvent.setup()
+
+      const NameField = Field.makeField("name", Schema.String)
+      const formBuilder = Form.empty.addField(NameField)
+
+      const runtime = createRuntime()
+      const form = FormReact.build(formBuilder, {
+        runtime,
+        fields: { name: TextInput },
+      })
+
+      let submittedValue: string | undefined
+
+      const onSubmit = form.submit((values) =>
+        Effect.sync(() => {
+          submittedValue = values.name
+          return { success: true }
+        })
+      )
+
+      render(
+        <form.Form defaultValues={{ name: "effect-value" }} onSubmit={onSubmit}>
+          <form.name />
+          <form.Subscribe>
+            {({ submit }) => <button onClick={submit} data-testid="submit">Submit</button>}
+          </form.Subscribe>
+        </form.Form>,
+      )
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(submittedValue).toBe("effect-value")
+      })
+    })
+  })
 })
