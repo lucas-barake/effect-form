@@ -1,5 +1,22 @@
 # @lucas-barake/effect-form-react
 
+## 0.8.0
+
+### Minor Changes
+
+- [#17](https://github.com/lucas-barake/effect-form/pull/17) [`d0ec0d8`](https://github.com/lucas-barake/effect-form/commit/d0ec0d825e1a208d23e929f9e106031f452719a2) Thanks [@lucas-barake](https://github.com/lucas-barake)! - feat: expose `values` atom on built form
+  - Added `form.values` atom returning `Option<EncodedValues>` - `None` before initialization, `Some(values)` after
+  - Allows parent components to safely subscribe to form values without throwing
+
+  feat: auto-provide AtomRegistry in refineEffect
+  - `AtomRegistry` is now excluded from the `R` type in `refineEffect` since it's auto-provided by the runtime
+  - Users can access `yield* Registry.AtomRegistry` in async refinements without providing it manually
+
+### Patch Changes
+
+- Updated dependencies [[`d0ec0d8`](https://github.com/lucas-barake/effect-form/commit/d0ec0d825e1a208d23e929f9e106031f452719a2)]:
+  - @lucas-barake/effect-form@0.7.0
+
 ## 0.7.0
 
 ### Minor Changes
