@@ -1,6 +1,7 @@
 /**
  * @since 1.0.0
  */
+import type * as Registry from "@effect-atom/atom/Registry"
 import type * as Effect from "effect/Effect"
 import type * as Option from "effect/Option"
 import * as Predicate from "effect/Predicate"
@@ -215,7 +216,7 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
   refineEffect<RD>(
     this: FormBuilder<TFields, R>,
     predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>,
-  ): FormBuilder<TFields, R | RD>
+  ): FormBuilder<TFields, R | Exclude<RD, Registry.AtomRegistry>>
 }
 
 const FormBuilderProto = {
@@ -253,7 +254,7 @@ const FormBuilderProto = {
   refineEffect<TFields extends FieldsRecord, R, RD>(
     this: FormBuilder<TFields, R>,
     predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>,
-  ): FormBuilder<TFields, R | RD> {
+  ): FormBuilder<TFields, R | Exclude<RD, Registry.AtomRegistry>> {
     const newSelf = Object.create(FormBuilderProto)
     newSelf.fields = this.fields
     newSelf.refinements = [

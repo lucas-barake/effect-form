@@ -62,6 +62,7 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
     Option.Option<FormBuilder.FormState<TFields>>
   >
   readonly crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>
+  readonly valuesAtom: Atom.Atom<Option.Option<Field.EncodedFromFields<TFields>>>
   readonly dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly isDirtyAtom: Atom.Atom<boolean>
   readonly submitCountAtom: Atom.Atom<number>
@@ -195,6 +196,10 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
 
   const stateAtom = Atom.make(Option.none<FormBuilder.FormState<TFields>>()).pipe(Atom.setIdleTTL(0))
   const crossFieldErrorsAtom = Atom.make<Map<string, string>>(new Map()).pipe(Atom.setIdleTTL(0))
+
+  const valuesAtom = Atom.readable((get) => Option.map(get(stateAtom), (state) => state.values)).pipe(
+    Atom.setIdleTTL(0),
+  )
 
   const dirtyFieldsAtom = Atom.readable((get) => Option.getOrThrow(get(stateAtom)).dirtyFields).pipe(
     Atom.setIdleTTL(0),
@@ -540,6 +545,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
   return {
     stateAtom,
     crossFieldErrorsAtom,
+    valuesAtom,
     dirtyFieldsAtom,
     isDirtyAtom,
     submitCountAtom,

@@ -432,12 +432,15 @@ function FormWithSideEffects({ onClose }: { onClose: () => void }) {
 All forms expose these atoms for fine-grained subscriptions:
 
 ```ts
+form.values                  // Atom<Option<EncodedValues>> - current form values
 form.isDirty                 // Atom<boolean> - values differ from initial
 form.hasChangedSinceSubmit   // Atom<boolean> - values differ from last submit
-form.lastSubmittedValues     // Atom<Option<Values>> - last submitted values
+form.lastSubmittedValues     // Atom<Option<SubmittedValues>> - last submitted values
 form.submitCount             // Atom<number> - number of submit attempts
 form.submit                  // AtomResultFn<void, A, E | ParseError> - submit with .waiting, ._tag
 ```
+
+> **Why `Option` for `values`?** Returns `None` before the form is initialized, `Some(values)` after. This allows parent components to safely subscribe and wait for initialization without throwing.
 
 ## Available Operations
 

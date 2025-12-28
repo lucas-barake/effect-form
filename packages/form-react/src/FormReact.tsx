@@ -119,6 +119,7 @@ export type BuiltForm<
   CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
 > = {
   // Atoms for fine-grained subscriptions (use with useAtomValue)
+  readonly values: Atom.Atom<Option.Option<Field.EncodedFromFields<TFields>>>
   readonly isDirty: Atom.Atom<boolean>
   readonly hasChangedSinceSubmit: Atom.Atom<boolean>
   readonly lastSubmittedValues: Atom.Atom<Option.Option<FormBuilder.SubmittedValues<TFields>>>
@@ -585,6 +586,7 @@ export const build = <
     stateAtom,
     submitAtom,
     submitCountAtom,
+    valuesAtom,
   } = formAtoms
 
   const InitializeComponent: React.FC<{
@@ -658,6 +660,7 @@ export const build = <
   )
 
   return {
+    values: valuesAtom,
     isDirty: isDirtyAtom,
     hasChangedSinceSubmit: hasChangedSinceSubmitAtom,
     lastSubmittedValues: lastSubmittedValuesAtom,
