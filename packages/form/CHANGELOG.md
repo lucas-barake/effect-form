@@ -1,5 +1,16 @@
 # @lucas-barake/effect-form
 
+## 0.3.0
+
+### Minor Changes
+
+- [#4](https://github.com/lucas-barake/effect-form/pull/4) [`12dc7cc`](https://github.com/lucas-barake/effect-form/commit/12dc7cc1050d09e8c5c104f3a86d0d1afcc1ae8e) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Add ability to track changes since last submit
+  - `hasChangedSinceSubmit`: boolean indicating values differ from last submit
+  - `lastSubmittedValues`: `Option<T>` containing the last submitted values
+  - `revertToLastSubmit()`: restores form to last submitted state
+
+  These APIs are available via both `useForm()` hook and `Subscribe` component.
+
 ## 0.2.0
 
 ### Minor Changes
