@@ -95,7 +95,7 @@ describe("Validation", () => {
     })
 
     it("routes first error when schema short-circuits", () => {
-      // Schema short-circuits on first error, so only one error is reported
+      // Schema short-circuits on first error
       const schema = Schema.Struct({
         name: Schema.Number,
         email: Schema.Number,
@@ -107,7 +107,7 @@ describe("Validation", () => {
       }
 
       const errors = routeErrors(result.left)
-      // Schema short-circuits, so only the first field error is captured
+      // Only first field error captured (schema short-circuits)
       expect(errors.size).toBe(1)
       expect(errors.has("name")).toBe(true)
     })
@@ -149,7 +149,7 @@ describe("Validation", () => {
     })
 
     it("routes first array item error when schema short-circuits", () => {
-      // Schema short-circuits on first error within arrays too
+      // Schema short-circuits on first error within arrays
       const schema = Schema.Struct({
         items: Schema.Array(
           Schema.Struct({
@@ -166,7 +166,7 @@ describe("Validation", () => {
       }
 
       const errors = routeErrors(result.left)
-      // Schema short-circuits, so only the first array item error is captured
+      // Only first array item error captured (schema short-circuits)
       expect(errors.size).toBe(1)
       expect(errors.has("items[0].name")).toBe(true)
     })

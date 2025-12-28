@@ -69,12 +69,11 @@ describe("Debounce and Auto-Submit", () => {
       )
 
       const input = screen.getByTestId("text-input")
-
       await user.clear(input)
       await user.type(input, "Bad")
       await user.tab()
 
-      // userEvent operations take some time but < 300ms typically
+      // userEvent operations take some time but < 300ms
       expect(screen.queryByTestId("text-input-error")).not.toBeInTheDocument()
 
       await waitFor(
@@ -152,7 +151,6 @@ describe("Debounce and Auto-Submit", () => {
 
       const nameInput = screen.getByTestId("name-input")
       const ageInput = screen.getByTestId("age-input")
-
       await user.type(nameInput, "Lucas")
       await user.type(ageInput, "30")
 

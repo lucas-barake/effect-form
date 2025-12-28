@@ -1069,7 +1069,6 @@ describe("FormReact.build", () => {
 
       await user.click(screen.getByTestId("submit"))
 
-      // The error should appear on the nested array item field, not on the parent
       await waitFor(() => {
         expect(screen.getByTestId("item-name-error")).toHaveTextContent(
           "Name must be at least 3 characters",
@@ -1103,9 +1102,8 @@ describe("FormReact.build", () => {
 
       const input = screen.getByTestId("text-input")
 
-      // Clear the input - this should trigger validation immediately (onChange mode)
+      // Blur to mark as touched (error only shows when touched)
       await user.clear(input)
-      // Need to blur to mark as touched (error only shows when touched)
       await user.tab()
 
       await waitFor(() => {
@@ -1139,8 +1137,7 @@ describe("FormReact.build", () => {
       await user.click(input)
       await user.tab()
 
-      // In onSubmit mode, no validation happens on blur
-      // Wait a bit to ensure no error appears
+      // In onSubmit mode, no validation happens on blur - wait to ensure no error appears
       await new Promise((r) => setTimeout(r, 50))
       expect(screen.queryByTestId("error")).not.toBeInTheDocument()
     })
@@ -1433,10 +1430,10 @@ describe("FormReact.build", () => {
 
       expect(isDirty).toBe(true)
 
-      // Rerender with new defaultValues - form does NOT reinitialize (mount-only)
+      // Rerender with new defaultValues - form does NOT reinitialize
       rerender(<FormWrapper defaultName="new-initial" />)
 
-      // Values are preserved from the previous render
+      // Values preserved from previous render
       expect(screen.getByTestId("text-input")).toHaveValue("modified")
       expect(isDirty).toBe(true)
     })
@@ -1481,7 +1478,7 @@ describe("FormReact.build", () => {
 
       expect(isDirty).toBe(true)
 
-      // Remount with new key forces reinitialization
+      // New key forces reinitialization
       rerender(<FormWrapper defaultName="new-initial" formKey="2" />)
 
       await waitFor(() => {
@@ -1523,7 +1520,6 @@ describe("FormReact.build", () => {
       expect(isDirty).toBe(false)
 
       const input = screen.getByTestId("text-input")
-
       await user.clear(input)
       await user.type(input, "changed")
       expect(isDirty).toBe(true)
@@ -1566,7 +1562,6 @@ describe("FormReact.build", () => {
         </form.Initialize>,
       )
 
-      // Modify
       const input = screen.getByTestId("text-input")
       await user.clear(input)
       await user.type(input, "changed")
@@ -1623,7 +1618,6 @@ describe("FormReact.build", () => {
       const input = screen.getByTestId("text-input")
       await user.clear(input)
       await user.type(input, "modified")
-
       expect(screen.getByTestId("isDirty")).toHaveTextContent("true")
       expect(screen.getByTestId("text-input")).toHaveValue("modified")
 

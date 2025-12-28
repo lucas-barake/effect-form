@@ -106,14 +106,12 @@ describe("useDebounced", () => {
         vi.advanceTimersByTime(50)
       })
 
-      // Still not called - timer was reset
       expect(fn).not.toHaveBeenCalled()
 
       await act(async () => {
         vi.advanceTimersByTime(50)
       })
 
-      // Now called with second value only
       expect(fn).toHaveBeenCalledTimes(1)
       expect(fn).toHaveBeenCalledWith("second")
 
@@ -161,7 +159,6 @@ describe("useDebounced", () => {
         vi.advanceTimersByTime(200)
       })
 
-      // Should never be called after unmount
       expect(fn).not.toHaveBeenCalled()
 
       vi.useRealTimers()
@@ -189,7 +186,6 @@ describe("useDebounced", () => {
         vi.advanceTimersByTime(100)
       })
 
-      // Should call the updated function (fn2), not the original (fn1)
       expect(fn1).not.toHaveBeenCalled()
       expect(fn2).toHaveBeenCalledTimes(1)
       expect(fn2).toHaveBeenCalledWith("value")
@@ -240,17 +236,12 @@ describe("useDebounced", () => {
         result.current("with-delay")
       })
 
-      // Change to null (immediate mode)
       rerender({ delay: null })
-
-      // The pending call from before should be cleaned up on delay change
-      // but the hook memoizes on delay so pending timeout might still fire
 
       await act(async () => {
         vi.advanceTimersByTime(100)
       })
 
-      // Call with null delay should execute immediately
       act(() => {
         result.current("immediate")
       })

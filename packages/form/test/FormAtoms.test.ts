@@ -485,7 +485,6 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
-
       const revertedState = atoms.operations.revertToLastSubmit(state)
 
       expect(revertedState).toBe(state)
@@ -503,7 +502,6 @@ describe("FormAtoms", () => {
 
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       state = atoms.operations.createSubmitState(state)
-
       state = atoms.operations.setFieldValue(state, "name", "Bob")
       expect(state.values.name).toBe("Bob")
       expect(state.dirtyFields.has("name")).toBe(true)
@@ -525,7 +523,6 @@ describe("FormAtoms", () => {
       })
 
       state = atoms.operations.createSubmitState(state)
-
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       expect(state.dirtyFields.has("name")).toBe(true)
 
@@ -784,21 +781,18 @@ describe("FormAtoms", () => {
         email: "john@test.com",
       })
 
-      // First submit with "Jane"
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       state = atoms.operations.createSubmitState(state)
       expect(Option.getOrThrow(state.lastSubmittedValues).name).toBe("Jane")
 
-      // Second submit with "Bob"
       state = atoms.operations.setFieldValue(state, "name", "Bob")
       state = atoms.operations.createSubmitState(state)
       expect(Option.getOrThrow(state.lastSubmittedValues).name).toBe("Bob")
 
-      // Modify to "Charlie"
       state = atoms.operations.setFieldValue(state, "name", "Charlie")
       expect(state.values.name).toBe("Charlie")
 
-      // Revert should go to "Bob" (most recent submit), not "Jane"
+      // Should go to "Bob" (most recent submit), not "Jane"
       const revertedState = atoms.operations.revertToLastSubmit(state)
       expect(revertedState.values.name).toBe("Bob")
     })
@@ -831,14 +825,12 @@ describe("FormAtoms", () => {
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
-      // Set up initial state
       const initialState = atoms.operations.createInitialState({
         name: "John",
         email: "john@test.com",
       })
       registry.set(atoms.stateAtom, Option.some(initialState))
 
-      // Modify and submit
       let state = atoms.operations.setFieldValue(initialState, "name", "Jane")
       state = atoms.operations.createSubmitState(state)
       registry.set(atoms.stateAtom, Option.some(state))
@@ -848,11 +840,9 @@ describe("FormAtoms", () => {
       expect(Option.isSome(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).lastSubmittedValues)).toBe(true)
       expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(1)
 
-      // Run reset (fnSync executes on read, mount triggers read)
       registry.mount(atoms.resetAtom)
       registry.set(atoms.resetAtom, undefined)
 
-      // Verify reset
       const resetState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(resetState.values.name).toBe("John")
       expect(Option.isNone(resetState.lastSubmittedValues)).toBe(true)
@@ -868,7 +858,6 @@ describe("FormAtoms", () => {
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
-      // Set up initial state, modify and submit
       let state = atoms.operations.createInitialState({
         name: "John",
         email: "john@test.com",
@@ -877,18 +866,16 @@ describe("FormAtoms", () => {
       state = atoms.operations.createSubmitState(state)
       registry.set(atoms.stateAtom, Option.some(state))
 
-      // Modify after submit
       state = atoms.operations.setFieldValue(state, "name", "Bob")
       registry.set(atoms.stateAtom, Option.some(state))
       registry.set(atoms.crossFieldErrorsAtom, new Map([["name", "Validation error"]]))
 
       expect(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).values.name).toBe("Bob")
 
-      // Run revert (fnSync executes on read, mount triggers read)
       registry.mount(atoms.revertToLastSubmitAtom)
       registry.set(atoms.revertToLastSubmitAtom, undefined)
 
-      // Verify revert - should go back to "Jane" (last submitted)
+      // Should go back to "Jane" (last submitted)
       const revertedState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(revertedState.values.name).toBe("Jane")
       expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(0)
@@ -902,7 +889,6 @@ describe("FormAtoms", () => {
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
-      // Set up initial state
       const initialState = atoms.operations.createInitialState({
         name: "John",
         email: "john@test.com",
@@ -910,11 +896,9 @@ describe("FormAtoms", () => {
       registry.set(atoms.stateAtom, Option.some(initialState))
       registry.set(atoms.crossFieldErrorsAtom, new Map([["email", "Invalid email"]]))
 
-      // Run setValues (fnSync executes on read, mount triggers read)
       registry.mount(atoms.setValuesAtom)
       registry.set(atoms.setValuesAtom, { name: "Alice", email: "alice@test.com" })
 
-      // Verify
       const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(newState.values.name).toBe("Alice")
       expect(newState.values.email).toBe("alice@test.com")
@@ -931,21 +915,17 @@ describe("FormAtoms", () => {
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
-      // Set up initial state
       const initialState = atoms.operations.createInitialState({
         name: "John",
         email: "john@test.com",
       })
       registry.set(atoms.stateAtom, Option.some(initialState))
 
-      // Get setValue atom for name field
       const setNameAtom = atoms.setValue(atoms.fieldRefs.name)
 
-      // Run setValue (fnSync executes on read, mount triggers read)
       registry.mount(setNameAtom)
       registry.set(setNameAtom, "Alice")
 
-      // Verify
       const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(newState.values.name).toBe("Alice")
       expect(newState.values.email).toBe("john@test.com")
@@ -959,21 +939,17 @@ describe("FormAtoms", () => {
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
-      // Set up initial state
       const initialState = atoms.operations.createInitialState({
         name: "John",
         email: "john@test.com",
       })
       registry.set(atoms.stateAtom, Option.some(initialState))
 
-      // Get setValue atom for name field
       const setNameAtom = atoms.setValue(atoms.fieldRefs.name)
 
-      // Run setValue with function (fnSync executes on read, mount triggers read)
       registry.mount(setNameAtom)
       registry.set(setNameAtom, (prev: string) => prev.toUpperCase())
 
-      // Verify
       const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(newState.values.name).toBe("JOHN")
     })
@@ -984,14 +960,12 @@ describe("FormAtoms", () => {
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
       const registry = Registry.make()
 
-      // Set up initial state
       const initialState = atoms.operations.createInitialState({
         title: "My List",
         items: [{ name: "Item 1" }],
       })
       registry.set(atoms.stateAtom, Option.some(initialState))
 
-      // Set cross-field errors for items path and nested paths
       registry.set(
         atoms.crossFieldErrorsAtom,
         new Map([
@@ -1002,14 +976,12 @@ describe("FormAtoms", () => {
         ]),
       )
 
-      // Get setValue atom for items field
       const setItemsAtom = atoms.setValue(atoms.fieldRefs.items)
 
-      // Run setValue (fnSync executes on read, mount triggers read)
       registry.mount(setItemsAtom)
       registry.set(setItemsAtom, [{ name: "Updated Item" }])
 
-      // Verify - items and nested paths should be cleared, title should remain
+      // items and nested paths should be cleared, title should remain
       const errors = registry.get(atoms.crossFieldErrorsAtom)
       expect(errors.has("items")).toBe(false)
       expect(errors.has("items[0]")).toBe(false)
