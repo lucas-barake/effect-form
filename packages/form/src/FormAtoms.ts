@@ -97,6 +97,8 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly revertToLastSubmitAtom: Atom.Writable<void, void>
   readonly setValuesAtom: Atom.Writable<void, Field.EncodedFromFields<TFields>>
   readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
+
+  readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<S>
 }
 
 /**
@@ -559,6 +561,11 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     return atom
   }
 
+  const getFieldAtom = <S>(field: FormBuilder.FieldRef<S>): Atom.Atom<S> => {
+    const { valueAtom } = getOrCreateFieldAtoms(field.key)
+    return valueAtom as Atom.Atom<S>
+  }
+
   return {
     stateAtom,
     crossFieldErrorsAtom,
@@ -582,5 +589,6 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     revertToLastSubmitAtom,
     setValuesAtom,
     setValue,
+    getFieldAtom,
   } as FormAtoms<TFields, R, A, E, SubmitArgs>
 }

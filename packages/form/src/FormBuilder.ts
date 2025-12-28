@@ -12,7 +12,7 @@ import type {
   FieldDef,
   FieldsRecord,
 } from "./Field.js"
-import { isArrayFieldDef, isFieldDef } from "./Field.js"
+import { isArrayFieldDef, isFieldDef, makeField } from "./Field.js"
 
 /**
  * @category Models
@@ -147,6 +147,23 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
   ): FormBuilder<TFields & { readonly [key in K]: ArrayFieldDef<K, S> }, R | Schema.Schema.Context<S>>
 
   /**
+   * Adds a scalar field using inline key and schema.
+   * Shorthand for `Field.makeField(key, schema)` when field reuse is not needed.
+   *
+   * @example
+   * ```ts
+   * const form = FormBuilder.empty
+   *   .addField("email", Schema.String)
+   *   .addField("age", Schema.Number)
+   * ```
+   */
+  addField<K extends string, S extends Schema.Schema.Any>(
+    this: FormBuilder<TFields, R>,
+    key: K,
+    schema: S,
+  ): FormBuilder<TFields & { readonly [key in K]: FieldDef<K, S> }, R | Schema.Schema.Context<S>>
+
+  /**
    * Merges another FormBuilder's fields into this one.
    * Useful for composing reusable field groups.
    *
@@ -211,8 +228,12 @@ const FormBuilderProto = {
   [TypeId]: TypeId,
   addField<TFields extends FieldsRecord, R>(
     this: FormBuilder<TFields, R>,
-    field: AnyFieldDef,
+    keyOrField: string | AnyFieldDef,
+    schema?: Schema.Schema.Any,
   ): FormBuilder<any, any> {
+    const field = typeof keyOrField === "string"
+      ? makeField(keyOrField, schema!)
+      : keyOrField
     const newSelf = Object.create(FormBuilderProto)
     newSelf.fields = { ...this.fields, [field.key]: field }
     newSelf.refinements = this.refinements

@@ -128,6 +128,7 @@ export type BuiltForm<
   readonly revertToLastSubmit: Atom.Writable<void, void>
   readonly setValues: Atom.Writable<void, Field.EncodedFromFields<TFields>>
   readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
+  readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<S>
 } & FieldComponents<TFields, CM>
 
 type FieldComponents<TFields extends Field.FieldsRecord, CM extends FieldComponentMap<TFields>> = {
@@ -570,6 +571,7 @@ export const build = <
     crossFieldErrorsAtom,
     dirtyFieldsAtom,
     fieldRefs,
+    getFieldAtom,
     getOrCreateFieldAtoms,
     getOrCreateValidationAtom,
     hasChangedSinceSubmitAtom,
@@ -670,6 +672,7 @@ export const build = <
     revertToLastSubmit: revertToLastSubmitAtom,
     setValues: setValuesAtom,
     setValue,
+    getFieldAtom,
     ...fieldComponents,
   } as BuiltForm<TFields, R, A, E, SubmitArgs, CM>
 }
