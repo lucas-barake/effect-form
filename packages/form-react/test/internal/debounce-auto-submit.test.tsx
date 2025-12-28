@@ -94,13 +94,11 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameField)
 
-      const onSubmit = (values: Record<string, string>) => submitHandler(values)
-
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
-        onSubmit,
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
 
       render(
@@ -133,13 +131,11 @@ describe("Debounce and Auto-Submit", () => {
         .addField(NameField)
         .addField(AgeField)
 
-      const onSubmit = (values: Record<string, string>) => submitHandler(values)
-
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: NameInput, age: AgeInput },
         mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
-        onSubmit,
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
 
       render(
@@ -175,13 +171,11 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameFieldMinLength)
 
-      const onSubmit = (values: Record<string, string>) => submitHandler(values)
-
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "50 millis", autoSubmit: true } },
-        onSubmit,
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
 
       render(
@@ -217,13 +211,11 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameField)
 
-      const onSubmit = (values: Record<string, string>) => submitHandler(values)
-
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
-        onSubmit,
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
 
       const { unmount } = render(
@@ -251,13 +243,11 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameField)
 
-      const onSubmit = (values: Record<string, string>) => submitHandler(values)
-
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onBlur: { autoSubmit: true } },
-        onSubmit,
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
 
       render(

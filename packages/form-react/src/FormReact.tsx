@@ -116,6 +116,7 @@ export type BuiltForm<
   R,
   A = void,
   E = never,
+  SubmitArgs = void,
   CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
 > = {
   // Atoms for fine-grained subscriptions (use with useAtomValue)
@@ -133,7 +134,7 @@ export type BuiltForm<
     readonly children: React.ReactNode
   }>
 
-  readonly submit: Atom.AtomResultFn<void, A, E | ParseResult.ParseError>
+  readonly submit: Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
   readonly reset: Atom.Writable<void, void>
   readonly revertToLastSubmit: Atom.Writable<void, void>
   readonly setValues: Atom.Writable<void, Field.EncodedFromFields<TFields>>
@@ -547,6 +548,7 @@ export const build = <
   R,
   A,
   E,
+  SubmitArgs = void,
   ER = never,
   CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
 >(
@@ -554,15 +556,22 @@ export const build = <
   options: {
     readonly runtime: Atom.AtomRuntime<R, ER>
     readonly fields: CM
-    readonly mode?: Mode.FormMode
-    readonly onSubmit: (decoded: Field.DecodedFromFields<TFields>, get: Atom.FnContext) => A | Effect.Effect<A, E, R>
+    readonly mode?: SubmitArgs extends void ? Mode.FormMode : Mode.FormModeWithoutAutoSubmit
+    readonly onSubmit: (
+      args: SubmitArgs,
+      ctx: {
+        readonly decoded: Field.DecodedFromFields<TFields>
+        readonly encoded: Field.EncodedFromFields<TFields>
+        readonly get: Atom.FnContext
+      },
+    ) => A | Effect.Effect<A, E, R>
   },
-): BuiltForm<TFields, R, A, E, CM> => {
+): BuiltForm<TFields, R, A, E, SubmitArgs, CM> => {
   const { fields: components, mode, onSubmit, runtime } = options
   const parsedMode = Mode.parse(mode)
   const { fields } = self
 
-  const formAtoms: FormAtoms.FormAtoms<TFields, R, A, E> = FormAtoms.make({
+  const formAtoms: FormAtoms.FormAtoms<TFields, R, A, E, SubmitArgs> = FormAtoms.make({
     formBuilder: self,
     runtime,
     onSubmit,
@@ -608,7 +617,7 @@ export const build = <
     const debouncedAutoSubmit = useDebounced(() => {
       const stateOption = registry.get(stateAtom)
       if (Option.isNone(stateOption)) return
-      callSubmit()
+      callSubmit(undefined as SubmitArgs)
     }, parsedMode.autoSubmit && parsedMode.validation === "onChange" ? parsedMode.debounce : null)
 
     useAtomSubscribe(
@@ -626,7 +635,7 @@ export const build = <
       if (parsedMode.autoSubmit && parsedMode.validation === "onBlur") {
         const stateOption = registry.get(stateAtom)
         if (Option.isNone(stateOption)) return
-        callSubmit()
+        callSubmit(undefined as SubmitArgs)
       }
     }, [registry, callSubmit])
 
@@ -674,7 +683,7 @@ export const build = <
     setValues: setValuesAtom,
     setValue,
     ...fieldComponents,
-  } as BuiltForm<TFields, R, A, E, CM>
+  } as BuiltForm<TFields, R, A, E, SubmitArgs, CM>
 }
 
 /**

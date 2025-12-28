@@ -30,10 +30,17 @@ export interface FieldAtoms {
  * @since 1.0.0
  * @category Models
  */
-export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E> {
+export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void> {
   readonly runtime: Atom.AtomRuntime<R, any>
   readonly formBuilder: FormBuilder.FormBuilder<TFields, R>
-  readonly onSubmit: (decoded: Field.DecodedFromFields<TFields>, get: Atom.FnContext) => A | Effect.Effect<A, E, R>
+  readonly onSubmit: (
+    args: SubmitArgs,
+    ctx: {
+      readonly decoded: Field.DecodedFromFields<TFields>
+      readonly encoded: Field.EncodedFromFields<TFields>
+      readonly get: Atom.FnContext
+    },
+  ) => A | Effect.Effect<A, E, R>
 }
 
 /**
@@ -56,7 +63,7 @@ export type FieldRefs<TFields extends Field.FieldsRecord> = {
  * @since 1.0.0
  * @category Models
  */
-export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = never> {
+export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = never, SubmitArgs = void> {
   readonly stateAtom: Atom.Writable<
     Option.Option<FormBuilder.FormState<TFields>>,
     Option.Option<FormBuilder.FormState<TFields>>
@@ -70,7 +77,7 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly changedSinceSubmitFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly hasChangedSinceSubmitAtom: Atom.Atom<boolean>
 
-  readonly submitAtom: Atom.AtomResultFn<void, A, E | ParseResult.ParseError>
+  readonly submitAtom: Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
 
   readonly combinedSchema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
 
@@ -186,9 +193,9 @@ export interface FormOperations<TFields extends Field.FieldsRecord> {
  * @since 1.0.0
  * @category Constructors
  */
-export const make = <TFields extends Field.FieldsRecord, R, A, E>(
-  config: FormAtomsConfig<TFields, R, A, E>,
-): FormAtoms<TFields, R, A, E> => {
+export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void>(
+  config: FormAtomsConfig<TFields, R, A, E, SubmitArgs>,
+): FormAtoms<TFields, R, A, E, SubmitArgs> => {
   const { formBuilder, runtime } = config
   const { fields } = formBuilder
 
@@ -302,7 +309,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
     fieldAtomsRegistry.clear()
   }
 
-  const submitAtom = runtime.fn<void>()((_void, get) =>
+  const submitAtom = runtime.fn<SubmitArgs>()((args, get) =>
     Effect.gen(function*() {
       const state = get(stateAtom)
       if (Option.isNone(state)) return yield* Effect.die("Form not initialized")
@@ -330,13 +337,13 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
           lastSubmittedValues: Option.some({ encoded: values, decoded }),
         }),
       )
-      const result = config.onSubmit(decoded, get)
+      const result = config.onSubmit(args, { decoded, encoded: values, get })
       if (Effect.isEffect(result)) {
         return yield* (result as Effect.Effect<A, E, R>)
       }
       return result as A
     })
-  ).pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<void, A, E | ParseResult.ParseError>
+  ).pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
 
   const fieldRefs = Object.fromEntries(
     Object.keys(fields).map((key) => [key, FormBuilder.makeFieldRef(key)]),
@@ -565,5 +572,5 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E>(
     revertToLastSubmitAtom,
     setValuesAtom,
     setValue,
-  } as FormAtoms<TFields, R, A, E>
+  } as FormAtoms<TFields, R, A, E, SubmitArgs>
 }

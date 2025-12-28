@@ -1142,7 +1142,10 @@ describe("FormAtoms", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 50))
 
-      expect(onSubmit).toHaveBeenCalledWith({ email: "test@example.com" }, expect.anything())
+      expect(onSubmit).toHaveBeenCalledWith(undefined, expect.objectContaining({
+        decoded: { email: "test@example.com" },
+        encoded: { email: "test@example.com" },
+      }))
       expect(Option.isSome(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).lastSubmittedValues)).toBe(true)
     })
 

@@ -57,7 +57,7 @@ const LoginForm = FormReact.build(loginFormBuilder, {
       </div>
     ),
   },
-  onSubmit: (values) => Effect.log(`Login: ${values.email}`),
+  onSubmit: (_, { decoded }) => Effect.log(`Login: ${decoded.email}`),
 })
 
 // Subscribe to atoms anywhere in the tree
@@ -100,7 +100,7 @@ const OrderForm = FormReact.build(orderFormBuilder, {
     title: TitleInput,
     items: { name: ItemNameInput },
   },
-  onSubmit: (values) => Effect.log(`Order: ${values.title}`),
+  onSubmit: (_, { decoded }) => Effect.log(`Order: ${decoded.title}`),
 })
 
 function OrderPage() {
@@ -218,7 +218,7 @@ const signupFormBuilder = FormBuilder.empty
 const SignupForm = FormReact.build(signupFormBuilder, {
   runtime,
   fields: { username: UsernameInput },
-  onSubmit: (values) => Effect.log(`Signup: ${values.username}`),
+  onSubmit: (_, { decoded }) => Effect.log(`Signup: ${decoded.username}`),
 })
 ```
 

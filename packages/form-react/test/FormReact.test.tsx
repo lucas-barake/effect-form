@@ -28,10 +28,10 @@ const TextInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> =
   </div>
 )
 
-const makeSubmitButton = (submitAtom: Atom.AtomResultFn<void, unknown, unknown>) => {
+const makeSubmitButton = <A,>(submitAtom: Atom.AtomResultFn<A, unknown, unknown>, args: A) => {
   const SubmitButton = () => {
     const submit = useAtomSet(submitAtom)
-    return <button onClick={() => submit()} data-testid="submit">Submit</button>
+    return <button onClick={() => submit(args)} data-testid="submit">Submit</button>
   }
   return SubmitButton
 }
@@ -194,16 +194,14 @@ describe("FormReact.build", () => {
       const NameField = Field.makeField("name", Schema.String)
       const formBuilder = FormBuilder.empty.addField(NameField)
 
-      const onSubmit = (values: { name: string }) => submitHandler(values)
-
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
         runtime,
         fields: { name: TextInput },
-        onSubmit,
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ name: "John" }}>
@@ -596,16 +594,14 @@ describe("FormReact.build", () => {
       const EmailField = Field.makeField("email", AsyncEmail)
       const formBuilder = FormBuilder.empty.addField(EmailField)
 
-      const onSubmit = (values: { email: string }) => submitHandler(values)
-
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
         runtime,
         fields: { email: TextInput },
-        onSubmit,
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ email: "test@example.com" }}>
@@ -727,7 +723,7 @@ describe("FormReact.build", () => {
         onSubmit,
       })
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ password: "secret", confirmPassword: "different" }}>
@@ -783,7 +779,7 @@ describe("FormReact.build", () => {
         onSubmit,
       })
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ username: "taken" }}>
@@ -850,7 +846,7 @@ describe("FormReact.build", () => {
         onSubmit,
       })
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ username: "taken" }}>
@@ -918,7 +914,7 @@ describe("FormReact.build", () => {
         onSubmit,
       })
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       const { rerender } = render(
         <form.Initialize key="1" defaultValues={{ fieldA: "error1", fieldB: "valid" }}>
@@ -997,7 +993,7 @@ describe("FormReact.build", () => {
         onSubmit,
       })
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ password: "secret", confirm: "different" }}>
@@ -1053,7 +1049,7 @@ describe("FormReact.build", () => {
         onSubmit,
       })
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ items: [{ name: "AB" }] }}>
@@ -1163,7 +1159,7 @@ describe("FormReact.build", () => {
         onSubmit,
       })
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ name: "" }}>
@@ -1208,7 +1204,7 @@ describe("FormReact.build", () => {
         )
       }
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ name: "test" }}>
@@ -1289,7 +1285,7 @@ describe("FormReact.build", () => {
         return null
       }
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ name: "test" }}>
@@ -1337,7 +1333,7 @@ describe("FormReact.build", () => {
         return null
       }
 
-      const SubmitButton = makeSubmitButton(form.submit)
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
         <form.Initialize defaultValues={{ name: "" }}>

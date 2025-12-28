@@ -29,6 +29,19 @@ export type FormMode =
   | { readonly onChange: { readonly debounce: Duration.DurationInput; readonly autoSubmit: true } }
 
 /**
+ * Form mode without auto-submit options.
+ * Used when SubmitArgs is not void, since auto-submit cannot provide custom arguments.
+ *
+ * @since 1.0.0
+ * @category Models
+ */
+export type FormModeWithoutAutoSubmit =
+  | "onSubmit"
+  | "onBlur"
+  | "onChange"
+  | { readonly onChange: { readonly debounce: Duration.DurationInput; readonly autoSubmit?: false } }
+
+/**
  * Parsed form mode with resolved values.
  *
  * @since 1.0.0
