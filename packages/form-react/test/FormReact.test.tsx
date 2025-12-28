@@ -3019,4 +3019,745 @@ describe("FormReact.build", () => {
       expect(inputs[1].value).toBe("ab")
     })
   })
+
+  describe("changedSinceSubmit lifecycle", () => {
+    describe("hasChangedSinceSubmit", () => {
+      it("returns false before first submit (even if form is dirty vs initial)", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const form = FormReact.build(formBuilder, {
+          runtime: createRuntime(),
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        const TestComponent = () => {
+          const { hasChangedSinceSubmit, isDirty } = form.useForm()
+          return (
+            <>
+              <span data-testid="isDirty">{String(isDirty)}</span>
+              <span data-testid="hasChangedSinceSubmit">{String(hasChangedSinceSubmit)}</span>
+            </>
+          )
+        }
+
+        render(
+          <form.Form defaultValues={{ name: "initial" }} onSubmit={onSubmit}>
+            <form.name />
+            <TestComponent />
+          </form.Form>,
+        )
+
+        expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("false")
+
+        const input = screen.getByTestId("text-input")
+        await user.clear(input)
+        await user.type(input, "modified")
+
+        // Form is dirty vs initial, but hasChangedSinceSubmit is false because no submit yet
+        expect(screen.getByTestId("isDirty")).toHaveTextContent("true")
+        expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("false")
+      })
+
+      it("returns false immediately after submit", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        const TestComponent = () => {
+          const { hasChangedSinceSubmit, submit } = form.useForm()
+          return (
+            <>
+              <span data-testid="hasChangedSinceSubmit">{String(hasChangedSinceSubmit)}</span>
+              <button onClick={submit} data-testid="submit">Submit</button>
+            </>
+          )
+        }
+
+        render(
+          <form.Form defaultValues={{ name: "test" }} onSubmit={onSubmit}>
+            <form.name />
+            <TestComponent />
+          </form.Form>,
+        )
+
+        expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("false")
+
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("false")
+        })
+      })
+
+      it("returns true after modifying values post-submit", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        const TestComponent = () => {
+          const { hasChangedSinceSubmit, submit } = form.useForm()
+          return (
+            <>
+              <span data-testid="hasChangedSinceSubmit">{String(hasChangedSinceSubmit)}</span>
+              <button onClick={submit} data-testid="submit">Submit</button>
+            </>
+          )
+        }
+
+        render(
+          <form.Form defaultValues={{ name: "initial" }} onSubmit={onSubmit}>
+            <form.name />
+            <TestComponent />
+          </form.Form>,
+        )
+
+        // Submit the form
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("false")
+        })
+
+        // Now modify after submit
+        const input = screen.getByTestId("text-input")
+        await user.clear(input)
+        await user.type(input, "changed")
+
+        expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("true")
+      })
+
+      it("returns false after reverting to last submit", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        const TestComponent = () => {
+          const { hasChangedSinceSubmit, revertToLastSubmit, submit } = form.useForm()
+          return (
+            <>
+              <span data-testid="hasChangedSinceSubmit">{String(hasChangedSinceSubmit)}</span>
+              <button onClick={submit} data-testid="submit">Submit</button>
+              <button onClick={revertToLastSubmit} data-testid="revert">Revert</button>
+            </>
+          )
+        }
+
+        render(
+          <form.Form defaultValues={{ name: "submitted-value" }} onSubmit={onSubmit}>
+            <form.name />
+            <TestComponent />
+          </form.Form>,
+        )
+
+        // Submit the form
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("false")
+        })
+
+        // Modify after submit
+        const input = screen.getByTestId("text-input")
+        await user.clear(input)
+        await user.type(input, "modified")
+
+        expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("true")
+
+        // Revert to last submit
+        await user.click(screen.getByTestId("revert"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("false")
+          expect(screen.getByTestId("text-input")).toHaveValue("submitted-value")
+        })
+      })
+
+      it("is accessible via Subscribe component", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        render(
+          <form.Form defaultValues={{ name: "initial" }} onSubmit={onSubmit}>
+            <form.name />
+            <form.Subscribe>
+              {({ hasChangedSinceSubmit, submit }) => (
+                <>
+                  <span data-testid="hasChangedSinceSubmit">{String(hasChangedSinceSubmit)}</span>
+                  <button onClick={submit} data-testid="submit">Submit</button>
+                </>
+              )}
+            </form.Subscribe>
+          </form.Form>,
+        )
+
+        expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("false")
+
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("false")
+        })
+
+        const input = screen.getByTestId("text-input")
+        await user.clear(input)
+        await user.type(input, "changed")
+
+        expect(screen.getByTestId("hasChangedSinceSubmit")).toHaveTextContent("true")
+      })
+    })
+
+    describe("lastSubmittedValues", () => {
+      it("is Option.None before first submit", () => {
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const form = FormReact.build(formBuilder, {
+          runtime: createRuntime(),
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        let capturedLastSubmittedValues: Option.Option<{ readonly name: string }> | undefined
+
+        render(
+          <form.Form defaultValues={{ name: "test" }} onSubmit={onSubmit}>
+            <form.name />
+            <form.Subscribe>
+              {({ lastSubmittedValues }) => {
+                capturedLastSubmittedValues = lastSubmittedValues
+                return null
+              }}
+            </form.Subscribe>
+          </form.Form>,
+        )
+
+        expect(Option.isNone(capturedLastSubmittedValues!)).toBe(true)
+      })
+
+      it("is Option.Some with correct values after submit", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        let capturedLastSubmittedValues: Option.Option<{ readonly name: string }> | undefined
+
+        render(
+          <form.Form defaultValues={{ name: "submitted-value" }} onSubmit={onSubmit}>
+            <form.name />
+            <form.Subscribe>
+              {({ lastSubmittedValues, submit }) => {
+                capturedLastSubmittedValues = lastSubmittedValues
+                return <button onClick={submit} data-testid="submit">Submit</button>
+              }}
+            </form.Subscribe>
+          </form.Form>,
+        )
+
+        expect(Option.isNone(capturedLastSubmittedValues!)).toBe(true)
+
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(Option.isSome(capturedLastSubmittedValues!)).toBe(true)
+          expect(Option.getOrThrow(capturedLastSubmittedValues!)).toEqual({ name: "submitted-value" })
+        })
+      })
+
+      it("updates to new values on subsequent submits", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        let capturedLastSubmittedValues: Option.Option<{ readonly name: string }> | undefined
+
+        render(
+          <form.Form defaultValues={{ name: "first" }} onSubmit={onSubmit}>
+            <form.name />
+            <form.Subscribe>
+              {({ lastSubmittedValues, submit }) => {
+                capturedLastSubmittedValues = lastSubmittedValues
+                return <button onClick={submit} data-testid="submit">Submit</button>
+              }}
+            </form.Subscribe>
+          </form.Form>,
+        )
+
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(Option.getOrThrow(capturedLastSubmittedValues!)).toEqual({ name: "first" })
+        })
+
+        const input = screen.getByTestId("text-input")
+        await user.clear(input)
+        await user.type(input, "second")
+
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(Option.getOrThrow(capturedLastSubmittedValues!)).toEqual({ name: "second" })
+        })
+      })
+
+      it("clears to Option.None after reset()", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        let capturedLastSubmittedValues: Option.Option<{ readonly name: string }> | undefined
+
+        render(
+          <form.Form defaultValues={{ name: "test" }} onSubmit={onSubmit}>
+            <form.name />
+            <form.Subscribe>
+              {({ lastSubmittedValues, reset, submit }) => {
+                capturedLastSubmittedValues = lastSubmittedValues
+                return (
+                  <>
+                    <button onClick={submit} data-testid="submit">Submit</button>
+                    <button onClick={reset} data-testid="reset">Reset</button>
+                  </>
+                )
+              }}
+            </form.Subscribe>
+          </form.Form>,
+        )
+
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(Option.isSome(capturedLastSubmittedValues!)).toBe(true)
+        })
+
+        await user.click(screen.getByTestId("reset"))
+
+        await waitFor(() => {
+          expect(Option.isNone(capturedLastSubmittedValues!)).toBe(true)
+        })
+      })
+
+      it("is accessible via Subscribe component", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        render(
+          <form.Form defaultValues={{ name: "via-subscribe" }} onSubmit={onSubmit}>
+            <form.name />
+            <form.Subscribe>
+              {({ lastSubmittedValues, submit }) => (
+                <>
+                  <span data-testid="isNone">{String(Option.isNone(lastSubmittedValues))}</span>
+                  <span data-testid="value">
+                    {Option.isSome(lastSubmittedValues) ? lastSubmittedValues.value.name : "none"}
+                  </span>
+                  <button onClick={submit} data-testid="submit">Submit</button>
+                </>
+              )}
+            </form.Subscribe>
+          </form.Form>,
+        )
+
+        expect(screen.getByTestId("isNone")).toHaveTextContent("true")
+        expect(screen.getByTestId("value")).toHaveTextContent("none")
+
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("isNone")).toHaveTextContent("false")
+          expect(screen.getByTestId("value")).toHaveTextContent("via-subscribe")
+        })
+      })
+    })
+
+    describe("revertToLastSubmit()", () => {
+      it("no-op before first submit (values unchanged)", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const form = FormReact.build(formBuilder, {
+          runtime: createRuntime(),
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        const TestComponent = () => {
+          const { revertToLastSubmit } = form.useForm()
+          return <button onClick={revertToLastSubmit} data-testid="revert">Revert</button>
+        }
+
+        render(
+          <form.Form defaultValues={{ name: "initial" }} onSubmit={onSubmit}>
+            <form.name />
+            <TestComponent />
+          </form.Form>,
+        )
+
+        // Modify the value
+        const input = screen.getByTestId("text-input")
+        await user.clear(input)
+        await user.type(input, "modified")
+
+        expect(screen.getByTestId("text-input")).toHaveValue("modified")
+
+        // Try to revert - should be no-op since no submit yet
+        await user.click(screen.getByTestId("revert"))
+
+        // Value should remain modified (no-op)
+        expect(screen.getByTestId("text-input")).toHaveValue("modified")
+      })
+
+      it("restores values to last submitted state", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        const TestComponent = () => {
+          const { revertToLastSubmit, submit } = form.useForm()
+          return (
+            <>
+              <button onClick={submit} data-testid="submit">Submit</button>
+              <button onClick={revertToLastSubmit} data-testid="revert">Revert</button>
+            </>
+          )
+        }
+
+        render(
+          <form.Form defaultValues={{ name: "submitted-value" }} onSubmit={onSubmit}>
+            <form.name />
+            <TestComponent />
+          </form.Form>,
+        )
+
+        // Submit the form
+        await user.click(screen.getByTestId("submit"))
+
+        // Modify after submit
+        const input = screen.getByTestId("text-input")
+        await user.clear(input)
+        await user.type(input, "modified-after-submit")
+
+        expect(screen.getByTestId("text-input")).toHaveValue("modified-after-submit")
+
+        // Revert to last submit
+        await user.click(screen.getByTestId("revert"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("text-input")).toHaveValue("submitted-value")
+        })
+      })
+
+      it("works correctly with multiple submits (reverts to most recent)", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        const TestComponent = () => {
+          const { revertToLastSubmit, submit } = form.useForm()
+          return (
+            <>
+              <button onClick={submit} data-testid="submit">Submit</button>
+              <button onClick={revertToLastSubmit} data-testid="revert">Revert</button>
+            </>
+          )
+        }
+
+        render(
+          <form.Form defaultValues={{ name: "first-submit" }} onSubmit={onSubmit}>
+            <form.name />
+            <TestComponent />
+          </form.Form>,
+        )
+
+        // First submit
+        await user.click(screen.getByTestId("submit"))
+
+        // Modify and do second submit
+        const input = screen.getByTestId("text-input")
+        await user.clear(input)
+        await user.type(input, "second-submit")
+
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("text-input")).toHaveValue("second-submit")
+        })
+
+        // Modify again
+        await user.clear(input)
+        await user.type(input, "post-second-submit-modification")
+
+        expect(screen.getByTestId("text-input")).toHaveValue("post-second-submit-modification")
+
+        // Revert should go back to second submit (most recent), not first
+        await user.click(screen.getByTestId("revert"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("text-input")).toHaveValue("second-submit")
+        })
+      })
+
+      it("is accessible via Subscribe component", async () => {
+        const user = userEvent.setup()
+
+        const NameField = Field.makeField("name", Schema.String)
+        const formBuilder = Form.empty.addField(NameField)
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { name: TextInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        render(
+          <form.Form defaultValues={{ name: "submitted" }} onSubmit={onSubmit}>
+            <form.name />
+            <form.Subscribe>
+              {({ revertToLastSubmit, submit }) => (
+                <>
+                  <button onClick={submit} data-testid="submit">Submit</button>
+                  <button onClick={revertToLastSubmit} data-testid="revert">Revert</button>
+                </>
+              )}
+            </form.Subscribe>
+          </form.Form>,
+        )
+
+        // Submit
+        await user.click(screen.getByTestId("submit"))
+
+        // Modify
+        const input = screen.getByTestId("text-input")
+        await user.clear(input)
+        await user.type(input, "modified")
+
+        expect(screen.getByTestId("text-input")).toHaveValue("modified")
+
+        // Revert via Subscribe
+        await user.click(screen.getByTestId("revert"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("text-input")).toHaveValue("submitted")
+        })
+      })
+
+      it("clears cross-field errors when reverting", async () => {
+        const user = userEvent.setup()
+
+        const PasswordField = Field.makeField("password", Schema.String)
+        const ConfirmField = Field.makeField("confirm", Schema.String)
+        const formBuilder = Form.empty
+          .addField(PasswordField)
+          .addField(ConfirmField)
+          .refine((values) => {
+            if (values.password !== values.confirm) {
+              return { path: ["confirm"], message: "Passwords must match" }
+            }
+          })
+
+        const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
+          onBlur,
+          onChange,
+          value,
+        }) => (
+          <input
+            type="password"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={onBlur}
+            data-testid="password"
+          />
+        )
+
+        const ConfirmInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
+          error,
+          onBlur,
+          onChange,
+          value,
+        }) => (
+          <div>
+            <input
+              type="password"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onBlur={onBlur}
+              data-testid="confirm"
+            />
+            {Option.isSome(error) && <span data-testid="error">{error.value}</span>}
+          </div>
+        )
+
+        const runtime = createRuntime()
+        const form = FormReact.build(formBuilder, {
+          runtime,
+          fields: { confirm: ConfirmInput, password: PasswordInput },
+        })
+
+        const onSubmit = form.submit(() => Effect.void)
+
+        const TestComponent = () => {
+          const { revertToLastSubmit, submit } = form.useForm()
+          return (
+            <>
+              <button onClick={submit} data-testid="submit">Submit</button>
+              <button onClick={revertToLastSubmit} data-testid="revert">Revert</button>
+            </>
+          )
+        }
+
+        render(
+          <form.Form defaultValues={{ confirm: "matching", password: "matching" }} onSubmit={onSubmit}>
+            <form.password />
+            <form.confirm />
+            <TestComponent />
+          </form.Form>,
+        )
+
+        // Submit with matching passwords - this becomes lastSubmittedValues
+        await user.click(screen.getByTestId("submit"))
+
+        // Modify confirm to cause mismatch (without submitting - just editing post-submit)
+        const confirmInput = screen.getByTestId("confirm")
+        await user.clear(confirmInput)
+        await user.type(confirmInput, "different")
+
+        // hasChangedSinceSubmit is now true, but we don't submit
+        // Instead we just revert - the values go back to last submitted state
+        await user.click(screen.getByTestId("revert"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("confirm")).toHaveValue("matching")
+        })
+
+        // Now let's test the error clearing scenario:
+        // After a successful submit with matching values, make a mismatch and submit to get an error
+        await user.clear(confirmInput)
+        await user.type(confirmInput, "mismatch")
+
+        await user.click(screen.getByTestId("submit"))
+
+        await waitFor(() => {
+          expect(screen.getByTestId("error")).toHaveTextContent("Passwords must match")
+        })
+
+        // Now the lastSubmittedValues is the mismatched state (confirm="mismatch")
+        // Modify again to create a new value
+        await user.clear(confirmInput)
+        await user.type(confirmInput, "another-value")
+
+        // Revert should clear the error (since we're reverting to lastSubmittedValues)
+        // and cross-field errors are explicitly cleared by revertToLastSubmit
+        await user.click(screen.getByTestId("revert"))
+
+        await waitFor(() => {
+          // Error should be cleared by revertToLastSubmit
+          expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+          // Value reverts to the last submit ("mismatch")
+          expect(screen.getByTestId("confirm")).toHaveValue("mismatch")
+        })
+      })
+    })
+  })
 })

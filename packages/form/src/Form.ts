@@ -2,6 +2,7 @@
  * @since 1.0.0
  */
 import type * as Effect from "effect/Effect"
+import type * as Option from "effect/Option"
 import * as Predicate from "effect/Predicate"
 import * as Schema from "effect/Schema"
 
@@ -83,6 +84,7 @@ export type TypeId = typeof TypeId
 export interface FormState<TFields extends FieldsRecord> {
   readonly values: EncodedFromFields<TFields>
   readonly initialValues: EncodedFromFields<TFields>
+  readonly lastSubmittedValues: Option.Option<EncodedFromFields<TFields>>
   readonly touched: { readonly [K in keyof TFields]: boolean }
   readonly submitCount: number
   readonly dirtyFields: ReadonlySet<string>

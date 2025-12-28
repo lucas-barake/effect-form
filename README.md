@@ -306,7 +306,55 @@ const EmailInput: React.FC<
 )
 ```
 
-## 11. Subscribing to Form State
+## 11. Track Changes Since Submit
+
+Track whether form values differ from the last submitted state. Useful for "revert to last submit" functionality and "unsaved changes since submit" indicators.
+
+```tsx
+function FormStatus() {
+  const { hasChangedSinceSubmit, lastSubmittedValues, revertToLastSubmit } =
+    LoginForm.useForm()
+
+  return (
+    <>
+      {hasChangedSinceSubmit && (
+        <div>
+          <span>You have unsaved changes since last submit</span>
+          <button onClick={revertToLastSubmit}>Revert to Last Submit</button>
+        </div>
+      )}
+      {Option.isSome(lastSubmittedValues) && (
+        <span>Last submitted: {lastSubmittedValues.value.email}</span>
+      )}
+    </>
+  )
+}
+```
+
+The same properties are available in the Subscribe component:
+
+```tsx
+<LoginForm.Subscribe>
+  {({ hasChangedSinceSubmit, revertToLastSubmit }) => (
+    <button onClick={revertToLastSubmit} disabled={!hasChangedSinceSubmit}>
+      Revert Changes
+    </button>
+  )}
+</LoginForm.Subscribe>
+```
+
+**State Lifecycle:**
+
+| Action | values | lastSubmittedValues | isDirty | hasChangedSinceSubmit |
+| ------ | ------ | ------------------- | ------- | --------------------- |
+| Mount  | A      | None                | false   | false                 |
+| Edit   | B      | None                | true    | false                 |
+| Submit | B      | Some(B)             | true    | false                 |
+| Edit   | C      | Some(B)             | true    | true                  |
+| Revert | B      | Some(B)             | true    | false                 |
+| Reset  | A      | None                | false   | false                 |
+
+## 12. Subscribing to Form State
 
 ```tsx
 import { useAtomSubscribe } from "@effect-atom/atom-react"
@@ -326,7 +374,7 @@ function FormSideEffects() {
 }
 ```
 
-## 12. Error Display Patterns
+## 13. Error Display Patterns
 
 ```tsx
 const TextInput: React.FC<

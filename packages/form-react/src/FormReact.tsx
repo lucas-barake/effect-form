@@ -89,9 +89,12 @@ export interface ArrayFieldOperations<TItem> {
 export interface SubscribeState<TFields extends Field.FieldsRecord> {
   readonly values: Field.EncodedFromFields<TFields>
   readonly isDirty: boolean
+  readonly hasChangedSinceSubmit: boolean
+  readonly lastSubmittedValues: Option.Option<Field.EncodedFromFields<TFields>>
   readonly submitResult: Result.Result<unknown, unknown>
   readonly submit: () => void
   readonly reset: () => void
+  readonly revertToLastSubmit: () => void
   readonly setValue: <S>(field: Form.Field<S>, update: S | ((prev: S) => S)) => void
   readonly setValues: (values: Field.EncodedFromFields<TFields>) => void
 }
@@ -121,7 +124,10 @@ export type BuiltForm<TFields extends Field.FieldsRecord, R> = {
   readonly useForm: () => {
     readonly submit: () => void
     readonly reset: () => void
+    readonly revertToLastSubmit: () => void
     readonly isDirty: boolean
+    readonly hasChangedSinceSubmit: boolean
+    readonly lastSubmittedValues: Option.Option<Field.EncodedFromFields<TFields>>
     readonly submitResult: Result.Result<unknown, unknown>
     readonly values: Field.EncodedFromFields<TFields>
     readonly setValue: <S>(field: Form.Field<S>, update: S | ((prev: S) => S)) => void
@@ -540,7 +546,9 @@ export const build = <TFields extends Field.FieldsRecord, R, ER = never>(
     fieldRefs,
     getOrCreateFieldAtoms,
     getOrCreateValidationAtom,
+    hasChangedSinceSubmitAtom,
     isDirtyAtom,
+    lastSubmittedValuesAtom,
     onSubmitAtom,
     operations,
     resetValidationAtoms,
@@ -615,6 +623,8 @@ export const build = <TFields extends Field.FieldsRecord, R, ER = never>(
     const setCrossFieldErrors = useAtomSet(crossFieldErrorsAtom)
     const [decodeAndSubmitResult, callDecodeAndSubmit] = useAtom(decodeAndSubmit)
     const isDirty = useAtomValue(isDirtyAtom)
+    const hasChangedSinceSubmit = useAtomValue(hasChangedSinceSubmitAtom)
+    const lastSubmittedValues = useAtomValue(lastSubmittedValuesAtom)
 
     React.useEffect(() => {
       if (decodeAndSubmitResult._tag === "Failure") {
@@ -663,6 +673,14 @@ export const build = <TFields extends Field.FieldsRecord, R, ER = never>(
       callDecodeAndSubmit(Atom.Reset)
     }, [setFormState, setCrossFieldErrors, callDecodeAndSubmit, registry])
 
+    const revertToLastSubmit = React.useCallback(() => {
+      setFormState((prev) => {
+        if (Option.isNone(prev)) return prev
+        return Option.some(operations.revertToLastSubmit(prev.value))
+      })
+      setCrossFieldErrors(new Map())
+    }, [setFormState, setCrossFieldErrors])
+
     const setValue = React.useCallback(<S,>(
       field: Form.Field<S>,
       update: S | ((prev: S) => S),
@@ -703,15 +721,52 @@ export const build = <TFields extends Field.FieldsRecord, R, ER = never>(
       setCrossFieldErrors(new Map())
     }, [setFormState, setCrossFieldErrors])
 
-    return { submit, reset, isDirty, submitResult: decodeAndSubmitResult, values: formValues, setValue, setValues }
+    return {
+      submit,
+      reset,
+      revertToLastSubmit,
+      isDirty,
+      hasChangedSinceSubmit,
+      lastSubmittedValues,
+      submitResult: decodeAndSubmitResult,
+      values: formValues,
+      setValue,
+      setValues,
+    }
   }
 
   const SubscribeComponent: React.FC<{
     readonly children: (state: SubscribeState<TFields>) => React.ReactNode
   }> = ({ children }) => {
-    const { isDirty, reset, setValue, setValues, submit, submitResult, values } = useFormHook()
+    const {
+      hasChangedSinceSubmit,
+      isDirty,
+      lastSubmittedValues,
+      reset,
+      revertToLastSubmit,
+      setValue,
+      setValues,
+      submit,
+      submitResult,
+      values,
+    } = useFormHook()
 
-    return <>{children({ values, isDirty, submitResult, submit, reset, setValue, setValues })}</>
+    return (
+      <>
+        {children({
+          hasChangedSinceSubmit,
+          isDirty,
+          lastSubmittedValues,
+          reset,
+          revertToLastSubmit,
+          setValue,
+          setValues,
+          submit,
+          submitResult,
+          values,
+        })}
+      </>
+    )
   }
 
   const submitHelper = <A, E>(

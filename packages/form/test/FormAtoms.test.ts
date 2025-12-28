@@ -48,6 +48,7 @@ describe("FormAtoms", () => {
 
       expect(state.values).toEqual(defaultValues)
       expect(state.initialValues).toEqual(defaultValues)
+      expect(Option.isNone(state.lastSubmittedValues)).toBe(true)
       expect(state.touched).toEqual({ name: false, email: false })
       expect(state.submitCount).toBe(0)
       expect(state.dirtyFields.size).toBe(0)
@@ -71,28 +72,25 @@ describe("FormAtoms", () => {
   })
 
   describe("operations.createResetState", () => {
-    it("resets to initial values", () => {
+    it("resets all state including lastSubmittedValues", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form })
 
-      const initialState = atoms.operations.createInitialState({
+      let state = atoms.operations.createInitialState({
         name: "John",
         email: "john@test.com",
       })
 
-      const modifiedState = {
-        ...initialState,
-        values: { name: "Jane", email: "jane@test.com" },
-        touched: { name: true, email: true },
-        submitCount: 3,
-        dirtyFields: new Set(["name", "email"]),
-      }
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      state = atoms.operations.createSubmitState(state)
+      expect(Option.isSome(state.lastSubmittedValues)).toBe(true)
 
-      const resetState = atoms.operations.createResetState(modifiedState)
+      const resetState = atoms.operations.createResetState(state)
 
-      expect(resetState.values).toEqual(initialState.initialValues)
-      expect(resetState.initialValues).toEqual(initialState.initialValues)
+      expect(resetState.values).toEqual({ name: "John", email: "john@test.com" })
+      expect(resetState.initialValues).toEqual({ name: "John", email: "john@test.com" })
+      expect(Option.isNone(resetState.lastSubmittedValues)).toBe(true)
       expect(resetState.touched).toEqual({ name: false, email: false })
       expect(resetState.submitCount).toBe(0)
       expect(resetState.dirtyFields.size).toBe(0)
@@ -115,6 +113,27 @@ describe("FormAtoms", () => {
       expect(submitState.touched).toEqual({ name: true, email: true })
       expect(submitState.submitCount).toBe(1)
       expect(submitState.values).toEqual(initialState.values)
+    })
+
+    it("captures current values as lastSubmittedValues", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+
+      const modifiedState = atoms.operations.setFieldValue(initialState, "name", "Jane")
+
+      const submitState = atoms.operations.createSubmitState(modifiedState)
+
+      expect(Option.isSome(submitState.lastSubmittedValues)).toBe(true)
+      expect(Option.getOrThrow(submitState.lastSubmittedValues)).toEqual({
+        name: "Jane",
+        email: "john@test.com",
+      })
     })
 
     it("increments submit count on subsequent submits", () => {
@@ -375,10 +394,8 @@ describe("FormAtoms", () => {
         items: [{ name: "A" }],
       })
 
-      // swapArrayItems has bounds checking - returns unchanged state if indices are invalid
       const newState = atoms.operations.swapArrayItems(initialState, "items", 0, 999)
 
-      // State should be unchanged
       expect(newState).toBe(initialState)
       expect(newState.values.items).toHaveLength(1)
       expect(newState.values.items[0]).toEqual({ name: "A" })
@@ -431,13 +448,91 @@ describe("FormAtoms", () => {
         items: [{ name: "A" }],
       })
 
-      // moveArrayItem has bounds checking - returns unchanged state if indices are invalid
       const newState = atoms.operations.moveArrayItem(initialState, "items", 999, 0)
 
-      // State should be unchanged
       expect(newState).toBe(initialState)
       expect(newState.values.items).toHaveLength(1)
       expect(newState.values.items[0]).toEqual({ name: "A" })
+    })
+  })
+
+  describe("operations.revertToLastSubmit", () => {
+    it("returns same state when lastSubmittedValues is None", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+
+      const modifiedState = atoms.operations.setFieldValue(initialState, "name", "Jane")
+
+      const revertedState = atoms.operations.revertToLastSubmit(modifiedState)
+
+      expect(revertedState).toBe(modifiedState)
+    })
+
+    it("returns same state when values already match lastSubmittedValues", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+
+      let state = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+
+      state = atoms.operations.createSubmitState(state)
+
+      const revertedState = atoms.operations.revertToLastSubmit(state)
+
+      expect(revertedState).toBe(state)
+    })
+
+    it("restores values to lastSubmittedValues and recalculates dirtyFields", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+
+      let state = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      state = atoms.operations.createSubmitState(state)
+
+      state = atoms.operations.setFieldValue(state, "name", "Bob")
+      expect(state.values.name).toBe("Bob")
+      expect(state.dirtyFields.has("name")).toBe(true)
+
+      const revertedState = atoms.operations.revertToLastSubmit(state)
+
+      expect(revertedState.values.name).toBe("Jane")
+      expect(revertedState.dirtyFields.has("name")).toBe(true)
+    })
+
+    it("clears dirtyFields when reverting makes values match initial", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+
+      let state = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+
+      state = atoms.operations.createSubmitState(state)
+
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      expect(state.dirtyFields.has("name")).toBe(true)
+
+      const revertedState = atoms.operations.revertToLastSubmit(state)
+
+      expect(revertedState.values.name).toBe("John")
+      expect(revertedState.dirtyFields.has("name")).toBe(false)
     })
   })
 
@@ -543,6 +638,189 @@ describe("FormAtoms", () => {
       const submitState = atoms.operations.createSubmitState(initialState)
       registry.set(atoms.stateAtom, Option.some(submitState))
       expect(registry.get(atoms.submitCountAtom)).toBe(1)
+    })
+
+    it("lastSubmittedValuesAtom reflects lastSubmittedValues", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "test@test.com",
+      })
+
+      registry.set(atoms.stateAtom, Option.some(initialState))
+      expect(Option.isNone(registry.get(atoms.lastSubmittedValuesAtom))).toBe(true)
+
+      const submitState = atoms.operations.createSubmitState(initialState)
+      registry.set(atoms.stateAtom, Option.some(submitState))
+      expect(Option.isSome(registry.get(atoms.lastSubmittedValuesAtom))).toBe(true)
+      expect(Option.getOrThrow(registry.get(atoms.lastSubmittedValuesAtom))).toEqual({
+        name: "John",
+        email: "test@test.com",
+      })
+    })
+
+    it("hasChangedSinceSubmitAtom returns false before first submit", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "test@test.com",
+      })
+
+      const modifiedState = atoms.operations.setFieldValue(initialState, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(modifiedState))
+      expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(false)
+    })
+
+    it("hasChangedSinceSubmitAtom returns false right after submit", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({
+        name: "John",
+        email: "test@test.com",
+      })
+
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+      expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(false)
+    })
+
+    it("hasChangedSinceSubmitAtom returns true after changes post-submit", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({
+        name: "John",
+        email: "test@test.com",
+      })
+
+      state = atoms.operations.createSubmitState(state)
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state))
+      expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(true)
+    })
+
+    it("changedSinceSubmitFieldsAtom returns correct fields after changes post-submit", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({
+        name: "John",
+        email: "test@test.com",
+      })
+
+      state = atoms.operations.createSubmitState(state)
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const changedFields = registry.get(atoms.changedSinceSubmitFieldsAtom)
+      expect(changedFields.has("name")).toBe(true)
+      expect(changedFields.has("email")).toBe(false)
+    })
+
+    it("changedSinceSubmitFieldsAtom tracks array item changes after submit", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeArrayTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({
+        title: "My List",
+        items: [{ name: "Item A" }, { name: "Item B" }],
+      })
+
+      state = atoms.operations.createSubmitState(state)
+      state = atoms.operations.setFieldValue(state, "items[1].name", "Item C")
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const changedFields = registry.get(atoms.changedSinceSubmitFieldsAtom)
+      expect(changedFields.has("items[1].name")).toBe(true)
+      expect(changedFields.has("items[0].name")).toBe(false)
+      expect(changedFields.has("title")).toBe(false)
+    })
+
+    it("hasChangedSinceSubmitAtom detects array append after submit", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const TitleField = Field.makeField("title", Schema.String)
+      const ItemSchema = Schema.Struct({ name: Schema.String })
+      const ItemsField = Field.makeArrayField("items", ItemSchema)
+      const form = Form.empty.addField(TitleField).addField(ItemsField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({
+        title: "My List",
+        items: [{ name: "Item A" }],
+      })
+
+      state = atoms.operations.createSubmitState(state)
+      state = atoms.operations.appendArrayItem(state, "items", ItemSchema, { name: "Item B" })
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(true)
+    })
+
+    it("revertToLastSubmit restores to most recent submit (not earlier ones)", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+
+      let state = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+
+      // First submit with "Jane"
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      state = atoms.operations.createSubmitState(state)
+      expect(Option.getOrThrow(state.lastSubmittedValues).name).toBe("Jane")
+
+      // Second submit with "Bob"
+      state = atoms.operations.setFieldValue(state, "name", "Bob")
+      state = atoms.operations.createSubmitState(state)
+      expect(Option.getOrThrow(state.lastSubmittedValues).name).toBe("Bob")
+
+      // Modify to "Charlie"
+      state = atoms.operations.setFieldValue(state, "name", "Charlie")
+      expect(state.values.name).toBe("Charlie")
+
+      // Revert should go to "Bob" (most recent submit), not "Jane"
+      const revertedState = atoms.operations.revertToLastSubmit(state)
+      expect(revertedState.values.name).toBe("Bob")
+    })
+
+    it("changedSinceSubmitFieldsAtom handles nested object changes", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeArrayTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({
+        title: "My List",
+        items: [{ name: "Item A" }],
+      })
+
+      state = atoms.operations.createSubmitState(state)
+
+      state = atoms.operations.setFieldValue(state, "items[0].name", "Updated")
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(true)
+      expect(registry.get(atoms.changedSinceSubmitFieldsAtom).has("items[0].name")).toBe(true)
     })
   })
 })
