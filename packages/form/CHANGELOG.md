@@ -1,5 +1,25 @@
 # @lucas-barake/effect-form
 
+## 0.10.0
+
+### Minor Changes
+
+- [#25](https://github.com/lucas-barake/effect-form/pull/25) [`40d8018`](https://github.com/lucas-barake/effect-form/commit/40d80183313333c7615993ff5d84bf995c218b89) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Add inline `addField` shorthand and per-field subscriptions via `getFieldAtom`
+
+  **New Features:**
+  1. **Inline `addField` syntax** - Define fields without `Field.makeField` for one-off fields:
+     ```ts
+     FormBuilder.empty
+       .addField("email", Schema.String)
+       .addField("age", Schema.Number)
+     ```
+     Use `Field.makeField` when you need to share fields across multiple forms.
+  2. **Per-field subscriptions** - Subscribe to individual field values without re-rendering when other fields change:
+     ```ts
+     const emailAtom = form.getFieldAtom(form.fields.email)
+     const email = useAtomValue(emailAtom) // Only re-renders when email changes
+     ```
+
 ## 0.9.1
 
 ### Patch Changes
