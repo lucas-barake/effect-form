@@ -1,5 +1,20 @@
 # @lucas-barake/effect-form-react
 
+## 0.7.0
+
+### Minor Changes
+
+- [#12](https://github.com/lucas-barake/effect-form/pull/12) [`09d48cc`](https://github.com/lucas-barake/effect-form/commit/09d48cc36728324f0a63baebb12d00a5c7f1a579) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Store both encoded and decoded values in lastSubmittedValues
+  - Changed `lastSubmittedValues` to store `{ encoded, decoded }` instead of just encoded values
+  - Only set `lastSubmittedValues` on successful validation (not on validation failure)
+  - Added performance optimizations to dirty field tracking with early returns for reference equality
+  - Simplified auto-submit initialization by removing unnecessary microtask
+
+### Patch Changes
+
+- Updated dependencies [[`09d48cc`](https://github.com/lucas-barake/effect-form/commit/09d48cc36728324f0a63baebb12d00a5c7f1a579)]:
+  - @lucas-barake/effect-form@0.6.0
+
 ## 0.6.0
 
 ### Minor Changes
