@@ -1,5 +1,5 @@
 import * as Atom from "@effect-atom/atom/Atom"
-import { Field, Form, FormReact } from "@lucas-barake/effect-form-react"
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import { render, screen, waitFor } from "@testing-library/react"
 import { userEvent } from "@testing-library/user-event"
 import * as Effect from "effect/Effect"
@@ -50,7 +50,7 @@ describe("Debounce and Auto-Submit", () => {
     it("should debounce validation updates in onChange mode", async () => {
       const user = userEvent.setup()
 
-      const formBuilder = Form.empty.addField(NameFieldMinLength)
+      const formBuilder = FormBuilder.empty.addField(NameFieldMinLength)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -91,7 +91,7 @@ describe("Debounce and Auto-Submit", () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
 
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -127,7 +127,7 @@ describe("Debounce and Auto-Submit", () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
 
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(NameField)
         .addField(AgeField)
 
@@ -171,7 +171,7 @@ describe("Debounce and Auto-Submit", () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
 
-      const formBuilder = Form.empty.addField(NameFieldMinLength)
+      const formBuilder = FormBuilder.empty.addField(NameFieldMinLength)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -212,7 +212,7 @@ describe("Debounce and Auto-Submit", () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
 
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -245,7 +245,7 @@ describe("Debounce and Auto-Submit", () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
 
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -282,7 +282,7 @@ describe("Debounce and Auto-Submit", () => {
     it("should validate immediately in onChange mode without debounce config", async () => {
       const user = userEvent.setup()
 
-      const formBuilder = Form.empty.addField(NameFieldMinLength)
+      const formBuilder = FormBuilder.empty.addField(NameFieldMinLength)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),

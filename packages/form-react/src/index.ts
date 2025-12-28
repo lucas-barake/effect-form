@@ -3,7 +3,7 @@
  *
  * @since 1.0.0
  */
-export { Field, Form } from "@lucas-barake/effect-form"
+export { Field, FormBuilder } from "@lucas-barake/effect-form"
 
 /**
  * React bindings for @lucas-barake/effect-form.

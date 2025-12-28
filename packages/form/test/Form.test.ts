@@ -1,4 +1,4 @@
-import { Field, Form } from "@lucas-barake/effect-form"
+import { Field, FormBuilder } from "@lucas-barake/effect-form"
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
@@ -6,15 +6,15 @@ import { describe, expect, it } from "vitest"
 describe("Form", () => {
   describe("FormBuilder", () => {
     it("empty creates an empty FormBuilder", () => {
-      expect(Form.isFormBuilder(Form.empty)).toBe(true)
-      expect(Form.empty.fields).toEqual({})
+      expect(FormBuilder.isFormBuilder(FormBuilder.empty)).toBe(true)
+      expect(FormBuilder.empty.fields).toEqual({})
     })
 
     it("addField adds a field to the builder", () => {
       const EmailField = Field.makeField("email", Schema.String)
-      const builder = Form.empty.addField(EmailField)
+      const builder = FormBuilder.empty.addField(EmailField)
 
-      expect(Form.isFormBuilder(builder)).toBe(true)
+      expect(FormBuilder.isFormBuilder(builder)).toBe(true)
       expect(builder.fields).toHaveProperty("email")
       expect(builder.fields.email._tag).toBe("field")
     })
@@ -28,7 +28,7 @@ describe("Form", () => {
           city: Schema.String,
         }),
       )
-      const builder = Form.empty
+      const builder = FormBuilder.empty
         .addField(NameField)
         .addField(AddressesField)
 
@@ -39,12 +39,12 @@ describe("Form", () => {
     it("merge combines two form builders", () => {
       const StreetField = Field.makeField("street", Schema.String)
       const CityField = Field.makeField("city", Schema.String)
-      const addressFields = Form.empty
+      const addressFields = FormBuilder.empty
         .addField(StreetField)
         .addField(CityField)
 
       const NameField = Field.makeField("name", Schema.String)
-      const builder = Form.empty
+      const builder = FormBuilder.empty
         .addField(NameField)
         .merge(addressFields)
 
@@ -57,11 +57,11 @@ describe("Form", () => {
       const EmailField = Field.makeField("email", Schema.String)
       const AgeField = Field.makeField("age", Schema.Number)
 
-      const builder = Form.empty
+      const builder = FormBuilder.empty
         .addField(EmailField)
         .addField(AgeField)
 
-      const schema = Form.buildSchema(builder)
+      const schema = FormBuilder.buildSchema(builder)
       const result = Schema.decodeUnknownSync(schema)({ email: "test@example.com", age: 25 })
 
       expect(result).toEqual({ email: "test@example.com", age: 25 })
@@ -71,11 +71,11 @@ describe("Form", () => {
       const TitleField = Field.makeField("title", Schema.String)
       const ItemsField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
-      const builder = Form.empty
+      const builder = FormBuilder.empty
         .addField(TitleField)
         .addField(ItemsField)
 
-      const schema = Form.buildSchema(builder)
+      const schema = FormBuilder.buildSchema(builder)
       const result = Schema.decodeUnknownSync(schema)({
         title: "My List",
         items: [{ name: "Item 1" }, { name: "Item 2" }],
@@ -91,9 +91,9 @@ describe("Form", () => {
       const Email = Schema.String.pipe(Schema.pattern(/@/))
       const EmailField = Field.makeField("email", Email)
 
-      const builder = Form.empty.addField(EmailField)
+      const builder = FormBuilder.empty.addField(EmailField)
 
-      const schema = Form.buildSchema(builder)
+      const schema = FormBuilder.buildSchema(builder)
 
       expect(() => Schema.decodeUnknownSync(schema)({ email: "invalid" })).toThrow()
       expect(Schema.decodeUnknownSync(schema)({ email: "valid@example.com" })).toEqual({
@@ -105,7 +105,7 @@ describe("Form", () => {
       const PasswordField = Field.makeField("password", Schema.String)
       const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String)
 
-      const builder = Form.empty
+      const builder = FormBuilder.empty
         .addField(PasswordField)
         .addField(ConfirmPasswordField)
         .refine((values) => {
@@ -114,7 +114,7 @@ describe("Form", () => {
           }
         })
 
-      const schema = Form.buildSchema(builder)
+      const schema = FormBuilder.buildSchema(builder)
 
       expect(() => Schema.decodeUnknownSync(schema)({ password: "secret", confirmPassword: "different" })).toThrow()
 
@@ -126,7 +126,7 @@ describe("Form", () => {
     it("applies async refinements with refineEffect", async () => {
       const UsernameField = Field.makeField("username", Schema.String)
 
-      const builder = Form.empty
+      const builder = FormBuilder.empty
         .addField(UsernameField)
         .refineEffect((values) =>
           Effect.gen(function*() {
@@ -137,7 +137,7 @@ describe("Form", () => {
           })
         )
 
-      const schema = Form.buildSchema(builder)
+      const schema = FormBuilder.buildSchema(builder)
 
       await expect(
         Effect.runPromise(Schema.decodeUnknown(schema)({ username: "taken" })),
@@ -153,7 +153,7 @@ describe("Form", () => {
       const AField = Field.makeField("a", Schema.String)
       const BField = Field.makeField("b", Schema.String)
 
-      const builder = Form.empty
+      const builder = FormBuilder.empty
         .addField(AField)
         .addField(BField)
         .refine((values) => {
@@ -167,7 +167,7 @@ describe("Form", () => {
           }
         })
 
-      const schema = Form.buildSchema(builder)
+      const schema = FormBuilder.buildSchema(builder)
 
       expect(() => Schema.decodeUnknownSync(schema)({ a: "error", b: "ok" })).toThrow(/First refinement failed/)
 
@@ -179,8 +179,8 @@ describe("Form", () => {
 
   describe("type guards", () => {
     it("isFormBuilder correctly identifies FormBuilder", () => {
-      expect(Form.isFormBuilder(Form.empty)).toBe(true)
-      expect(Form.isFormBuilder({})).toBe(false)
+      expect(FormBuilder.isFormBuilder(FormBuilder.empty)).toBe(true)
+      expect(FormBuilder.isFormBuilder({})).toBe(false)
     })
   })
 })

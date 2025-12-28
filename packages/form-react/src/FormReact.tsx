@@ -5,7 +5,7 @@ import { RegistryContext, useAtom, useAtomSet, useAtomSubscribe, useAtomValue } 
 import * as Atom from "@effect-atom/atom/Atom"
 import type * as Result from "@effect-atom/atom/Result"
 import { Field, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
-import type * as Form from "@lucas-barake/effect-form/Form"
+import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
 import { getNestedValue, isPathOrParentDirty, schemaPathToFieldPath } from "@lucas-barake/effect-form/internal/path"
 import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
@@ -95,7 +95,7 @@ export interface SubscribeState<TFields extends Field.FieldsRecord> {
   readonly submit: () => void
   readonly reset: () => void
   readonly revertToLastSubmit: () => void
-  readonly setValue: <S>(field: Form.Field<S>, update: S | ((prev: S) => S)) => void
+  readonly setValue: <S>(field: FormBuilder.FieldRef<S>, update: S | ((prev: S) => S)) => void
   readonly setValues: (values: Field.EncodedFromFields<TFields>) => void
 }
 
@@ -107,7 +107,10 @@ export interface SubscribeState<TFields extends Field.FieldsRecord> {
  * @category Models
  */
 export type BuiltForm<TFields extends Field.FieldsRecord, R> = {
-  readonly atom: Atom.Writable<Option.Option<Form.FormState<TFields>>, Option.Option<Form.FormState<TFields>>>
+  readonly atom: Atom.Writable<
+    Option.Option<FormBuilder.FormState<TFields>>,
+    Option.Option<FormBuilder.FormState<TFields>>
+  >
   readonly schema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
   readonly fields: FieldRefs<TFields>
 
@@ -130,7 +133,7 @@ export type BuiltForm<TFields extends Field.FieldsRecord, R> = {
     readonly lastSubmittedValues: Option.Option<Field.EncodedFromFields<TFields>>
     readonly submitResult: Result.Result<unknown, unknown>
     readonly values: Field.EncodedFromFields<TFields>
-    readonly setValue: <S>(field: Form.Field<S>, update: S | ((prev: S) => S)) => void
+    readonly setValue: <S>(field: FormBuilder.FieldRef<S>, update: S | ((prev: S) => S)) => void
     readonly setValues: (values: Field.EncodedFromFields<TFields>) => void
   }
 
@@ -292,7 +295,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any>(
 const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
   fieldKey: string,
   def: Field.ArrayFieldDef<string, S>,
-  stateAtom: Atom.Writable<Option.Option<Form.FormState<any>>, Option.Option<Form.FormState<any>>>,
+  stateAtom: Atom.Writable<Option.Option<FormBuilder.FormState<any>>, Option.Option<FormBuilder.FormState<any>>>,
   crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>,
   submitCountAtom: Atom.Atom<number>,
   dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>,
@@ -427,7 +430,10 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
 
 const makeFieldComponents = <TFields extends Field.FieldsRecord>(
   fields: TFields,
-  stateAtom: Atom.Writable<Option.Option<Form.FormState<TFields>>, Option.Option<Form.FormState<TFields>>>,
+  stateAtom: Atom.Writable<
+    Option.Option<FormBuilder.FormState<TFields>>,
+    Option.Option<FormBuilder.FormState<TFields>>
+  >,
   crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>,
   submitCountAtom: Atom.Atom<number>,
   dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>,
@@ -491,7 +497,7 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord>(
  *
  * const runtime = Atom.runtime(Layer.empty)
  *
- * const loginForm = Form.empty
+ * const loginForm = FormBuilder.empty
  *   .addField("email", Schema.String)
  *   .addField("password", Schema.String)
  *
@@ -526,7 +532,7 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord>(
  * @category Constructors
  */
 export const build = <TFields extends Field.FieldsRecord, R, ER = never>(
-  self: Form.FormBuilder<TFields, R>,
+  self: FormBuilder.FormBuilder<TFields, R>,
   options: {
     readonly runtime: Atom.AtomRuntime<R, ER>
     readonly fields: FieldComponentMap<TFields>
@@ -686,7 +692,7 @@ export const build = <TFields extends Field.FieldsRecord, R, ER = never>(
     }, [setFormState, setCrossFieldErrors])
 
     const setValue = React.useCallback(<S,>(
-      field: Form.Field<S>,
+      field: FormBuilder.FieldRef<S>,
       update: S | ((prev: S) => S),
     ) => {
       const path = field.key

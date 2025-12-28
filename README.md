@@ -11,8 +11,7 @@ pnpm add @lucas-barake/effect-form-react
 ## 1. Basic Form Setup
 
 ```tsx
-import { Field, Form } from "@lucas-barake/effect-form"
-import { FormReact } from "@lucas-barake/effect-form-react"
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Atom from "@effect-atom/atom/Atom"
 import * as Schema from "effect/Schema"
 import * as Effect from "effect/Effect"
@@ -30,7 +29,7 @@ const PasswordField = Field.makeField(
   Schema.String.pipe(Schema.minLength(8)),
 )
 
-const loginFormBuilder = Form.empty.addField(EmailField).addField(PasswordField)
+const loginFormBuilder = FormBuilder.empty.addField(EmailField).addField(PasswordField)
 
 const LoginForm = FormReact.build(loginFormBuilder, {
   runtime,
@@ -92,7 +91,7 @@ const ItemsArrayField = Field.makeArrayField(
   Schema.Struct({ name: Schema.String }),
 )
 
-const orderFormBuilder = Form.empty.addField(TitleField).addField(ItemsArrayField)
+const orderFormBuilder = FormBuilder.empty.addField(TitleField).addField(ItemsArrayField)
 
 const OrderForm = FormReact.build(orderFormBuilder, {
   runtime,
@@ -152,7 +151,7 @@ FormReact.build(form, { runtime, fields, mode: "onChange" })
 const PasswordField = Field.makeField("password", Schema.String)
 const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String)
 
-const signupForm = Form.empty
+const signupForm = FormBuilder.empty
   .addField(PasswordField)
   .addField(ConfirmPasswordField)
   .refine((values) => {
@@ -167,7 +166,7 @@ const signupForm = Form.empty
 ```tsx
 const UsernameField = Field.makeField("username", Schema.String)
 
-const usernameForm = Form.empty
+const usernameForm = FormBuilder.empty
   .addField(UsernameField)
   .refineEffect((values) =>
     Effect.gen(function* () {
@@ -202,7 +201,7 @@ const runtime = Atom.runtime(UsernameValidatorLive)
 
 const UsernameField = Field.makeField("username", Schema.String)
 
-const signupFormBuilder = Form.empty
+const signupFormBuilder = FormBuilder.empty
   .addField(UsernameField)
   .refineEffect((values) =>
     Effect.gen(function* () {

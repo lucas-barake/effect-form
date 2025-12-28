@@ -1,7 +1,7 @@
 import { useAtomValue } from "@effect-atom/atom-react"
 import * as Atom from "@effect-atom/atom/Atom"
 import * as Result from "@effect-atom/atom/Result"
-import { Field, Form, FormReact } from "@lucas-barake/effect-form-react"
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import { render, screen, waitFor } from "@testing-library/react"
 import { userEvent } from "@testing-library/user-event"
 import * as Context from "effect/Context"
@@ -36,7 +36,7 @@ describe("FormReact.build", () => {
   describe("Form Component", () => {
     it("initializes with default values", () => {
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -60,7 +60,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -86,7 +86,7 @@ describe("FormReact.build", () => {
 
       const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
       const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -115,7 +115,7 @@ describe("FormReact.build", () => {
   describe("useForm hook", () => {
     it("returns isDirty = false when values match initial", () => {
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -146,7 +146,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -181,7 +181,7 @@ describe("FormReact.build", () => {
       const submitHandler = vi.fn()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -217,7 +217,7 @@ describe("FormReact.build", () => {
 
       const FirstNameField = Field.makeField("firstName", Schema.String)
       const LastNameField = Field.makeField("lastName", Schema.String)
-      const formBuilder = Form.empty.addField(FirstNameField).addField(LastNameField)
+      const formBuilder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField)
 
       const NamedInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String> & { name: string }> = ({
         name,
@@ -273,7 +273,7 @@ describe("FormReact.build", () => {
 
       const TitleField = Field.makeField("title", Schema.String)
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = Form.empty.addField(TitleField).addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(TitleField).addField(ItemsArrayField)
 
       const TitleInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
         onBlur,
@@ -350,7 +350,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
         onBlur,
@@ -417,7 +417,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
         onBlur,
@@ -481,7 +481,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
         onBlur,
@@ -541,7 +541,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
         onBlur,
@@ -611,7 +611,7 @@ describe("FormReact.build", () => {
       )
 
       const EmailField = Field.makeField("email", AsyncEmail)
-      const formBuilder = Form.empty.addField(EmailField)
+      const formBuilder = FormBuilder.empty.addField(EmailField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -666,7 +666,7 @@ describe("FormReact.build", () => {
       )
 
       const AsyncFieldDef = Field.makeField("asyncField", AsyncField)
-      const formBuilder = Form.empty.addField(AsyncFieldDef)
+      const formBuilder = FormBuilder.empty.addField(AsyncFieldDef)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -700,7 +700,7 @@ describe("FormReact.build", () => {
   })
 
   describe("cross-field validation", () => {
-    it("Form.refine validates across fields and routes error to specific field", async () => {
+    it("FormBuilder.refine validates across fields and routes error to specific field", async () => {
       const user = userEvent.setup()
 
       const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
@@ -741,7 +741,7 @@ describe("FormReact.build", () => {
 
       const PasswordField = Field.makeField("password", Schema.String)
       const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String)
-      const formBuilder = Form.empty.addField(PasswordField).addField(ConfirmPasswordField)
+      const formBuilder = FormBuilder.empty.addField(PasswordField).addField(ConfirmPasswordField)
         .refine((values) => {
           if (values.password !== values.confirmPassword) {
             return { path: ["confirmPassword"], message: "Passwords must match" }
@@ -803,7 +803,7 @@ describe("FormReact.build", () => {
       )
 
       const UsernameField = Field.makeField("username", Schema.String)
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(UsernameField)
         .refineEffect((values) =>
           Effect.gen(function*() {
@@ -872,7 +872,7 @@ describe("FormReact.build", () => {
       )
 
       const UsernameField = Field.makeField("username", Schema.String)
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(UsernameField)
         .refineEffect((values) =>
           Effect.gen(function*() {
@@ -943,7 +943,7 @@ describe("FormReact.build", () => {
 
       const FieldAField = Field.makeField("fieldA", Schema.String)
       const FieldBField = Field.makeField("fieldB", Schema.String)
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(FieldAField)
         .addField(FieldBField)
         .refine((values) => {
@@ -1032,7 +1032,7 @@ describe("FormReact.build", () => {
 
       const PasswordField = Field.makeField("password", Schema.String)
       const ConfirmField = Field.makeField("confirm", Schema.String)
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(PasswordField)
         .addField(ConfirmField)
         .refine((values) => {
@@ -1102,7 +1102,7 @@ describe("FormReact.build", () => {
       })
 
       const ItemsArrayField = Field.makeArrayField("items", ItemSchema)
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -1151,7 +1151,7 @@ describe("FormReact.build", () => {
 
       const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
       const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1184,7 +1184,7 @@ describe("FormReact.build", () => {
 
       const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
       const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1215,7 +1215,7 @@ describe("FormReact.build", () => {
 
       const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
       const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1252,7 +1252,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -1291,7 +1291,7 @@ describe("FormReact.build", () => {
   describe("Subscribe component", () => {
     it("exposes submitResult with initial state", () => {
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1325,7 +1325,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -1367,7 +1367,7 @@ describe("FormReact.build", () => {
 
       const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
       const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -1403,7 +1403,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1441,7 +1441,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1487,7 +1487,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1534,7 +1534,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1575,7 +1575,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -1620,7 +1620,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -1680,7 +1680,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -1721,7 +1721,7 @@ describe("FormReact.build", () => {
   describe("setValue", () => {
     it("updates a scalar field value using Field identity", async () => {
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1764,7 +1764,7 @@ describe("FormReact.build", () => {
 
     it("updates value using functional callback (prev => next)", async () => {
       const CountField = Field.makeField("count", Schema.NumberFromString)
-      const formBuilder = Form.empty.addField(CountField)
+      const formBuilder = FormBuilder.empty.addField(CountField)
 
       const NumberInput: React.FC<FormReact.FieldComponentProps<typeof Schema.NumberFromString>> = ({
         error,
@@ -1830,7 +1830,7 @@ describe("FormReact.build", () => {
           name: Schema.String,
         }),
       )
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
       const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({
         onBlur,
@@ -1921,7 +1921,7 @@ describe("FormReact.build", () => {
 
     it("marks field as dirty when value differs from initial", async () => {
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -1963,7 +1963,7 @@ describe("FormReact.build", () => {
 
     it("marks field as clean when value returns to initial", async () => {
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -2020,7 +2020,7 @@ describe("FormReact.build", () => {
           city: Schema.String,
         }),
       )
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(NameField)
         .addField(AddressesArrayField)
 
@@ -2152,7 +2152,7 @@ describe("FormReact.build", () => {
       )
 
       const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -2195,7 +2195,7 @@ describe("FormReact.build", () => {
       const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
 
       const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -2243,7 +2243,7 @@ describe("FormReact.build", () => {
     it("clears cross-field errors for the affected path", async () => {
       const PasswordField = Field.makeField("password", Schema.String)
       const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String)
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(PasswordField)
         .addField(ConfirmPasswordField)
         .refine((values) => {
@@ -2342,7 +2342,7 @@ describe("FormReact.build", () => {
     it("replaces entire form state", async () => {
       const FirstNameField = Field.makeField("firstName", Schema.String)
       const LastNameField = Field.makeField("lastName", Schema.String)
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(FirstNameField)
         .addField(LastNameField)
 
@@ -2425,7 +2425,7 @@ describe("FormReact.build", () => {
     it("recalculates dirty state for all fields (global reset)", async () => {
       const FirstNameField = Field.makeField("firstName", Schema.String)
       const LastNameField = Field.makeField("lastName", Schema.String)
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(FirstNameField)
         .addField(LastNameField)
 
@@ -2526,7 +2526,7 @@ describe("FormReact.build", () => {
     it("clears ALL cross-field errors", async () => {
       const PasswordField = Field.makeField("password", Schema.String)
       const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String)
-      const formBuilder = Form.empty
+      const formBuilder = FormBuilder.empty
         .addField(PasswordField)
         .addField(ConfirmPasswordField)
         .refine((values) => {
@@ -2640,7 +2640,7 @@ describe("FormReact.build", () => {
       )
 
       const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.build(formBuilder, {
         runtime: createRuntime(),
@@ -2710,7 +2710,7 @@ describe("FormReact.build", () => {
 
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
         .refine((values) => {
           // Check for duplicate names across items
           const names = values.items.map((item) => item.name)
@@ -2807,7 +2807,7 @@ describe("FormReact.build", () => {
 
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
         .refine((values) => {
           // Validation: first item name must not be "forbidden"
           if (values.items[0]?.name === "forbidden") {
@@ -2886,7 +2886,7 @@ describe("FormReact.build", () => {
 
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
         .refineEffect((values) =>
           Effect.gen(function*() {
             yield* Effect.sleep("20 millis")
@@ -2963,7 +2963,7 @@ describe("FormReact.build", () => {
           name: Schema.String.pipe(Schema.minLength(3, { message: () => "Name must be at least 3 characters" })),
         }),
       )
-      const formBuilder = Form.empty.addField(ItemsArrayField)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -3026,7 +3026,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const form = FormReact.build(formBuilder, {
           runtime: createRuntime(),
@@ -3067,7 +3067,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3107,7 +3107,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3153,7 +3153,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3208,7 +3208,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3251,7 +3251,7 @@ describe("FormReact.build", () => {
     describe("lastSubmittedValues", () => {
       it("is Option.None before first submit", () => {
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const form = FormReact.build(formBuilder, {
           runtime: createRuntime(),
@@ -3281,7 +3281,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3319,7 +3319,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3364,7 +3364,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3410,7 +3410,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3454,7 +3454,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const form = FormReact.build(formBuilder, {
           runtime: createRuntime(),
@@ -3493,7 +3493,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3542,7 +3542,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3601,7 +3601,7 @@ describe("FormReact.build", () => {
         const user = userEvent.setup()
 
         const NameField = Field.makeField("name", Schema.String)
-        const formBuilder = Form.empty.addField(NameField)
+        const formBuilder = FormBuilder.empty.addField(NameField)
 
         const runtime = createRuntime()
         const form = FormReact.build(formBuilder, {
@@ -3648,7 +3648,7 @@ describe("FormReact.build", () => {
 
         const PasswordField = Field.makeField("password", Schema.String)
         const ConfirmField = Field.makeField("confirm", Schema.String)
-        const formBuilder = Form.empty
+        const formBuilder = FormBuilder.empty
           .addField(PasswordField)
           .addField(ConfirmField)
           .refine((values) => {
@@ -3766,7 +3766,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {
@@ -3801,7 +3801,7 @@ describe("FormReact.build", () => {
       const user = userEvent.setup()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = Form.empty.addField(NameField)
+      const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
       const form = FormReact.build(formBuilder, {

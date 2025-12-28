@@ -38,7 +38,7 @@ export type FieldTypeId = typeof FieldTypeId
  * @since 1.0.0
  * @category Models
  */
-export interface Field<S> {
+export interface FieldRef<S> {
   readonly [FieldTypeId]: FieldTypeId
   readonly _S: S
   readonly key: string
@@ -51,7 +51,7 @@ export interface Field<S> {
  * @category Constructors
  * @internal
  */
-export const makeFieldRef = <S>(key: string): Field<S> => ({
+export const makeFieldRef = <S>(key: string): FieldRef<S> => ({
   [FieldTypeId]: FieldTypeId,
   _S: undefined as any,
   key,
@@ -125,8 +125,8 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
    *
    * @example
    * ```ts
-   * const NameField = Form.makeField("name", Schema.String)
-   * const form = Form.empty.addField(NameField)
+   * const NameField = Field.makeField("name", Schema.String)
+   * const form = FormBuilder.empty.addField(NameField)
    * ```
    */
   addField<K extends string, S extends Schema.Schema.Any>(
@@ -139,8 +139,8 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
    *
    * @example
    * ```ts
-   * const ItemsField = Form.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-   * const form = Form.empty.addField(ItemsField)
+   * const ItemsField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
+   * const form = FormBuilder.empty.addField(ItemsField)
    * ```
    */
   addField<K extends string, S extends Schema.Schema.Any>(
@@ -154,11 +154,11 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
    *
    * @example
    * ```ts
-   * const addressFields = Form.empty
+   * const addressFields = FormBuilder.empty
    *   .addField("street", Schema.String)
    *   .addField("city", Schema.String)
    *
-   * const userForm = Form.empty
+   * const userForm = FormBuilder.empty
    *   .addField("name", Schema.String)
    *   .merge(addressFields)
    * ```
@@ -173,7 +173,7 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
    *
    * @example
    * ```ts
-   * const form = Form.empty
+   * const form = FormBuilder.empty
    *   .addField("password", Schema.String)
    *   .addField("confirmPassword", Schema.String)
    *   .refine((values) => {
@@ -193,7 +193,7 @@ export interface FormBuilder<TFields extends FieldsRecord, R> {
    *
    * @example
    * ```ts
-   * const form = Form.empty
+   * const form = FormBuilder.empty
    *   .addField("username", Schema.String)
    *   .refineEffect((values) =>
    *     Effect.gen(function* () {
@@ -260,14 +260,14 @@ const FormBuilderProto = {
  *
  * @example
  * ```ts
- * import * as Form from "@lucas-barake/effect-form"
+ * import { FormBuilder } from "@lucas-barake/effect-form"
  *
- * const builder = Form.empty
+ * const builder = FormBuilder.empty
  *
- * console.log(Form.isFormBuilder(builder))
+ * console.log(FormBuilder.isFormBuilder(builder))
  * // Output: true
  *
- * console.log(Form.isFormBuilder({}))
+ * console.log(FormBuilder.isFormBuilder({}))
  * // Output: false
  * ```
  *
@@ -286,13 +286,13 @@ export const isFormBuilder = (u: unknown): u is FormBuilder<any, any> => Predica
  *
  * @example
  * ```ts
- * import * as Form from "@lucas-barake/effect-form"
+ * import { Field, FormBuilder } from "@lucas-barake/effect-form"
  * import * as Schema from "effect/Schema"
  *
- * const EmailField = Form.makeField("email", Schema.String)
- * const PasswordField = Form.makeField("password", Schema.String)
+ * const EmailField = Field.makeField("email", Schema.String)
+ * const PasswordField = Field.makeField("password", Schema.String)
  *
- * const loginForm = Form.empty
+ * const loginForm = FormBuilder.empty
  *   .addField(EmailField)
  *   .addField(PasswordField)
  * ```

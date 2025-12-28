@@ -5,20 +5,20 @@ import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
 import * as Field from "../src/Field.js"
-import * as Form from "../src/Form.js"
 import * as FormAtoms from "../src/FormAtoms.js"
+import * as FormBuilder from "../src/FormBuilder.js"
 
 const makeTestForm = () => {
   const NameField = Field.makeField("name", Schema.String)
   const EmailField = Field.makeField("email", Schema.String)
-  return Form.empty.addField(NameField).addField(EmailField)
+  return FormBuilder.empty.addField(NameField).addField(EmailField)
 }
 
 const makeArrayTestForm = () => {
   const TitleField = Field.makeField("title", Schema.String)
   const ItemsField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
 
-  return Form.empty.addField(TitleField).addField(ItemsField)
+  return FormBuilder.empty.addField(TitleField).addField(ItemsField)
 }
 
 describe("FormAtoms", () => {
@@ -289,7 +289,7 @@ describe("FormAtoms", () => {
       const TitleField = Field.makeField("title", Schema.String)
       const ItemSchema = Schema.Struct({ name: Schema.String })
       const ItemsField = Field.makeArrayField("items", ItemSchema)
-      const form = Form.empty.addField(TitleField).addField(ItemsField)
+      const form = FormBuilder.empty.addField(TitleField).addField(ItemsField)
 
       const atoms = FormAtoms.make({ runtime, formBuilder: form })
 
@@ -315,7 +315,7 @@ describe("FormAtoms", () => {
       const TitleField = Field.makeField("title", Schema.String)
       const ItemSchema = Schema.Struct({ name: Schema.String })
       const ItemsField = Field.makeArrayField("items", ItemSchema)
-      const form = Form.empty.addField(TitleField).addField(ItemsField)
+      const form = FormBuilder.empty.addField(TitleField).addField(ItemsField)
 
       const atoms = FormAtoms.make({ runtime, formBuilder: form })
 
@@ -758,7 +758,7 @@ describe("FormAtoms", () => {
       const TitleField = Field.makeField("title", Schema.String)
       const ItemSchema = Schema.Struct({ name: Schema.String })
       const ItemsField = Field.makeArrayField("items", ItemSchema)
-      const form = Form.empty.addField(TitleField).addField(ItemsField)
+      const form = FormBuilder.empty.addField(TitleField).addField(ItemsField)
       const atoms = FormAtoms.make({ runtime, formBuilder: form })
       const registry = Registry.make()
 
