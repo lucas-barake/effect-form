@@ -506,6 +506,69 @@ const billingForm = FormBuilder.empty
   .merge(addressFields)
 ```
 
+## 17. Bundled Field + Component
+
+Use `FormReact.makeField` to bundle a field definition with its component in one place:
+
+```tsx
+import { FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
+import * as Schema from "effect/Schema"
+
+// Define field + component together
+const NameInput = FormReact.makeField({
+  key: "name",
+  schema: Schema.String.pipe(Schema.nonEmptyString()),
+  component: ({ field }) => (
+    <input
+      value={field.value}
+      onChange={(e) => field.onChange(e.target.value)}
+      onBlur={field.onBlur}
+    />
+  ),
+})
+
+// Use .field for form builder
+const formBuilder = FormBuilder.empty.addField(NameInput.field)
+
+// Use the bundle directly in build()
+const Form = FormReact.build(formBuilder, {
+  runtime,
+  fields: { name: NameInput },
+  onSubmit: (_, { decoded }) => Effect.log(decoded.name),
+})
+```
+
+This reduces boilerplate when you need reusable field + component combos across multiple forms:
+
+```tsx
+// fields/name-input.tsx
+export const NameInput = FormReact.makeField({
+  key: "name",
+  schema: Schema.String.pipe(Schema.nonEmptyString()),
+  component: ({ field }) => <TextInput field={field} />,
+})
+
+// forms/user-form.tsx
+import { NameInput } from "../fields/name-input"
+
+const form = FormBuilder.empty.addField(NameInput.field).addField("email", Schema.String)
+const UserForm = FormReact.build(form, {
+  runtime,
+  fields: { name: NameInput, email: EmailComponent },
+  onSubmit: ...,
+})
+
+// forms/profile-form.tsx
+import { NameInput } from "../fields/name-input"
+
+const form = FormBuilder.empty.addField(NameInput.field).addField("bio", Schema.String)
+const ProfileForm = FormReact.build(form, {
+  runtime,
+  fields: { name: NameInput, bio: BioComponent },
+  onSubmit: ...,
+})
+```
+
 ## Available Atoms
 
 All forms expose these atoms for fine-grained subscriptions:
@@ -558,11 +621,12 @@ interface FieldComponentProps<
 
 ### Defining Field Components with `forField`
 
-Use `FormReact.forField()` for ergonomic component definition with full type inference:
+Use `FormReact.forField()` with reusable `FieldDef`s for ergonomic component definition with full type inference:
 
 ```tsx
-// Using a FieldRef from the built form
-const TextInput = FormReact.forField(LoginForm.fields.email)(({ field }) => (
+const EmailField = Field.makeField("email", Schema.String)
+
+const TextInput = FormReact.forField(EmailField)(({ field }) => (
   <input
     value={field.value}
     onChange={(e) => field.onChange(e.target.value)}
@@ -571,7 +635,7 @@ const TextInput = FormReact.forField(LoginForm.fields.email)(({ field }) => (
 ))
 
 // With custom props - just specify the props type
-const TextInput = FormReact.forField(LoginForm.fields.email)<{ placeholder?: string }>(({ field, props }) => (
+const TextInput = FormReact.forField(EmailField)<{ placeholder?: string }>(({ field, props }) => (
   <input
     value={field.value}
     onChange={(e) => field.onChange(e.target.value)}
@@ -581,10 +645,6 @@ const TextInput = FormReact.forField(LoginForm.fields.email)<{ placeholder?: str
 
 // Pass props at render time
 <LoginForm.email placeholder="Enter email" />
-
-// Also works with reusable FieldDefs
-const EmailField = Field.makeField("email", Schema.String)
-const TextInput = FormReact.forField(EmailField)(({ field }) => ...)
 ```
 
 ## License

@@ -4,6 +4,7 @@ import { Field, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
 import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
 import { getNestedValue, isPathOrParentDirty, isPathUnderRoot } from "@lucas-barake/effect-form/Path"
 import * as Cause from "effect/Cause"
+import * as Predicate from "effect/Predicate"
 import type * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as ParseResult from "effect/ParseResult"
@@ -43,11 +44,31 @@ export interface FieldComponentProps<
 }
 
 /**
+ * A bundled field definition + component for reusable form fields.
+ * Created with `FormReact.makeField`.
+ *
+ * @category Models
+ */
+export interface FieldBundle<
+  K extends string,
+  S extends Schema.Schema.Any,
+  P extends Record<string, unknown> = Record<string, never>,
+> {
+  readonly _tag: "FieldBundle"
+  readonly field: Field.FieldDef<K, S>
+  readonly component: React.FC<FieldComponentProps<S, P>>
+}
+
+const isFieldBundle = (x: unknown): x is FieldBundle<string, Schema.Schema.Any, Record<string, unknown>> =>
+  Predicate.isTagged(x, "FieldBundle")
+
+/**
  * Extracts the extra props type from a field component.
  *
  * @category Type-level utilities
  */
 export type ExtractExtraProps<C> = C extends React.FC<FieldComponentProps<any, infer P>> ? P
+  : C extends FieldBundle<any, any, infer P> ? P
   : Record<string, never>
 
 /**
@@ -69,7 +90,8 @@ export type ArrayItemComponentMap<S extends Schema.Schema.Any> = S extends Schem
  * @category Models
  */
 export type FieldComponentMap<TFields extends Field.FieldsRecord> = {
-  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S> ? React.FC<FieldComponentProps<S, any>>
+  readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S>
+    ? React.FC<FieldComponentProps<S, any>> | FieldBundle<any, S, any>
     : TFields[K] extends Field.ArrayFieldDef<any, infer S> ? ArrayItemComponentMap<S>
     : never
 }
@@ -465,7 +487,10 @@ const makeFieldComponents = <
         arrayComponentMap,
       )
     } else if (Field.isFieldDef(def)) {
-      const fieldComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any, any>>>)[key]
+      const componentOrBundle = (componentMap as Record<string, unknown>)[key]
+      const fieldComponent = isFieldBundle(componentOrBundle)
+        ? componentOrBundle.component
+        : componentOrBundle as React.FC<FieldComponentProps<any, any>>
       components[key] = makeFieldComponent(
         key,
         def,
@@ -678,42 +703,78 @@ export const build = <
 }
 
 /**
- * A curried helper that infers the schema type from a field definition or field reference.
+ * A curried helper that infers the schema type from a field definition.
  * Provides ergonomic type inference when defining field components.
  *
  * @example
  * ```tsx
- * import { FormReact } from "@lucas-barake/effect-form-react"
+ * import { Field, FormReact } from "@lucas-barake/effect-form-react"
  *
- * // Using a FieldRef from the built form
- * const TextInput = FormReact.forField(form.fields.email)(({ field }) => (
- *   <input value={field.value} onChange={e => field.onChange(e.target.value)} />
- * ))
- *
- * // Using a FieldDef (for reusable fields)
  * const EmailField = Field.makeField("email", Schema.String)
  * const TextInput = FormReact.forField(EmailField)(({ field }) => (
  *   <input value={field.value} onChange={e => field.onChange(e.target.value)} />
  * ))
  *
  * // With extra props - just specify the props type
- * const TextInput = FormReact.forField(form.fields.email)<{ placeholder?: string }>(({ field, props }) => (
+ * const TextInput = FormReact.forField(EmailField)<{ placeholder?: string }>(({ field, props }) => (
  *   <input value={field.value} placeholder={props.placeholder} ... />
  * ))
  * ```
  *
  * @category Constructors
  */
-export const forField: {
-  <S>(
-    _field: FormBuilder.FieldRef<S>,
-  ): <P extends Record<string, unknown> = Record<string, never>>(
-    component: React.FC<FieldComponentProps<Schema.Schema<S, S, never>, P>>,
-  ) => React.FC<FieldComponentProps<Schema.Schema<S, S, never>, P>>
+export const forField = <K extends string, S extends Schema.Schema.Any>(
+  _field: Field.FieldDef<K, S>,
+): <P extends Record<string, unknown> = Record<string, never>>(
+  component: React.FC<FieldComponentProps<S, P>>,
+) => React.FC<FieldComponentProps<S, P>> =>
+(component) => component
 
-  <K extends string, S extends Schema.Schema.Any>(
-    _field: Field.FieldDef<K, S>,
-  ): <P extends Record<string, unknown> = Record<string, never>>(
-    component: React.FC<FieldComponentProps<S, P>>,
-  ) => React.FC<FieldComponentProps<S, P>>
-} = (_field: unknown) => (component: unknown) => component as any
+/**
+ * Creates a bundled field definition + component for reusable form fields.
+ * Reduces boilerplate when you need both a field and its component together.
+ *
+ * @example
+ * ```tsx
+ * import { FormReact } from "@lucas-barake/effect-form-react"
+ * import * as Schema from "effect/Schema"
+ *
+ * // Define field + component in one place
+ * const NameInput = FormReact.makeField({
+ *   key: "name",
+ *   schema: Schema.String.pipe(Schema.nonEmptyString()),
+ *   component: ({ field }) => (
+ *     <input
+ *       value={field.value}
+ *       onChange={(e) => field.onChange(e.target.value)}
+ *       onBlur={field.onBlur}
+ *     />
+ *   ),
+ * })
+ *
+ * // Use in form builder
+ * const form = FormBuilder.empty.addField(NameInput.field)
+ *
+ * // Use in build()
+ * const Form = FormReact.build(form, {
+ *   runtime,
+ *   fields: { name: NameInput },
+ *   onSubmit: (_, { decoded }) => Effect.log(decoded.name),
+ * })
+ * ```
+ *
+ * @category Constructors
+ */
+export const makeField = <
+  K extends string,
+  S extends Schema.Schema.Any,
+  P extends Record<string, unknown> = Record<string, never>,
+>(options: {
+  readonly key: K
+  readonly schema: S
+  readonly component: React.FC<FieldComponentProps<S, P>>
+}): FieldBundle<K, S, P> => ({
+  _tag: "FieldBundle",
+  field: Field.makeField(options.key, options.schema),
+  component: options.component,
+})
