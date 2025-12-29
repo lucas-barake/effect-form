@@ -1,5 +1,96 @@
 # @lucas-barake/effect-form-react
 
+## 0.12.0
+
+### Minor Changes
+
+- [#31](https://github.com/lucas-barake/effect-form/pull/31) [`2a2b94e`](https://github.com/lucas-barake/effect-form/commit/2a2b94e7adee7b93c739f1e09419ff75bae6e127) Thanks [@lucas-barake](https://github.com/lucas-barake)! - **BREAKING:** Changed `makeField` to use a curried API for better type inference.
+
+  Previously, users had to explicitly type `FieldComponentProps` including the schema type:
+
+  ```tsx
+  const NameInput = FormReact.makeField({
+    key: "name",
+    schema: Schema.String,
+    component: ({ field, props }: FormReact.FieldComponentProps<typeof Schema.String, { disabled: boolean }>) => ...
+  })
+  ```
+
+  Now, `makeField` is curried - the schema type is captured first, so you only need to specify extra props:
+
+  ```tsx
+  // No extra props
+  const NameInput = FormReact.makeField({
+    key: "name",
+    schema: Schema.String,
+  })(({ field }) => ...)
+
+  // With extra props - only specify the props type
+  const NameInput = FormReact.makeField({
+    key: "name",
+    schema: Schema.String,
+  })<{ disabled: boolean }>(({ field, props }) => ...)
+  ```
+
+  Migration: Move `component` from inside the config object to a second function call.
+
+  Additionally, `makeField` now automatically sets the component's `displayName` based on the key (e.g., `"name"` → `"NameField"`), improving React DevTools debugging experience.
+
+- [#28](https://github.com/lucas-barake/effect-form/pull/28) [`96339b8`](https://github.com/lucas-barake/effect-form/commit/96339b828ea886f0e61084d99b283b50a5e77843) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Add `FormReact.makeField` for bundled field + component definitions
+
+  **New Feature:**
+
+  `FormReact.makeField` bundles a field definition with its component in one place, reducing boilerplate for form-heavy applications:
+
+  ```tsx
+  const NameInput = FormReact.makeField({
+    key: "name",
+    schema: Schema.String.pipe(Schema.nonEmptyString()),
+    component: ({ field }) => (
+      <input value={field.value} onChange={(e) => field.onChange(e.target.value)} />
+    ),
+  })
+
+  // Use .field for form builder
+  const form = FormBuilder.empty.addField(NameInput.field)
+
+  // Use the bundle directly in build()
+  FormReact.build(form, {
+    runtime,
+    fields: { name: NameInput },
+    onSubmit: ...,
+  })
+  ```
+
+  **Breaking Change:**
+
+  Removed the `FieldRef` overload from `forField` since it was architecturally impossible to use (`form.fields.x` doesn't exist until after `build()` returns, but components must be passed into `build()`). Use `forField` with `FieldDef` (from `Field.makeField`) instead.
+
+- [#30](https://github.com/lucas-barake/effect-form/pull/30) [`8b45cec`](https://github.com/lucas-barake/effect-form/commit/8b45cece1fbcac05e9139e4134ab73646f222081) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Make `getFieldAtom` return `Option.Option<S>` instead of throwing when accessed before initialization
+
+  **Breaking Change:**
+
+  `getFieldAtom` now returns `Atom<Option.Option<S>>` instead of `Atom<S>`. This prevents crashes when subscribing before `<form.Initialize>` mounts.
+
+  ```tsx
+  // Before (would crash if used outside Initialize)
+  const email = useAtomValue(form.getFieldAtom(form.fields.email))
+
+  // After (safe to use anywhere)
+  const emailOption = useAtomValue(form.getFieldAtom(form.fields.email))
+  return Option.match(emailOption, {
+    onNone: () => <span>Loading...</span>,
+    onSome: (email) => <span>{email}</span>,
+  })
+  ```
+
+  Internal field components are unaffected - they still use the efficient direct access since they're guaranteed to run inside `<Initialize>`.
+
+### Patch Changes
+
+- Updated dependencies [[`8b45cec`](https://github.com/lucas-barake/effect-form/commit/8b45cece1fbcac05e9139e4134ab73646f222081)]:
+  - @lucas-barake/effect-form@0.11.0
+
 ## 0.11.0
 
 ### Minor Changes
