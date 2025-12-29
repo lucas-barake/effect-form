@@ -369,22 +369,29 @@ function FormSideEffects() {
 
 ## 13. Subscribing to Individual Field Values
 
-Use `getFieldAtom` to subscribe to a specific field's value without re-rendering when other fields change:
+Use `getFieldAtom` to subscribe to a specific field's value without re-rendering when other fields change.
+The atom returns `Option<T>` - `None` before initialization, `Some(value)` after:
 
 ```tsx
 function EmailDisplay() {
   // Only re-renders when email changes, not when password changes
   const emailAtom = LoginForm.getFieldAtom(LoginForm.fields.email)
-  const email = useAtomValue(emailAtom)
+  const emailOption = useAtomValue(emailAtom)
 
-  return <span>Current email: {email}</span>
+  // Safe to use outside Initialize - returns None before form mounts
+  return Option.match(emailOption, {
+    onNone: () => <span>Loading...</span>,
+    onSome: (email) => <span>Current email: {email}</span>,
+  })
 }
 
-// Useful for derived state based on a single field
+// Inside Initialize where state is guaranteed
 function PasswordStrength() {
   const passwordAtom = LoginForm.getFieldAtom(LoginForm.fields.password)
-  const password = useAtomValue(passwordAtom)
+  const passwordOption = useAtomValue(passwordAtom)
 
+  // Can safely getOrThrow inside Initialize
+  const password = Option.getOrThrow(passwordOption)
   const strength = password.length < 8 ? "weak" : password.length < 12 ? "medium" : "strong"
   return <span>Password strength: {strength}</span>
 }
@@ -580,7 +587,7 @@ form.hasChangedSinceSubmit   // Atom<boolean> - values differ from last submit
 form.lastSubmittedValues     // Atom<Option<SubmittedValues>> - last submitted values
 form.submitCount             // Atom<number> - number of submit attempts
 form.submit                  // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
-form.getFieldAtom(fieldRef)  // Atom<FieldValue> - subscribe to individual field values
+form.getFieldAtom(fieldRef)  // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
 ```
 
 > **Why `Option` for `values`?** Returns `None` before the form is initialized, `Some(values)` after. This allows parent components to safely subscribe and wait for initialization without throwing.

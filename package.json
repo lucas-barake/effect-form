@@ -9,9 +9,8 @@
     "build": "tsc -b tsconfig.build.json && pnpm -r run build",
     "circular": "madge --extensions ts --circular --no-color --no-spinner packages/*/src",
     "check:types": "tsc -b tsconfig.json",
-    "check:lint": "eslint \"**/{src,test}/**/*.{ts,tsx,mjs}\"",
-    "check:lint-fix": "pnpm check:lint --fix",
-    "check:all": "pnpm check:types && pnpm check:lint-fix && pnpm test",
+    "check:lint": "eslint \"**/{src,test}/**/*.{ts,tsx,mjs}\" --fix",
+    "check:all": "pnpm check:types && pnpm check:lint && pnpm test",
     "test": "vitest",
     "coverage": "vitest --coverage"
   },

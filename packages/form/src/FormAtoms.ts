@@ -98,7 +98,7 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly setValuesAtom: Atom.Writable<void, Field.EncodedFromFields<TFields>>
   readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
 
-  readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<S>
+  readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>
 }
 
 /**
@@ -253,6 +253,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 
   const validationAtomsRegistry = createWeakRegistry<Atom.AtomResultFn<unknown, void, ParseResult.ParseError>>()
   const fieldAtomsRegistry = createWeakRegistry<FieldAtoms>()
+  const publicFieldAtomRegistry = createWeakRegistry<Atom.Atom<Option.Option<unknown>>>()
 
   const getOrCreateValidationAtom = (
     fieldPath: string,
@@ -561,9 +562,16 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     return atom
   }
 
-  const getFieldAtom = <S>(field: FormBuilder.FieldRef<S>): Atom.Atom<S> => {
-    const { valueAtom } = getOrCreateFieldAtoms(field.key)
-    return valueAtom as Atom.Atom<S>
+  const getFieldAtom = <S>(field: FormBuilder.FieldRef<S>): Atom.Atom<Option.Option<S>> => {
+    const existing = publicFieldAtomRegistry.get(field.key)
+    if (existing) return existing as Atom.Atom<Option.Option<S>>
+
+    const safeAtom = Atom.readable((get) =>
+      Option.map(get(stateAtom), (state) => getNestedValue(state.values, field.key) as S)
+    ).pipe(Atom.setIdleTTL(0))
+
+    publicFieldAtomRegistry.set(field.key, safeAtom)
+    return safeAtom
   }
 
   return {

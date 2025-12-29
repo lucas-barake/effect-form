@@ -1092,7 +1092,7 @@ describe("FormAtoms", () => {
   })
 
   describe("getFieldAtom", () => {
-    it("returns the value atom for a field", () => {
+    it("returns Option.some(value) when initialized", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
@@ -1106,7 +1106,7 @@ describe("FormAtoms", () => {
 
       const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name)
 
-      expect(registry.get(nameAtom)).toBe("John")
+      expect(registry.get(nameAtom)).toEqual(Option.some("John"))
     })
 
     it("updates when field value changes", () => {
@@ -1122,12 +1122,12 @@ describe("FormAtoms", () => {
       registry.set(atoms.stateAtom, Option.some(state))
 
       const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name)
-      expect(registry.get(nameAtom)).toBe("John")
+      expect(registry.get(nameAtom)).toEqual(Option.some("John"))
 
       state = atoms.operations.setFieldValue(state, "name", "Jane")
       registry.set(atoms.stateAtom, Option.some(state))
 
-      expect(registry.get(nameAtom)).toBe("Jane")
+      expect(registry.get(nameAtom)).toEqual(Option.some("Jane"))
     })
 
     it("returns same atom instance for same field", () => {
@@ -1145,6 +1145,35 @@ describe("FormAtoms", () => {
       const nameAtom2 = atoms.getFieldAtom(atoms.fieldRefs.name)
 
       expect(nameAtom1).toBe(nameAtom2)
+    })
+
+    it("returns Option.none() when form is not initialized", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name)
+
+      expect(registry.get(nameAtom)).toEqual(Option.none())
+    })
+
+    it("updates from None to Some when form initializes", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name)
+      expect(registry.get(nameAtom)).toEqual(Option.none())
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      expect(registry.get(nameAtom)).toEqual(Option.some("John"))
     })
   })
 
