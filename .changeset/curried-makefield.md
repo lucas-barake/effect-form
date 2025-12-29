@@ -1,5 +1,5 @@
 ---
-"@lucas-barake/effect-form-react": major
+"@lucas-barake/effect-form-react": minor
 ---
 
 **BREAKING:** Changed `makeField` to use a curried API for better type inference.
