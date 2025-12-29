@@ -521,18 +521,29 @@ Use `FormReact.makeField` to bundle a field definition with its component in one
 import { FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Schema from "effect/Schema"
 
-// Define field + component together
+// Define field + component together (curried API)
 const NameInput = FormReact.makeField({
   key: "name",
   schema: Schema.String.pipe(Schema.nonEmptyString()),
-  component: ({ field }) => (
-    <input
-      value={field.value}
-      onChange={(e) => field.onChange(e.target.value)}
-      onBlur={field.onBlur}
-    />
-  ),
-})
+})(({ field }) => (
+  <input
+    value={field.value}
+    onChange={(e) => field.onChange(e.target.value)}
+    onBlur={field.onBlur}
+  />
+))
+
+// With extra props - specify only the props type
+const EmailInput = FormReact.makeField({
+  key: "email",
+  schema: Schema.String,
+})<{ placeholder: string }>(({ field, props }) => (
+  <input
+    value={field.value}
+    onChange={(e) => field.onChange(e.target.value)}
+    placeholder={props.placeholder}
+  />
+))
 
 // Use .field for form builder
 const formBuilder = FormBuilder.empty.addField(NameInput.field)
@@ -552,8 +563,7 @@ This reduces boilerplate when you need reusable field + component combos across 
 export const NameInput = FormReact.makeField({
   key: "name",
   schema: Schema.String.pipe(Schema.nonEmptyString()),
-  component: ({ field }) => <TextInput field={field} />,
-})
+})(({ field }) => <TextInput field={field} />)
 
 // forms/user-form.tsx
 import { NameInput } from "../fields/name-input"
