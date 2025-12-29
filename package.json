@@ -11,7 +11,7 @@
     "check:types": "tsc -b tsconfig.json",
     "check:lint": "eslint \"**/{src,test}/**/*.{ts,tsx,mjs}\"",
     "check:lint-fix": "pnpm check:lint --fix",
-    "check:all": "pnpm check:types && pnpm check:lint && pnpm test",
+    "check:all": "pnpm check:types && pnpm check:lint-fix && pnpm test",
     "test": "vitest",
     "coverage": "vitest --coverage"
   },
