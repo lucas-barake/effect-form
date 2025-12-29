@@ -734,23 +734,37 @@ export const forField = <K extends string, S extends Schema.Schema.Any>(
  * Creates a bundled field definition + component for reusable form fields.
  * Reduces boilerplate when you need both a field and its component together.
  *
+ * Uses a curried API for better type inference - the schema type is captured
+ * first, so you only need to specify the extra props type (if any).
+ *
  * @example
  * ```tsx
  * import { FormReact } from "@lucas-barake/effect-form-react"
  * import * as Schema from "effect/Schema"
  *
- * // Define field + component in one place
+ * // Define field + component in one place (no extra props)
  * const NameInput = FormReact.makeField({
  *   key: "name",
  *   schema: Schema.String.pipe(Schema.nonEmptyString()),
- *   component: ({ field }) => (
- *     <input
- *       value={field.value}
- *       onChange={(e) => field.onChange(e.target.value)}
- *       onBlur={field.onBlur}
- *     />
- *   ),
- * })
+ * })(({ field }) => (
+ *   <input
+ *     value={field.value}
+ *     onChange={(e) => field.onChange(e.target.value)}
+ *     onBlur={field.onBlur}
+ *   />
+ * ))
+ *
+ * // With extra props - specify only the props type
+ * const EmailInput = FormReact.makeField({
+ *   key: "email",
+ *   schema: Schema.String,
+ * })<{ placeholder: string }>(({ field, props }) => (
+ *   <input
+ *     value={field.value}
+ *     onChange={(e) => field.onChange(e.target.value)}
+ *     placeholder={props.placeholder}
+ *   />
+ * ))
  *
  * // Use in form builder
  * const form = FormBuilder.empty.addField(NameInput.field)
@@ -765,16 +779,30 @@ export const forField = <K extends string, S extends Schema.Schema.Any>(
  *
  * @category Constructors
  */
-export const makeField = <
-  K extends string,
-  S extends Schema.Schema.Any,
-  P extends Record<string, unknown> = Record<string, never>,
->(options: {
+export const makeField = <K extends string, S extends Schema.Schema.Any>(options: {
   readonly key: K
   readonly schema: S
-  readonly component: React.FC<FieldComponentProps<S, P>>
-}): FieldBundle<K, S, P> => ({
-  _tag: "FieldBundle",
-  field: Field.makeField(options.key, options.schema),
-  component: options.component,
-})
+}): <P extends Record<string, unknown> = Record<string, never>>(
+  component: React.FC<FieldComponentProps<S, P>>
+) => FieldBundle<K, S, P> => {
+  const field = Field.makeField(options.key, options.schema)
+  return (component) => {
+    // DX: Auto-generate a readable component name for DevTools
+    // e.g., key "email" -> "<EmailField />"
+    if (!component.displayName) {
+      const displayName = `${options.key.charAt(0).toUpperCase()}${options.key.slice(1)}Field`
+      // Cast to 'any' because strict TS marks function names as readonly,
+      // but React relies on mutation here.
+      try {
+        ;(component as any).displayName = displayName
+      } catch {
+        // Ignore errors in environments where function props are frozen
+      }
+    }
+    return {
+      _tag: "FieldBundle",
+      field,
+      component,
+    }
+  }
+}
