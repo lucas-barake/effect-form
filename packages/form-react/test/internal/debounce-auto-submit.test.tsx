@@ -55,7 +55,7 @@ describe("Debounce and Auto-Submit", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "300 millis" } },
@@ -94,7 +94,7 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameField)
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
@@ -131,7 +131,7 @@ describe("Debounce and Auto-Submit", () => {
         .addField(NameField)
         .addField(AgeField)
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: NameInput, age: AgeInput },
         mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
@@ -171,7 +171,7 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameFieldMinLength)
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "50 millis", autoSubmit: true } },
@@ -211,7 +211,7 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameField)
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
@@ -243,7 +243,7 @@ describe("Debounce and Auto-Submit", () => {
 
       const formBuilder = FormBuilder.empty.addField(NameField)
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: { onBlur: { autoSubmit: true } },
@@ -281,7 +281,7 @@ describe("Debounce and Auto-Submit", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onChange",

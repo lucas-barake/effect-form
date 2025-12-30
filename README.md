@@ -25,7 +25,7 @@ const loginFormBuilder = FormBuilder.empty
   .addField("email", Schema.String.pipe(Schema.nonEmptyString()))
   .addField("password", Schema.String.pipe(Schema.minLength(8)))
 
-const LoginForm = FormReact.build(loginFormBuilder, {
+const loginForm = FormReact.make(loginFormBuilder, {
   runtime,
   fields: {
     email: ({ field }) => (
@@ -55,9 +55,9 @@ const LoginForm = FormReact.build(loginFormBuilder, {
 
 // Subscribe to atoms anywhere in the tree
 function SubmitButton() {
-  const isDirty = useAtomValue(LoginForm.isDirty)
-  const submitResult = useAtomValue(LoginForm.submit)
-  const submit = useAtomSet(LoginForm.submit)
+  const isDirty = useAtomValue(loginForm.isDirty)
+  const submitResult = useAtomValue(loginForm.submit)
+  const submit = useAtomSet(loginForm.submit)
   return (
     <button onClick={() => submit()} disabled={!isDirty || submitResult.waiting}>
       Login
@@ -67,11 +67,11 @@ function SubmitButton() {
 
 function LoginPage() {
   return (
-    <LoginForm.Initialize defaultValues={{ email: "", password: "" }}>
-      <LoginForm.email />
-      <LoginForm.password />
+    <loginForm.Initialize defaultValues={{ email: "", password: "" }}>
+      <loginForm.email />
+      <loginForm.password />
       <SubmitButton />
-    </LoginForm.Initialize>
+    </loginForm.Initialize>
   )
 }
 ```
@@ -85,7 +85,7 @@ const orderFormBuilder = FormBuilder.empty
   .addField("title", Schema.String)
   .addField(Field.makeArrayField("items", Schema.Struct({ name: Schema.String })))
 
-const OrderForm = FormReact.build(orderFormBuilder, {
+const orderForm = FormReact.make(orderFormBuilder, {
   runtime,
   fields: {
     title: TitleInput,
@@ -96,22 +96,22 @@ const OrderForm = FormReact.build(orderFormBuilder, {
 
 function OrderPage() {
   return (
-    <OrderForm.Initialize defaultValues={{ title: "", items: [] }}>
-      <OrderForm.title />
-      <OrderForm.items>
+    <orderForm.Initialize defaultValues={{ title: "", items: [] }}>
+      <orderForm.title />
+      <orderForm.items>
         {({ items, append, remove, swap, move }) => (
           <>
             {items.map((_, index) => (
-              <OrderForm.items.Item key={index} index={index}>
+              <orderForm.items.Item key={index} index={index}>
                 {({ remove }) => (
                   <div>
-                    <OrderForm.items.name />
+                    <orderForm.items.name />
                     <button type="button" onClick={remove}>
                       Remove
                     </button>
                   </div>
                 )}
-              </OrderForm.items.Item>
+              </orderForm.items.Item>
             ))}
             <button type="button" onClick={() => append()}>
               Add Item
@@ -124,8 +124,8 @@ function OrderPage() {
             </button>
           </>
         )}
-      </OrderForm.items>
-    </OrderForm.Initialize>
+      </orderForm.items>
+    </orderForm.Initialize>
   )
 }
 ```
@@ -133,9 +133,9 @@ function OrderPage() {
 ## 3. Validation Modes
 
 ```tsx
-FormReact.build(form, { runtime, fields, mode: "onSubmit", onSubmit })
-FormReact.build(form, { runtime, fields, mode: "onBlur", onSubmit })
-FormReact.build(form, { runtime, fields, mode: "onChange", onSubmit })
+FormReact.make(formBuilder, { runtime, fields, mode: "onSubmit", onSubmit })
+FormReact.make(formBuilder, { runtime, fields, mode: "onBlur", onSubmit })
+FormReact.make(formBuilder, { runtime, fields, mode: "onChange", onSubmit })
 ```
 
 ## 4. Cross-Field Validation (Sync Refinements)
@@ -199,7 +199,7 @@ const signupFormBuilder = FormBuilder.empty
     }),
   )
 
-const SignupForm = FormReact.build(signupFormBuilder, {
+const signupForm = FormReact.make(signupFormBuilder, {
   runtime,
   fields: { username: UsernameInput },
   onSubmit: (_, { decoded }) => Effect.log(`Signup: ${decoded.username}`),
@@ -212,9 +212,9 @@ Operations are AtomResultFns - use `useAtomSet` to call them:
 
 ```tsx
 function FormControls() {
-  const setEmail = useAtomSet(LoginForm.setValue(LoginForm.fields.email))
-  const setPassword = useAtomSet(LoginForm.setValue(LoginForm.fields.password))
-  const setAllValues = useAtomSet(LoginForm.setValues)
+  const setEmail = useAtomSet(loginForm.setValue(loginForm.fields.email))
+  const setPassword = useAtomSet(loginForm.setValue(loginForm.fields.password))
+  const setAllValues = useAtomSet(loginForm.setValues)
 
   return (
     <>
@@ -237,14 +237,14 @@ function FormControls() {
 ## 8. Auto-Submit Mode
 
 ```tsx
-FormReact.build(form, {
+FormReact.make(formBuilder, {
   runtime,
   fields,
   mode: { onChange: { debounce: "300 millis", autoSubmit: true } },
   onSubmit,
 })
 
-FormReact.build(form, {
+FormReact.make(formBuilder, {
   runtime,
   fields,
   mode: { onBlur: { autoSubmit: true } },
@@ -255,7 +255,7 @@ FormReact.build(form, {
 ## 9. Debounced Validation
 
 ```tsx
-FormReact.build(form, {
+FormReact.make(formBuilder, {
   runtime,
   fields,
   mode: { onChange: { debounce: "300 millis" } },
@@ -267,8 +267,8 @@ FormReact.build(form, {
 
 ```tsx
 function FormStatus() {
-  const isDirty = useAtomValue(LoginForm.isDirty)
-  const reset = useAtomSet(LoginForm.reset)
+  const isDirty = useAtomValue(loginForm.isDirty)
+  const reset = useAtomSet(loginForm.reset)
 
   return (
     <>
@@ -300,9 +300,9 @@ Track whether form values differ from the last submitted state. Useful for "reve
 
 ```tsx
 function FormStatus() {
-  const hasChangedSinceSubmit = useAtomValue(LoginForm.hasChangedSinceSubmit)
-  const lastSubmittedValues = useAtomValue(LoginForm.lastSubmittedValues)
-  const revertToLastSubmit = useAtomSet(LoginForm.revertToLastSubmit)
+  const hasChangedSinceSubmit = useAtomValue(loginForm.hasChangedSinceSubmit)
+  const lastSubmittedValues = useAtomValue(loginForm.lastSubmittedValues)
+  const revertToLastSubmit = useAtomSet(loginForm.revertToLastSubmit)
 
   return (
     <>
@@ -340,9 +340,9 @@ import { useAtomValue, useAtomSubscribe } from "@effect-atom/atom-react"
 
 // Read atoms directly
 function FormDebug() {
-  const isDirty = useAtomValue(LoginForm.isDirty)
-  const submitCount = useAtomValue(LoginForm.submitCount)
-  const submitResult = useAtomValue(LoginForm.submit)
+  const isDirty = useAtomValue(loginForm.isDirty)
+  const submitCount = useAtomValue(loginForm.submitCount)
+  const submitResult = useAtomValue(loginForm.submit)
 
   return (
     <pre>
@@ -356,7 +356,7 @@ function FormDebug() {
 // Subscribe to changes with side effects
 function FormSideEffects() {
   useAtomSubscribe(
-    LoginForm.isDirty,
+    loginForm.isDirty,
     (isDirty) => {
       console.log("Dirty state changed:", isDirty)
     },
@@ -375,7 +375,7 @@ The atom returns `Option<T>` - `None` before initialization, `Some(value)` after
 ```tsx
 function EmailDisplay() {
   // Only re-renders when email changes, not when password changes
-  const emailAtom = LoginForm.getFieldAtom(LoginForm.fields.email)
+  const emailAtom = loginForm.getFieldAtom(loginForm.fields.email)
   const emailOption = useAtomValue(emailAtom)
 
   // Safe to use outside Initialize - returns None before form mounts
@@ -387,7 +387,7 @@ function EmailDisplay() {
 
 // Inside Initialize where state is guaranteed
 function PasswordStrength() {
-  const passwordAtom = LoginForm.getFieldAtom(LoginForm.fields.password)
+  const passwordAtom = loginForm.getFieldAtom(loginForm.fields.password)
   const passwordOption = useAtomValue(passwordAtom)
 
   // Can safely getOrThrow inside Initialize
@@ -417,7 +417,7 @@ const TextInput: React.FC<
 import * as Result from "@effect-atom/atom/Result"
 
 function SubmitStatus() {
-  const submitResult = useAtomValue(LoginForm.submit)
+  const submitResult = useAtomValue(loginForm.submit)
 
   if (submitResult.waiting) return <span>Submitting...</span>
   if (Result.isSuccess(submitResult)) return <span>Success!</span>
@@ -428,7 +428,7 @@ function SubmitStatus() {
 // For side effects after submit (navigation, close dialog, etc.):
 function FormWithSideEffects({ onClose }: { onClose: () => void }) {
   useAtomSubscribe(
-    LoginForm.submit,
+    loginForm.submit,
     (result) => {
       if (Result.isSuccess(result)) {
         onClose()
@@ -437,7 +437,7 @@ function FormWithSideEffects({ onClose }: { onClose: () => void }) {
     { immediate: false },
   )
 
-  return <LoginForm.Initialize defaultValues={{ email: "", password: "" }}>...</LoginForm.Initialize>
+  return <loginForm.Initialize defaultValues={{ email: "", password: "" }}>...</loginForm.Initialize>
 }
 ```
 
@@ -447,7 +447,7 @@ Pass custom arguments to `onSubmit` by annotating the first parameter:
 
 ```tsx
 // Define form with custom submit args
-const ContactForm = FormReact.build(formBuilder, {
+const contactForm = FormReact.make(contactFormBuilder, {
   runtime,
   fields: { email: TextInput, message: TextInput },
   onSubmit: (args: { source: string }, { decoded, encoded, get }) =>
@@ -456,7 +456,7 @@ const ContactForm = FormReact.build(formBuilder, {
 
 // Pass args when submitting
 function SubmitButton({ source }: { source: string }) {
-  const submit = useAtomSet(ContactForm.submit)
+  const submit = useAtomSet(contactForm.submit)
   return <button onClick={() => submit({ source })}>Send</button>
 }
 ```
@@ -548,8 +548,8 @@ const EmailInput = FormReact.makeField({
 // Use .field for form builder
 const formBuilder = FormBuilder.empty.addField(NameInput.field)
 
-// Use the bundle directly in build()
-const Form = FormReact.build(formBuilder, {
+// Use the bundle directly in make()
+const form = FormReact.make(formBuilder, {
   runtime,
   fields: { name: NameInput },
   onSubmit: (_, { decoded }) => Effect.log(decoded.name),
@@ -568,8 +568,8 @@ export const NameInput = FormReact.makeField({
 // forms/user-form.tsx
 import { NameInput } from "../fields/name-input"
 
-const form = FormBuilder.empty.addField(NameInput.field).addField("email", Schema.String)
-const UserForm = FormReact.build(form, {
+const userFormBuilder = FormBuilder.empty.addField(NameInput.field).addField("email", Schema.String)
+const userForm = FormReact.make(userFormBuilder, {
   runtime,
   fields: { name: NameInput, email: EmailComponent },
   onSubmit: ...,
@@ -578,8 +578,8 @@ const UserForm = FormReact.build(form, {
 // forms/profile-form.tsx
 import { NameInput } from "../fields/name-input"
 
-const form = FormBuilder.empty.addField(NameInput.field).addField("bio", Schema.String)
-const ProfileForm = FormReact.build(form, {
+const profileFormBuilder = FormBuilder.empty.addField(NameInput.field).addField("bio", Schema.String)
+const profileForm = FormReact.make(profileFormBuilder, {
   runtime,
   fields: { name: NameInput, bio: BioComponent },
   onSubmit: ...,

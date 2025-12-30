@@ -976,7 +976,6 @@ describe("FormAtoms", () => {
       registry.mount(atoms.revertToLastSubmitAtom)
       registry.set(atoms.revertToLastSubmitAtom, undefined)
 
-      // Should go back to "Jane" (last submitted)
       const revertedState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(revertedState.values.name).toBe("Jane")
       expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(0)
@@ -1082,7 +1081,6 @@ describe("FormAtoms", () => {
       registry.mount(setItemsAtom)
       registry.set(setItemsAtom, [{ name: "Updated Item" }])
 
-      // items and nested paths should be cleared, title should remain
       const errors = registry.get(atoms.crossFieldErrorsAtom)
       expect(errors.has("items")).toBe(false)
       expect(errors.has("items[0]")).toBe(false)

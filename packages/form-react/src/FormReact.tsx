@@ -130,7 +130,6 @@ export type BuiltForm<
   SubmitArgs = void,
   CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
 > = {
-  // Atoms for fine-grained subscriptions (use with useAtomValue)
   readonly values: Atom.Atom<Option.Option<Field.EncodedFromFields<TFields>>>
   readonly isDirty: Atom.Atom<boolean>
   readonly hasChangedSinceSubmit: Atom.Atom<boolean>
@@ -436,7 +435,6 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
     ...itemFieldComponents,
   }
 
-  // Proxy enables <Form.items.Item> and <Form.items.name> syntax
   return new Proxy(ArrayWrapper, {
     get(target, prop) {
       if (prop in properties) {
@@ -509,7 +507,7 @@ const makeFieldComponents = <
 }
 
 /**
- * Builds a React form from a FormBuilder.
+ * Creates a React form from a FormBuilder.
  *
  * @example
  * ```tsx
@@ -522,11 +520,11 @@ const makeFieldComponents = <
  *
  * const runtime = Atom.runtime(Layer.empty)
  *
- * const loginForm = FormBuilder.empty
+ * const loginFormBuilder = FormBuilder.empty
  *   .addField("email", Schema.String)
  *   .addField("password", Schema.String)
  *
- * const form = FormReact.build(loginForm, {
+ * const loginForm = FormReact.make(loginFormBuilder, {
  *   runtime,
  *   fields: { email: TextInput, password: PasswordInput },
  *   onSubmit: (values) => Effect.log(`Login: ${values.email}`),
@@ -534,9 +532,9 @@ const makeFieldComponents = <
  *
  * // Subscribe to atoms anywhere in the tree
  * function SubmitButton() {
- *   const isDirty = useAtomValue(form.isDirty)
- *   const submit = useAtomValue(form.submit)
- *   const callSubmit = useAtomSet(form.submit)
+ *   const isDirty = useAtomValue(loginForm.isDirty)
+ *   const submit = useAtomValue(loginForm.submit)
+ *   const callSubmit = useAtomSet(loginForm.submit)
  *   return (
  *     <button onClick={() => callSubmit()} disabled={!isDirty || submit.waiting}>
  *       {submit.waiting ? "Validating..." : "Login"}
@@ -544,20 +542,20 @@ const makeFieldComponents = <
  *   )
  * }
  *
- * function LoginDialog({ onClose }) {
+ * function LoginPage() {
  *   return (
- *     <form.Initialize defaultValues={{ email: "", password: "" }}>
- *       <form.email />
- *       <form.password />
+ *     <loginForm.Initialize defaultValues={{ email: "", password: "" }}>
+ *       <loginForm.email />
+ *       <loginForm.password />
  *       <SubmitButton />
- *     </form.Initialize>
+ *     </loginForm.Initialize>
  *   )
  * }
  * ```
  *
  * @category Constructors
  */
-export const build = <
+export const make = <
   TFields extends Field.FieldsRecord,
   R,
   A,
@@ -767,10 +765,10 @@ export const forField = <K extends string, S extends Schema.Schema.Any>(
  * ))
  *
  * // Use in form builder
- * const form = FormBuilder.empty.addField(NameInput.field)
+ * const formBuilder = FormBuilder.empty.addField(NameInput.field)
  *
- * // Use in build()
- * const Form = FormReact.build(form, {
+ * // Use in make()
+ * const form = FormReact.make(formBuilder, {
  *   runtime,
  *   fields: { name: NameInput },
  *   onSubmit: (_, { decoded }) => Effect.log(decoded.name),
@@ -788,7 +786,6 @@ export const makeField = <K extends string, S extends Schema.Schema.Any>(options
   const field = Field.makeField(options.key, options.schema)
   return (component) => {
     // DX: Auto-generate a readable component name for DevTools
-    // e.g., key "email" -> "<EmailField />"
     if (!component.displayName) {
       const displayName = `${options.key.charAt(0).toUpperCase()}${options.key.slice(1)}Field`
       // Cast to 'any' because strict TS marks function names as readonly,

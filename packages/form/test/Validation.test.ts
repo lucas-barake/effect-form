@@ -107,7 +107,6 @@ describe("Validation", () => {
       }
 
       const errors = routeErrors(result.left)
-      // Only first field error captured (schema short-circuits)
       expect(errors.size).toBe(1)
       expect(errors.has("name")).toBe(true)
     })
@@ -166,7 +165,6 @@ describe("Validation", () => {
       }
 
       const errors = routeErrors(result.left)
-      // Only first array item error captured (schema short-circuits)
       expect(errors.size).toBe(1)
       expect(errors.has("items[0].name")).toBe(true)
     })

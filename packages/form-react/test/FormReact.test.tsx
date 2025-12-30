@@ -36,7 +36,7 @@ const makeSubmitButton = <A,>(submitAtom: Atom.AtomResultFn<A, unknown, unknown>
   return SubmitButton
 }
 
-describe("FormReact.build", () => {
+describe("FormReact.make", () => {
   describe("Initialize Component", () => {
     it("initializes with default values", () => {
       const NameField = Field.makeField("name", Schema.String)
@@ -44,7 +44,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
@@ -69,7 +69,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
@@ -96,7 +96,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onBlur",
@@ -126,7 +126,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
@@ -159,7 +159,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
@@ -195,7 +195,7 @@ describe("FormReact.build", () => {
       const formBuilder = FormBuilder.empty.addField(NameField)
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { name: TextInput },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded),
@@ -248,7 +248,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: {
           firstName: FirstNameInput,
@@ -302,7 +302,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: {
           title: TitleInput,
@@ -361,7 +361,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { items: { name: ItemNameInput } },
         onSubmit,
@@ -424,7 +424,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { items: { name: ItemNameInput } },
         onSubmit,
@@ -484,7 +484,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { items: { name: ItemNameInput } },
         onSubmit,
@@ -540,7 +540,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { items: { name: ItemNameInput } },
         onSubmit,
@@ -595,7 +595,7 @@ describe("FormReact.build", () => {
       const formBuilder = FormBuilder.empty.addField(EmailField)
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { email: TextInput },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded),
@@ -643,7 +643,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { asyncField: ValidatingInput },
         mode: "onBlur",
@@ -714,7 +714,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: {
           password: PasswordInput,
@@ -773,7 +773,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { username: UsernameInput },
         onSubmit,
@@ -840,7 +840,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = Atom.runtime(UsernameValidatorLive)
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { username: UsernameInput },
         onSubmit,
@@ -857,7 +857,6 @@ describe("FormReact.build", () => {
 
       await user.click(screen.getByTestId("submit"))
 
-      // Validation should work using the service
       await waitFor(() => {
         expect(screen.getByTestId("username-error")).toHaveTextContent("Username is already taken")
       })
@@ -908,7 +907,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { fieldA: FieldAInput, fieldB: FieldBInput },
         onSubmit,
@@ -987,7 +986,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { password: PasswordInput, confirm: ConfirmInput },
         onSubmit,
@@ -1043,7 +1042,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { items: { name: ItemNameInput } },
         onSubmit,
@@ -1088,7 +1087,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onChange",
@@ -1121,7 +1120,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onSubmit",
@@ -1152,7 +1151,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onSubmit",
@@ -1188,7 +1187,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => Effect.fail(new Error("Submission failed"))
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { name: TextInput },
         onSubmit,
@@ -1232,7 +1231,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
@@ -1271,7 +1270,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => Effect.void.pipe(Effect.delay("50 millis"))
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { name: TextInput },
         onSubmit,
@@ -1318,7 +1317,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { name: TextInput },
         onSubmit,
@@ -1359,7 +1358,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
@@ -1399,7 +1398,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
@@ -1434,7 +1433,6 @@ describe("FormReact.build", () => {
       // Rerender with new defaultValues - form does NOT reinitialize
       rerender(<FormWrapper defaultName="new-initial" />)
 
-      // Values preserved from previous render
       expect(screen.getByTestId("text-input")).toHaveValue("modified")
       expect(isDirty).toBe(true)
     })
@@ -1447,7 +1445,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
@@ -1496,7 +1494,7 @@ describe("FormReact.build", () => {
 
       const onSubmit = () => {}
 
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
@@ -1539,7 +1537,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { name: TextInput },
         onSubmit,
@@ -1585,7 +1583,7 @@ describe("FormReact.build", () => {
       const onSubmit = () => {}
 
       const runtime = createRuntime()
-      const form = FormReact.build(formBuilder, {
+      const form = FormReact.make(formBuilder, {
         runtime,
         fields: { name: TextInput },
         onSubmit,
