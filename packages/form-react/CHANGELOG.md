@@ -1,5 +1,33 @@
 # @lucas-barake/effect-form-react
 
+## 0.13.0
+
+### Minor Changes
+
+- [#36](https://github.com/lucas-barake/effect-form/pull/36) [`dbe8735`](https://github.com/lucas-barake/effect-form/commit/dbe87355012421584a79f09c3fc2eaf3f7b21a48) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Distinguish per-field errors from cross-field refinement errors
+  - Per-field schema errors (minLength, pattern, etc.) now clear immediately when the user types a valid value
+  - Cross-field refinement errors (password !== confirm) persist until re-submit
+  - Added `rootErrorAtom` for displaying root-level form errors (exposed as `form.rootError` in React)
+  - Renamed `crossFieldErrorsAtom` to `errorsAtom` with new `ErrorEntry` type containing `source: 'field' | 'refinement'`
+  - Renamed `FieldAtoms.crossFieldErrorAtom` to `errorAtom`
+
+  Add KeepAlive for persisting form state across unmounts
+  - Added `form.KeepAlive` component to preserve state when `Initialize` unmounts (for wizards, tabs, conditional fields)
+  - Added `form.mount` atom for hook-based mounting via `useAtomMount(form.mount)`
+  - Initialize now checks if KeepAlive is active before deciding whether to re-initialize
+
+- [#35](https://github.com/lucas-barake/effect-form/pull/35) [`350fcc8`](https://github.com/lucas-barake/effect-form/commit/350fcc86d3e5720f8da25a33c8b2afe9281c0bb4) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Make `runtime` optional in `FormReact.make()` for forms without service requirements
+
+  When `R = never` (no services needed), runtime can be omitted and defaults to `Atom.runtime(Layer.empty)`.
+  Forms with service requirements (via `refineEffect` or `Schema.filterEffect`) still require an explicit runtime.
+
+- [#33](https://github.com/lucas-barake/effect-form/pull/33) [`c070551`](https://github.com/lucas-barake/effect-form/commit/c070551863b45a2ad5e01c40135de1bcba855794) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Rename `FormReact.build` to `FormReact.make` to follow Effect naming conventions
+
+### Patch Changes
+
+- Updated dependencies [[`dbe8735`](https://github.com/lucas-barake/effect-form/commit/dbe87355012421584a79f09c3fc2eaf3f7b21a48)]:
+  - @lucas-barake/effect-form@0.12.0
+
 ## 0.12.0
 
 ### Minor Changes
