@@ -1419,8 +1419,8 @@ describe("FormReact.make", () => {
       // Async schema simulates API check with delay
       const AsyncMinLength = Schema.String.pipe(
         Schema.minLength(8, { message: () => "Too short" }),
-        Schema.filterEffect((value) =>
-          Effect.gen(function* () {
+        Schema.filterEffect((_value) =>
+          Effect.gen(function*() {
             yield* Effect.sleep("200 millis")
             return undefined
           })

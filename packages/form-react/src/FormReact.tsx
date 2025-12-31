@@ -245,7 +245,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string
       if (shouldValidate) {
         validate(value)
       }
-    }, [value, isTouched, submitCount, validate, parsedMode.validation])
+    }, [value, isTouched, submitCount, validate])
 
     const livePerFieldError: Option.Option<string> = React.useMemo(() => {
       if (validationResult._tag === "Failure") {
@@ -292,7 +292,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string
         validate(value)
       }
       autoSubmitOnBlur?.()
-    }, [setTouched, validate, value, autoSubmitOnBlur, parsedMode.validation])
+    }, [setTouched, validate, value, autoSubmitOnBlur])
 
     const dirtyFields = useAtomValue(dirtyFieldsAtom)
     const isDirty = React.useMemo(
