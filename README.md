@@ -13,20 +13,15 @@ pnpm add @lucas-barake/effect-form-react
 ```tsx
 import { FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import { useAtomValue, useAtomSet } from "@effect-atom/atom-react"
-import * as Atom from "@effect-atom/atom/Atom"
 import * as Schema from "effect/Schema"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
-import * as Layer from "effect/Layer"
-
-const runtime = Atom.runtime(Layer.empty)
 
 const loginFormBuilder = FormBuilder.empty
   .addField("email", Schema.String.pipe(Schema.nonEmptyString()))
   .addField("password", Schema.String.pipe(Schema.minLength(8)))
 
 const loginForm = FormReact.make(loginFormBuilder, {
-  runtime,
   fields: {
     email: ({ field }) => (
       <div>
@@ -133,9 +128,9 @@ function OrderPage() {
 ## 3. Validation Modes
 
 ```tsx
-FormReact.make(formBuilder, { runtime, fields, mode: "onSubmit", onSubmit })
-FormReact.make(formBuilder, { runtime, fields, mode: "onBlur", onSubmit })
-FormReact.make(formBuilder, { runtime, fields, mode: "onChange", onSubmit })
+FormReact.make(formBuilder, { fields, mode: "onSubmit", onSubmit })
+FormReact.make(formBuilder, { fields, mode: "onBlur", onSubmit })
+FormReact.make(formBuilder, { fields, mode: "onChange", onSubmit })
 ```
 
 ## 4. Cross-Field Validation (Sync Refinements)
@@ -238,14 +233,12 @@ function FormControls() {
 
 ```tsx
 FormReact.make(formBuilder, {
-  runtime,
   fields,
   mode: { onChange: { debounce: "300 millis", autoSubmit: true } },
   onSubmit,
 })
 
 FormReact.make(formBuilder, {
-  runtime,
   fields,
   mode: { onBlur: { autoSubmit: true } },
   onSubmit,
@@ -256,7 +249,6 @@ FormReact.make(formBuilder, {
 
 ```tsx
 FormReact.make(formBuilder, {
-  runtime,
   fields,
   mode: { onChange: { debounce: "300 millis" } },
   onSubmit,

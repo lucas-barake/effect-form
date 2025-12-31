@@ -13,8 +13,6 @@ import * as Schema from "effect/Schema"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
-const createRuntime = () => Atom.runtime(Layer.empty)
-
 const TextInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
   <div>
     <input
@@ -45,7 +43,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
       })
@@ -70,7 +67,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
       })
@@ -97,7 +93,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onBlur",
         onSubmit,
@@ -127,7 +122,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
       })
@@ -160,7 +154,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
       })
@@ -194,9 +187,7 @@ describe("FormReact.make", () => {
       const NameField = Field.makeField("name", Schema.String)
       const formBuilder = FormBuilder.empty.addField(NameField)
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { name: TextInput },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
@@ -249,7 +240,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: {
           firstName: FirstNameInput,
           lastName: LastNameInput,
@@ -303,7 +293,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: {
           title: TitleInput,
           items: { name: ItemNameInput },
@@ -362,7 +351,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { items: { name: ItemNameInput } },
         onSubmit,
       })
@@ -425,7 +413,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { items: { name: ItemNameInput } },
         onSubmit,
       })
@@ -485,7 +472,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { items: { name: ItemNameInput } },
         onSubmit,
       })
@@ -541,7 +527,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { items: { name: ItemNameInput } },
         onSubmit,
       })
@@ -594,9 +579,7 @@ describe("FormReact.make", () => {
       const EmailField = Field.makeField("email", AsyncEmail)
       const formBuilder = FormBuilder.empty.addField(EmailField)
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { email: TextInput },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
@@ -642,9 +625,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => {}
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { asyncField: ValidatingInput },
         mode: "onBlur",
         onSubmit,
@@ -713,9 +694,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => {}
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: {
           password: PasswordInput,
           confirmPassword: ConfirmPasswordInput,
@@ -772,9 +751,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => {}
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { username: UsernameInput },
         onSubmit,
       })
@@ -906,9 +883,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => {}
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { fieldA: FieldAInput, fieldB: FieldBInput },
         onSubmit,
       })
@@ -985,9 +960,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => {}
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { password: PasswordInput, confirm: ConfirmInput },
         onSubmit,
       })
@@ -1041,9 +1014,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => {}
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { items: { name: ItemNameInput } },
         onSubmit,
       })
@@ -1088,7 +1059,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onChange",
         onSubmit,
@@ -1121,7 +1091,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onSubmit",
         onSubmit,
@@ -1152,7 +1121,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         mode: "onSubmit",
         onSubmit,
@@ -1186,9 +1154,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => Effect.fail(new Error("Submission failed"))
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { name: TextInput },
         onSubmit,
       })
@@ -1232,7 +1198,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
       })
@@ -1269,9 +1234,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => Effect.void.pipe(Effect.delay("50 millis"))
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { name: TextInput },
         onSubmit,
       })
@@ -1316,9 +1279,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => {}
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { name: TextInput },
         onSubmit,
       })
@@ -1359,7 +1320,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
       })
@@ -1399,7 +1359,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
       })
@@ -1446,7 +1405,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
       })
@@ -1495,7 +1453,6 @@ describe("FormReact.make", () => {
       const onSubmit = () => {}
 
       const form = FormReact.make(formBuilder, {
-        runtime: createRuntime(),
         fields: { name: TextInput },
         onSubmit,
       })
@@ -1536,9 +1493,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => {}
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { name: TextInput },
         onSubmit,
       })
@@ -1582,9 +1537,7 @@ describe("FormReact.make", () => {
 
       const onSubmit = () => {}
 
-      const runtime = createRuntime()
       const form = FormReact.make(formBuilder, {
-        runtime,
         fields: { name: TextInput },
         onSubmit,
       })
