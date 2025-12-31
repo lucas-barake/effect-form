@@ -1,10 +1,11 @@
 import { RegistryContext, useAtom, useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
-import type * as Atom from "@effect-atom/atom/Atom"
+import * as Atom from "@effect-atom/atom/Atom"
 import { Field, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
 import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
 import { getNestedValue, isPathOrParentDirty, isPathUnderRoot } from "@lucas-barake/effect-form/Path"
 import * as Cause from "effect/Cause"
 import type * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as ParseResult from "effect/ParseResult"
 import * as Predicate from "effect/Predicate"
@@ -514,20 +515,16 @@ const makeFieldComponents = <
  * import { FormBuilder } from "@lucas-barake/effect-form"
  * import { FormReact } from "@lucas-barake/effect-form-react"
  * import { useAtomValue, useAtomSet } from "@effect-atom/atom-react"
- * import * as Atom from "@effect-atom/atom/Atom"
  * import * as Schema from "effect/Schema"
- * import * as Layer from "effect/Layer"
- *
- * const runtime = Atom.runtime(Layer.empty)
  *
  * const loginFormBuilder = FormBuilder.empty
  *   .addField("email", Schema.String)
  *   .addField("password", Schema.String)
  *
+ * // Runtime is optional for forms without service requirements
  * const loginForm = FormReact.make(loginFormBuilder, {
- *   runtime,
  *   fields: { email: TextInput, password: PasswordInput },
- *   onSubmit: (values) => Effect.log(`Login: ${values.email}`),
+ *   onSubmit: (_, { decoded }) => Effect.log(`Login: ${decoded.email}`),
  * })
  *
  * // Subscribe to atoms anywhere in the tree
@@ -555,35 +552,61 @@ const makeFieldComponents = <
  *
  * @category Constructors
  */
-export const make = <
-  TFields extends Field.FieldsRecord,
-  R,
-  A,
-  E,
-  SubmitArgs = void,
-  ER = never,
-  CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
->(
-  self: FormBuilder.FormBuilder<TFields, R>,
-  options: {
-    readonly runtime: Atom.AtomRuntime<R, ER>
-    readonly fields: CM
-    readonly mode?: SubmitArgs extends void ? Mode.FormMode : Mode.FormModeWithoutAutoSubmit
-    readonly onSubmit: (
-      args: SubmitArgs,
-      ctx: {
-        readonly decoded: Field.DecodedFromFields<TFields>
-        readonly encoded: Field.EncodedFromFields<TFields>
-        readonly get: Atom.FnContext
-      },
-    ) => A | Effect.Effect<A, E, R>
-  },
-): BuiltForm<TFields, R, A, E, SubmitArgs, CM> => {
-  const { fields: components, mode, onSubmit, runtime } = options
+export const make: {
+  <
+    TFields extends Field.FieldsRecord,
+    A,
+    E,
+    SubmitArgs = void,
+    CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
+  >(
+    self: FormBuilder.FormBuilder<TFields, never>,
+    options: {
+      readonly runtime?: Atom.AtomRuntime<never, never>
+      readonly fields: CM
+      readonly mode?: SubmitArgs extends void ? Mode.FormMode : Mode.FormModeWithoutAutoSubmit
+      readonly onSubmit: (
+        args: SubmitArgs,
+        ctx: {
+          readonly decoded: Field.DecodedFromFields<TFields>
+          readonly encoded: Field.EncodedFromFields<TFields>
+          readonly get: Atom.FnContext
+        },
+      ) => A | Effect.Effect<A, E, never>
+    },
+  ): BuiltForm<TFields, never, A, E, SubmitArgs, CM>
+
+  <
+    TFields extends Field.FieldsRecord,
+    R,
+    A,
+    E,
+    SubmitArgs = void,
+    ER = never,
+    CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
+  >(
+    self: FormBuilder.FormBuilder<TFields, R>,
+    options: {
+      readonly runtime: Atom.AtomRuntime<R, ER>
+      readonly fields: CM
+      readonly mode?: SubmitArgs extends void ? Mode.FormMode : Mode.FormModeWithoutAutoSubmit
+      readonly onSubmit: (
+        args: SubmitArgs,
+        ctx: {
+          readonly decoded: Field.DecodedFromFields<TFields>
+          readonly encoded: Field.EncodedFromFields<TFields>
+          readonly get: Atom.FnContext
+        },
+      ) => A | Effect.Effect<A, E, R>
+    },
+  ): BuiltForm<TFields, R, A, E, SubmitArgs, CM>
+} = (self: any, options: any): any => {
+  const { fields: components, mode, onSubmit, runtime: providedRuntime } = options
+  const runtime = providedRuntime ?? Atom.runtime(Layer.empty)
   const parsedMode = Mode.parse(mode)
   const { fields } = self
 
-  const formAtoms: FormAtoms.FormAtoms<TFields, R, A, E, SubmitArgs> = FormAtoms.make({
+  const formAtoms = FormAtoms.make({
     formBuilder: self,
     runtime,
     onSubmit,
@@ -612,7 +635,7 @@ export const make = <
   } = formAtoms
 
   const InitializeComponent: React.FC<{
-    readonly defaultValues: Field.EncodedFromFields<TFields>
+    readonly defaultValues: any
     readonly children: React.ReactNode
   }> = ({ children, defaultValues }) => {
     const registry = React.useContext(RegistryContext)
@@ -630,7 +653,7 @@ export const make = <
     const debouncedAutoSubmit = useDebounced(() => {
       const stateOption = registry.get(stateAtom)
       if (Option.isNone(stateOption)) return
-      callSubmit(undefined as SubmitArgs)
+      callSubmit(undefined)
     }, parsedMode.autoSubmit && parsedMode.validation === "onChange" ? parsedMode.debounce : null)
 
     useAtomSubscribe(
@@ -648,7 +671,7 @@ export const make = <
       if (parsedMode.autoSubmit && parsedMode.validation === "onBlur") {
         const stateOption = registry.get(stateAtom)
         if (Option.isNone(stateOption)) return
-        callSubmit(undefined as SubmitArgs)
+        callSubmit(undefined)
       }
     }, [registry, callSubmit])
 
@@ -697,7 +720,7 @@ export const make = <
     setValue,
     getFieldAtom,
     ...fieldComponents,
-  } as BuiltForm<TFields, R, A, E, SubmitArgs, CM>
+  }
 }
 
 /**
