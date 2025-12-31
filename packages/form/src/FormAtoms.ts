@@ -65,7 +65,7 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
     Option.Option<FormBuilder.FormState<TFields>>
   >
   readonly errorsAtom: Atom.Writable<Map<string, Validation.ErrorEntry>, Map<string, Validation.ErrorEntry>>
-  readonly formErrorAtom: Atom.Atom<Option.Option<string>>
+  readonly rootErrorAtom: Atom.Atom<Option.Option<string>>
   readonly valuesAtom: Atom.Atom<Option.Option<Field.EncodedFromFields<TFields>>>
   readonly dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly isDirtyAtom: Atom.Atom<boolean>
@@ -201,7 +201,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
   const stateAtom = Atom.make(Option.none<FormBuilder.FormState<TFields>>()).pipe(Atom.setIdleTTL(0))
   const errorsAtom = Atom.make<Map<string, Validation.ErrorEntry>>(new Map()).pipe(Atom.setIdleTTL(0))
 
-  const formErrorAtom = Atom.readable((get) => {
+  const rootErrorAtom = Atom.readable((get) => {
     const errors = get(errorsAtom)
     const entry = errors.get("")
     return entry ? Option.some(entry.message) : Option.none<string>()
@@ -574,7 +574,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
   return {
     stateAtom,
     errorsAtom,
-    formErrorAtom,
+    rootErrorAtom,
     valuesAtom,
     dirtyFieldsAtom,
     isDirtyAtom,

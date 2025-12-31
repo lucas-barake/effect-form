@@ -1278,7 +1278,7 @@ describe("FormAtoms", () => {
     })
   })
 
-  describe("formErrorAtom", () => {
+  describe("rootErrorAtom", () => {
     it("extracts root-level refinement errors from errorsAtom", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
@@ -1299,7 +1299,7 @@ describe("FormAtoms", () => {
         ]),
       )
 
-      const formError = registry.get(atoms.formErrorAtom)
+      const formError = registry.get(atoms.rootErrorAtom)
       expect(Option.isSome(formError)).toBe(true)
       expect(Option.getOrThrow(formError)).toBe("Form-level validation failed")
     })
@@ -1321,7 +1321,7 @@ describe("FormAtoms", () => {
         new Map([["name", { message: "Name error", source: "field" as const }]]),
       )
 
-      const formError = registry.get(atoms.formErrorAtom)
+      const formError = registry.get(atoms.rootErrorAtom)
       expect(Option.isNone(formError)).toBe(true)
     })
   })

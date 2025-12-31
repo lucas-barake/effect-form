@@ -141,9 +141,15 @@ const signupForm = FormBuilder.empty
   .addField("confirmPassword", Schema.String)
   .refine((values) => {
     if (values.password !== values.confirmPassword) {
+      // Route error to specific field
       return { path: ["confirmPassword"], message: "Passwords must match" }
+      // Or return root-level error (no path): return "Passwords must match"
     }
   })
+
+// Display root-level errors with form.rootError
+const rootError = useAtomValue(form.rootError)
+Option.isSome(rootError) && <div className="error">{rootError.value}</div>
 ```
 
 ## 5. Async Refinements
@@ -588,6 +594,7 @@ form.isDirty                 // Atom<boolean> - values differ from initial
 form.hasChangedSinceSubmit   // Atom<boolean> - values differ from last submit
 form.lastSubmittedValues     // Atom<Option<SubmittedValues>> - last submitted values
 form.submitCount             // Atom<number> - number of submit attempts
+form.rootError               // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
 form.submit                  // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
 form.getFieldAtom(fieldRef)  // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
 ```
