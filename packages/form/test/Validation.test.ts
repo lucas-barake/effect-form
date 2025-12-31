@@ -1,7 +1,7 @@
 import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
-import { extractFirstError, routeErrors } from "../src/Validation.js"
+import { extractFirstError, routeErrors, routeErrorsWithSource } from "../src/Validation.js"
 
 describe("Validation", () => {
   describe("extractFirstError", () => {
@@ -95,7 +95,6 @@ describe("Validation", () => {
     })
 
     it("routes first error when schema short-circuits", () => {
-      // Schema short-circuits on first error
       const schema = Schema.Struct({
         name: Schema.Number,
         email: Schema.Number,
@@ -148,7 +147,6 @@ describe("Validation", () => {
     })
 
     it("routes first array item error when schema short-circuits", () => {
-      // Schema short-circuits on first error within arrays
       const schema = Schema.Struct({
         items: Schema.Array(
           Schema.Struct({
@@ -252,6 +250,133 @@ describe("Validation", () => {
 
       const errors = routeErrors(result.left)
       expect(errors.has("age")).toBe(true)
+    })
+  })
+
+  describe("routeErrorsWithSource", () => {
+    it("tags field schema errors as 'field'", () => {
+      const schema = Schema.Struct({
+        password: Schema.String.pipe(Schema.minLength(8, { message: () => "Too short" })),
+      })
+      const result = Schema.decodeUnknownEither(schema)({ password: "abc" })
+
+      if (result._tag === "Right") {
+        throw new Error("Expected Left")
+      }
+
+      const errors = routeErrorsWithSource(result.left)
+      const entry = errors.get("password")
+      expect(entry).toBeDefined()
+      expect(entry?.source).toBe("field")
+      expect(entry?.message).toBe("Too short")
+    })
+
+    it("tags Struct refinement errors as 'refinement'", async () => {
+      const schema = Schema.Struct({
+        password: Schema.String,
+        confirm: Schema.String,
+      }).pipe(
+        Schema.filter((values) => {
+          if (values.password !== values.confirm) {
+            return { path: ["confirm"], message: "Must match" }
+          }
+        }),
+      )
+
+      const result = await Effect.runPromise(
+        Schema.decodeUnknown(schema)({ password: "abc", confirm: "xyz" }).pipe(Effect.either),
+      )
+
+      if (result._tag === "Right") {
+        throw new Error("Expected Left")
+      }
+
+      const errors = routeErrorsWithSource(result.left)
+      const entry = errors.get("confirm")
+      expect(entry).toBeDefined()
+      expect(entry?.source).toBe("refinement")
+      expect(entry?.message).toBe("Must match")
+    })
+
+    it("tags Union refinement errors as 'refinement'", async () => {
+      const OptionA = Schema.Struct({ type: Schema.Literal("a"), value: Schema.String })
+      const OptionB = Schema.Struct({ type: Schema.Literal("b"), count: Schema.Number })
+      const schema = Schema.Union(OptionA, OptionB).pipe(
+        Schema.filter((union) => {
+          if (union.type === "a" && union.value.length < 3) {
+            return { path: ["value"], message: "Value too short" }
+          }
+        }),
+      )
+
+      const result = await Effect.runPromise(
+        Schema.decodeUnknown(schema)({ type: "a", value: "ab" }).pipe(Effect.either),
+      )
+
+      if (result._tag === "Right") {
+        throw new Error("Expected Left")
+      }
+
+      const errors = routeErrorsWithSource(result.left)
+      const entry = errors.get("value")
+      expect(entry).toBeDefined()
+      expect(entry?.source).toBe("refinement")
+    })
+
+    it("tags Class refinement errors as 'refinement'", async () => {
+      class PasswordForm extends Schema.Class<PasswordForm>("PasswordForm")({
+        password: Schema.String,
+        confirm: Schema.String,
+      }) {}
+
+      const schema = PasswordForm.pipe(
+        Schema.filter((values) => {
+          if (values.password !== values.confirm) {
+            return { path: ["confirm"], message: "Passwords must match" }
+          }
+        }),
+      )
+
+      const result = await Effect.runPromise(
+        Schema.decodeUnknown(schema)({ password: "abc", confirm: "xyz" }).pipe(Effect.either),
+      )
+
+      if (result._tag === "Right") {
+        throw new Error("Expected Left")
+      }
+
+      const errors = routeErrorsWithSource(result.left)
+      const entry = errors.get("confirm")
+      expect(entry).toBeDefined()
+      expect(entry?.source).toBe("refinement")
+      expect(entry?.message).toBe("Passwords must match")
+    })
+
+    it("routes root-level refinement errors to empty string key", async () => {
+      const schema = Schema.Struct({
+        a: Schema.String,
+        b: Schema.String,
+      }).pipe(
+        Schema.filter((values) => {
+          if (values.a === values.b) {
+            return "Values must be different"
+          }
+        }),
+      )
+
+      const result = await Effect.runPromise(
+        Schema.decodeUnknown(schema)({ a: "same", b: "same" }).pipe(Effect.either),
+      )
+
+      if (result._tag === "Right") {
+        throw new Error("Expected Left")
+      }
+
+      const errors = routeErrorsWithSource(result.left)
+      const entry = errors.get("")
+      expect(entry).toBeDefined()
+      expect(entry?.source).toBe("refinement")
+      expect(entry?.message).toBe("Values must be different")
     })
   })
 })

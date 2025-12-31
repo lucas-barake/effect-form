@@ -872,7 +872,6 @@ describe("FormAtoms", () => {
       state = atoms.operations.setFieldValue(state, "name", "Charlie")
       expect(state.values.name).toBe("Charlie")
 
-      // Should go to "Bob" (most recent submit), not "Jane"
       const revertedState = atoms.operations.revertToLastSubmit(state)
       expect(revertedState.values.name).toBe("Bob")
     })
@@ -1086,7 +1085,6 @@ describe("FormAtoms", () => {
       registry.mount(setItemsAtom)
       registry.set(setItemsAtom, [{ name: "Updated Item" }])
 
-      // Stored errors remain - they're "cleared" by display logic in React, not by mutation
       const errors = registry.get(atoms.errorsAtom)
       expect(errors.has("items")).toBe(true)
       expect(errors.has("items[0]")).toBe(true)
@@ -1277,6 +1275,54 @@ describe("FormAtoms", () => {
       const finalState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(Option.isSome(finalState.lastSubmittedValues)).toBe(true)
       expect(Option.getOrThrow(finalState.lastSubmittedValues).encoded.email).toBe("first@example.com")
+    })
+  })
+
+  describe("formErrorAtom", () => {
+    it("extracts root-level refinement errors from errorsAtom", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      registry.set(
+        atoms.errorsAtom,
+        new Map([
+          ["", { message: "Form-level validation failed", source: "refinement" as const }],
+          ["name", { message: "Name error", source: "field" as const }],
+        ]),
+      )
+
+      const formError = registry.get(atoms.formErrorAtom)
+      expect(Option.isSome(formError)).toBe(true)
+      expect(Option.getOrThrow(formError)).toBe("Form-level validation failed")
+    })
+
+    it("returns None when no root-level error exists", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com",
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      registry.set(
+        atoms.errorsAtom,
+        new Map([["name", { message: "Name error", source: "field" as const }]]),
+      )
+
+      const formError = registry.get(atoms.formErrorAtom)
+      expect(Option.isNone(formError)).toBe(true)
     })
   })
 })

@@ -981,11 +981,9 @@ describe("FormReact.make", () => {
         expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
       })
 
-      // Type more characters - still doesn't match, error should persist
       const confirmInput = screen.getByTestId("confirm")
       await user.type(confirmInput, "x")
 
-      // Wait a bit and verify error is still there (cross-field validation only runs on submit)
       await new Promise((r) => setTimeout(r, 50))
       expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
     })
@@ -1050,15 +1048,12 @@ describe("FormReact.make", () => {
         expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
       })
 
-      // Fix the value to match
       const confirmInput = screen.getByTestId("confirm")
       await user.clear(confirmInput)
       await user.type(confirmInput, "secret")
 
-      // Error still shows until we submit
       expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
 
-      // Submit again - now it should pass and error should clear
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
@@ -1180,14 +1175,12 @@ describe("FormReact.make", () => {
 
       const input = screen.getByTestId("text-input")
 
-      // Type invalid value (less than 3 chars) - should show error without blur
       await user.type(input, "ab")
 
       await waitFor(() => {
         expect(screen.getByTestId("error")).toHaveTextContent("Min 3 chars")
       })
 
-      // Type one more char to make it valid - error should disappear
       await user.type(input, "c")
 
       await waitFor(() => {
@@ -1219,20 +1212,16 @@ describe("FormReact.make", () => {
 
       const input = screen.getByTestId("text-input")
 
-      // Type invalid value
       await user.type(input, "short")
 
-      // Submit - should show error
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
         expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
       })
 
-      // Type one more character (still invalid) - error should persist
       await user.type(input, "x")
 
-      // Wait a bit and verify error is still there
       await new Promise((r) => setTimeout(r, 50))
       expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
     })
@@ -1261,20 +1250,16 @@ describe("FormReact.make", () => {
 
       const input = screen.getByTestId("text-input")
 
-      // Type invalid value (5 chars)
       await user.type(input, "short")
 
-      // Submit - should show error
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
         expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
       })
 
-      // Type more characters to make it valid (now 8 chars)
       await user.type(input, "123")
 
-      // Error should clear since value is now valid
       await waitFor(() => {
         expect(screen.queryByTestId("error")).not.toBeInTheDocument()
       })
@@ -1325,24 +1310,20 @@ describe("FormReact.make", () => {
         </form.Initialize>,
       )
 
-      // Submit - should show cross-field refinement error
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
         expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
       })
 
-      // Type in confirm field to make it match - error should still persist (refinement error)
       await user.clear(screen.getByTestId("confirm-input"))
       await user.type(screen.getByTestId("confirm-input"), "test")
 
-      // Wait for validation to run
       await new Promise((r) => setTimeout(r, 100))
 
-      // Refinement error should persist until re-submit
+      // Refinement errors persist until re-submit
       expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
 
-      // Re-submit should clear the error
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
@@ -1399,44 +1380,151 @@ describe("FormReact.make", () => {
         </form.Initialize>,
       )
 
-      // Submit - password field error shows (minLength fails)
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
         expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
       })
 
-      // Type more to make password valid
       await user.type(screen.getByTestId("text-input"), "1234")
 
-      // Per-field error should clear since password is now valid
       await waitFor(() => {
         expect(screen.queryByTestId("error")).not.toBeInTheDocument()
       })
 
-      // Submit again - now refinement error shows on confirm field
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
         expect(screen.getByTestId("confirm-error")).toHaveTextContent("Must match password")
       })
 
-      // Type matching value in confirm field
       await user.clear(screen.getByTestId("confirm-input"))
       await user.type(screen.getByTestId("confirm-input"), "short1234")
 
-      // Wait for validation
       await new Promise((r) => setTimeout(r, 100))
 
-      // Refinement error should persist (it's a cross-field error)
+      // Refinement errors persist until re-submit
       expect(screen.getByTestId("confirm-error")).toHaveTextContent("Must match password")
 
-      // Only re-submit clears it
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
         expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument()
       })
+    })
+
+    it("hides stored field error while async validation is pending (async gap)", async () => {
+      const user = userEvent.setup()
+
+      // Async schema simulates API check with delay
+      const AsyncMinLength = Schema.String.pipe(
+        Schema.minLength(8, { message: () => "Too short" }),
+        Schema.filterEffect((value) =>
+          Effect.gen(function* () {
+            yield* Effect.sleep("200 millis")
+            return undefined
+          })
+        ),
+      )
+      const PasswordField = Field.makeField("password", AsyncMinLength)
+      const formBuilder = FormBuilder.empty.addField(PasswordField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { password: TextInput },
+        mode: "onSubmit",
+        onSubmit: () => {},
+      })
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ password: "short" }}>
+          <form.password />
+          <SubmitButton />
+        </form.Initialize>,
+      )
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      await user.type(screen.getByTestId("text-input"), "1234567")
+
+      // Stored field error hidden while async validation pending (isValidating = true)
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+    })
+
+    it("persists refinement errors across field unmount/remount", async () => {
+      const user = userEvent.setup()
+
+      const PasswordField = Field.makeField("password", Schema.String)
+      const ConfirmField = Field.makeField("confirm", Schema.String)
+
+      const formBuilder = FormBuilder.empty
+        .addField(PasswordField)
+        .addField(ConfirmField)
+        .refine((values) => {
+          if (values.password !== values.confirm) {
+            return { path: ["confirm"], message: "Passwords must match" }
+          }
+        })
+
+      const form = FormReact.make(formBuilder, {
+        fields: {
+          password: TextInput,
+          confirm: ({ field }) => (
+            <div>
+              <input
+                data-testid="confirm-input"
+                type="text"
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+              {Option.isSome(field.error) && <span data-testid="confirm-error">{field.error.value}</span>}
+            </div>
+          ),
+        },
+        mode: "onSubmit",
+        onSubmit: () => {},
+      })
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      const ToggleableForm = () => {
+        const [showConfirm, setShowConfirm] = React.useState(true)
+        return (
+          <form.Initialize defaultValues={{ password: "abc", confirm: "xyz" }}>
+            <form.password />
+            {showConfirm && <form.confirm />}
+            <button data-testid="toggle" onClick={() => setShowConfirm((v) => !v)}>
+              Toggle
+            </button>
+            <SubmitButton />
+          </form.Initialize>
+        )
+      }
+
+      render(<ToggleableForm />)
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
+      })
+
+      await user.click(screen.getByTestId("toggle"))
+      expect(screen.queryByTestId("confirm-input")).not.toBeInTheDocument()
+
+      await user.click(screen.getByTestId("toggle"))
+      expect(screen.getByTestId("confirm-input")).toBeInTheDocument()
+
+      // Error persists across unmount/remount (stored in atoms, not component state)
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
     })
   })
 
@@ -1684,7 +1772,6 @@ describe("FormReact.make", () => {
 
       expect(isDirty).toBe(true)
 
-      // Rerender with new defaultValues - form does NOT reinitialize
       rerender(<FormWrapper defaultName="new-initial" />)
 
       expect(screen.getByTestId("text-input")).toHaveValue("modified")
@@ -1730,7 +1817,6 @@ describe("FormReact.make", () => {
 
       expect(isDirty).toBe(true)
 
-      // New key forces reinitialization
       rerender(<FormWrapper defaultName="new-initial" formKey="2" />)
 
       await waitFor(() => {
@@ -1818,7 +1904,6 @@ describe("FormReact.make", () => {
 
       await user.click(screen.getByTestId("submit"))
 
-      // isDirty should still be true (form doesn't auto-reset on submit)
       await waitFor(() => {
         expect(screen.getByTestId("isDirty")).toHaveTextContent("true")
       })
