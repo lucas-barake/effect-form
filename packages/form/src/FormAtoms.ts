@@ -121,7 +121,6 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
    */
   readonly mountAtom: Atom.Atom<void>
 
-  /** @internal */
   readonly keepAliveActiveAtom: Atom.Writable<boolean, boolean>
 }
 
