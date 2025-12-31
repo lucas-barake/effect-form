@@ -1240,6 +1240,43 @@ describe("FormAtoms", () => {
       expect(Option.isSome(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).lastSubmittedValues)).toBe(true)
     })
 
+    it("collects all validation errors on submit, not just the first", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" })),
+      )
+      const EmailField = Field.makeField(
+        "email",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" })),
+      )
+      const AgeField = Field.makeField(
+        "age",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Age is required" })),
+      )
+      const form = FormBuilder.empty.addField(NameField).addField(EmailField).addField(AgeField)
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({ name: "", email: "", age: "" })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+      registry.mount(atoms.stateAtom)
+      registry.mount(atoms.errorsAtom)
+      registry.mount(atoms.submitAtom)
+      registry.set(atoms.submitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(onSubmit).not.toHaveBeenCalled()
+      const errors = registry.get(atoms.errorsAtom)
+      // Should have all 3 errors, not just the first
+      expect(errors.size).toBe(3)
+      expect(errors.has("name")).toBe(true)
+      expect(errors.has("email")).toBe(true)
+      expect(errors.has("age")).toBe(true)
+    })
+
     it("preserves previous lastSubmittedValues when subsequent submit fails", async () => {
       const runtime = Atom.runtime(Layer.empty)
       const EmailField = Field.makeField(

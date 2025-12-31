@@ -336,7 +336,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       const values = state.value.values
       get.set(errorsAtom, new Map())
       const decoded = yield* pipe(
-        Schema.decodeUnknown(combinedSchema)(values) as Effect.Effect<
+        Schema.decodeUnknown(combinedSchema, { errors: "all" })(values) as Effect.Effect<
           Field.DecodedFromFields<TFields>,
           ParseResult.ParseError,
           R
