@@ -574,7 +574,7 @@ describe("FormAtoms", () => {
       expect(fieldAtoms.valueAtom).toBeDefined()
       expect(fieldAtoms.initialValueAtom).toBeDefined()
       expect(fieldAtoms.touchedAtom).toBeDefined()
-      expect(fieldAtoms.crossFieldErrorAtom).toBeDefined()
+      expect(fieldAtoms.errorAtom).toBeDefined()
     })
   })
 
@@ -928,11 +928,11 @@ describe("FormAtoms", () => {
         }),
       }
       registry.set(atoms.stateAtom, Option.some(state))
-      registry.set(atoms.crossFieldErrorsAtom, new Map([["name", "Some error"]]))
+      registry.set(atoms.errorsAtom, new Map([["name", { message: "Some error", source: "field" }]]))
 
       expect(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).values.name).toBe("Jane")
       expect(Option.isSome(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).lastSubmittedValues)).toBe(true)
-      expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(1)
+      expect(registry.get(atoms.errorsAtom).size).toBe(1)
 
       registry.mount(atoms.resetAtom)
       registry.set(atoms.resetAtom, undefined)
@@ -941,7 +941,7 @@ describe("FormAtoms", () => {
       expect(resetState.values.name).toBe("John")
       expect(Option.isNone(resetState.lastSubmittedValues)).toBe(true)
       expect(resetState.submitCount).toBe(0)
-      expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(0)
+      expect(registry.get(atoms.errorsAtom).size).toBe(0)
     })
   })
 
@@ -969,7 +969,7 @@ describe("FormAtoms", () => {
 
       state = atoms.operations.setFieldValue(state, "name", "Bob")
       registry.set(atoms.stateAtom, Option.some(state))
-      registry.set(atoms.crossFieldErrorsAtom, new Map([["name", "Validation error"]]))
+      registry.set(atoms.errorsAtom, new Map([["name", { message: "Validation error", source: "field" }]]))
 
       expect(registry.get(atoms.stateAtom).pipe(Option.getOrThrow).values.name).toBe("Bob")
 
@@ -978,7 +978,7 @@ describe("FormAtoms", () => {
 
       const revertedState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(revertedState.values.name).toBe("Jane")
-      expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(0)
+      expect(registry.get(atoms.errorsAtom).size).toBe(0)
     })
   })
 
@@ -994,7 +994,7 @@ describe("FormAtoms", () => {
         email: "john@test.com",
       })
       registry.set(atoms.stateAtom, Option.some(initialState))
-      registry.set(atoms.crossFieldErrorsAtom, new Map([["email", "Invalid email"]]))
+      registry.set(atoms.errorsAtom, new Map([["email", { message: "Invalid email", source: "field" }]]))
 
       registry.mount(atoms.setValuesAtom)
       registry.set(atoms.setValuesAtom, { name: "Alice", email: "alice@test.com" })
@@ -1004,7 +1004,7 @@ describe("FormAtoms", () => {
       expect(newState.values.email).toBe("alice@test.com")
       expect(newState.dirtyFields.has("name")).toBe(true)
       expect(newState.dirtyFields.has("email")).toBe(true)
-      expect(registry.get(atoms.crossFieldErrorsAtom).size).toBe(0)
+      expect(registry.get(atoms.errorsAtom).size).toBe(0)
     })
   })
 
@@ -1054,7 +1054,12 @@ describe("FormAtoms", () => {
       expect(newState.values.name).toBe("JOHN")
     })
 
-    it("clears cross-field errors for the updated path and nested paths", () => {
+    it("does not clear stored errors (display logic handles clearing)", () => {
+      // Note: errors are intentionally NOT cleared in setValue to avoid race conditions.
+      // The display logic in React components handles "clearing" via useMemo based on:
+      // 1. Live validation passing
+      // 2. Error source (field vs refinement)
+      // Actual error clearing happens on the next submit.
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
@@ -1067,12 +1072,12 @@ describe("FormAtoms", () => {
       registry.set(atoms.stateAtom, Option.some(initialState))
 
       registry.set(
-        atoms.crossFieldErrorsAtom,
+        atoms.errorsAtom,
         new Map([
-          ["items", "Array error"],
-          ["items[0]", "Item error"],
-          ["items[0].name", "Name error"],
-          ["title", "Title error"],
+          ["items", { message: "Array error", source: "field" as const }],
+          ["items[0]", { message: "Item error", source: "field" as const }],
+          ["items[0].name", { message: "Name error", source: "field" as const }],
+          ["title", { message: "Title error", source: "field" as const }],
         ]),
       )
 
@@ -1081,10 +1086,11 @@ describe("FormAtoms", () => {
       registry.mount(setItemsAtom)
       registry.set(setItemsAtom, [{ name: "Updated Item" }])
 
-      const errors = registry.get(atoms.crossFieldErrorsAtom)
-      expect(errors.has("items")).toBe(false)
-      expect(errors.has("items[0]")).toBe(false)
-      expect(errors.has("items[0].name")).toBe(false)
+      // Stored errors remain - they're "cleared" by display logic in React, not by mutation
+      const errors = registry.get(atoms.errorsAtom)
+      expect(errors.has("items")).toBe(true)
+      expect(errors.has("items[0]")).toBe(true)
+      expect(errors.has("items[0].name")).toBe(true)
       expect(errors.has("title")).toBe(true)
     })
   })

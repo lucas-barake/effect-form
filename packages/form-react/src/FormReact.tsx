@@ -2,7 +2,7 @@ import { RegistryContext, useAtom, useAtomSet, useAtomSubscribe, useAtomValue } 
 import * as Atom from "@effect-atom/atom/Atom"
 import { Field, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
 import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
-import { getNestedValue, isPathOrParentDirty, isPathUnderRoot } from "@lucas-barake/effect-form/Path"
+import { getNestedValue, isPathOrParentDirty } from "@lucas-barake/effect-form/Path"
 import * as Cause from "effect/Cause"
 import type * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
@@ -193,7 +193,7 @@ const AutoSubmitContext = createContext<(() => void) | null>(null)
 const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string, unknown>>(
   fieldKey: string,
   fieldDef: Field.FieldDef<string, S>,
-  crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>,
+  errorsAtom: Atom.Writable<Map<string, Validation.ErrorEntry>, Map<string, Validation.ErrorEntry>>,
   submitCountAtom: Atom.Atom<number>,
   dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>,
   parsedMode: Mode.ParsedMode,
@@ -209,15 +209,14 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string
     const autoSubmitOnBlur = useContext(AutoSubmitContext)
     const fieldPath = arrayCtx ? `${arrayCtx.parentPath}.${fieldKey}` : fieldKey
 
-    const { crossFieldErrorAtom, touchedAtom, valueAtom } = React.useMemo(
+    const { errorAtom, touchedAtom, valueAtom } = React.useMemo(
       () => getOrCreateFieldAtoms(fieldPath),
       [fieldPath],
     )
 
     const [value, setValue] = useAtom(valueAtom) as [Schema.Schema.Encoded<S>, (v: unknown) => void]
     const [isTouched, setTouched] = useAtom(touchedAtom)
-    const crossFieldError = useAtomValue(crossFieldErrorAtom)
-    const setCrossFieldErrors = useAtomSet(crossFieldErrorsAtom)
+    const storedError = useAtomValue(errorAtom)
     const submitCount = useAtomValue(submitCountAtom)
 
     const validationAtom = React.useMemo(
@@ -241,13 +240,14 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string
 
       const shouldValidate = parsedMode.validation === "onChange"
         || (parsedMode.validation === "onBlur" && isTouched)
+        || (parsedMode.validation === "onSubmit" && submitCount > 0)
 
       if (shouldValidate) {
         validate(value)
       }
-    }, [value, isTouched, validate])
+    }, [value, isTouched, submitCount, validate, parsedMode.validation])
 
-    const perFieldError: Option.Option<string> = React.useMemo(() => {
+    const livePerFieldError: Option.Option<string> = React.useMemo(() => {
       if (validationResult._tag === "Failure") {
         const parseError = Cause.failureOption(validationResult.cause)
         if (Option.isSome(parseError) && ParseResult.isParseError(parseError.value)) {
@@ -257,25 +257,33 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string
       return Option.none()
     }, [validationResult])
 
-    const validationError = Option.isSome(perFieldError) ? perFieldError : crossFieldError
+    const isValidating = validationResult.waiting
+
+    const validationError: Option.Option<string> = React.useMemo(() => {
+      if (Option.isSome(livePerFieldError)) {
+        return livePerFieldError
+      }
+
+      if (Option.isSome(storedError)) {
+        // Hide field-sourced errors when validation passes or is pending (async gap).
+        // Refinement errors persist until re-submit - they can't be cleared by typing.
+        const shouldHideStoredError = storedError.value.source === "field" &&
+          (validationResult._tag === "Success" || isValidating)
+
+        if (shouldHideStoredError) {
+          return Option.none()
+        }
+        return Option.some(storedError.value.message)
+      }
+
+      return Option.none()
+    }, [livePerFieldError, storedError, validationResult, isValidating])
 
     const onChange = React.useCallback(
       (newValue: Schema.Schema.Encoded<S>) => {
         setValue(newValue)
-        setCrossFieldErrors((prev) => {
-          const next = new Map<string, string>()
-          for (const [errorPath, message] of prev) {
-            if (!isPathUnderRoot(errorPath, fieldPath)) {
-              next.set(errorPath, message)
-            }
-          }
-          return next.size !== prev.size ? next : prev
-        })
-        if (parsedMode.validation === "onChange") {
-          validate(newValue)
-        }
       },
-      [fieldPath, setValue, setCrossFieldErrors, validate],
+      [setValue],
     )
 
     const onBlur = React.useCallback(() => {
@@ -284,15 +292,18 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string
         validate(value)
       }
       autoSubmitOnBlur?.()
-    }, [setTouched, validate, value, autoSubmitOnBlur])
+    }, [setTouched, validate, value, autoSubmitOnBlur, parsedMode.validation])
 
     const dirtyFields = useAtomValue(dirtyFieldsAtom)
     const isDirty = React.useMemo(
       () => isPathOrParentDirty(dirtyFields, fieldPath),
       [dirtyFields, fieldPath],
     )
-    const isValidating = validationResult.waiting
-    const shouldShowError = isTouched || submitCount > 0
+    const shouldShowError = parsedMode.validation === "onChange"
+      ? (isDirty || submitCount > 0)
+      : parsedMode.validation === "onBlur"
+      ? (isTouched || submitCount > 0)
+      : submitCount > 0
 
     const fieldState: FieldState<S> = React.useMemo(() => ({
       value,
@@ -314,7 +325,7 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
   fieldKey: string,
   def: Field.ArrayFieldDef<string, S>,
   stateAtom: Atom.Writable<Option.Option<FormBuilder.FormState<any>>, Option.Option<FormBuilder.FormState<any>>>,
-  crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>,
+  errorsAtom: Atom.Writable<Map<string, Validation.ErrorEntry>, Map<string, Validation.ErrorEntry>>,
   submitCountAtom: Atom.Atom<number>,
   dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>,
   parsedMode: Mode.ParsedMode,
@@ -420,7 +431,7 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any>(
       itemFieldComponents[itemKey] = makeFieldComponent(
         itemKey,
         itemDef,
-        crossFieldErrorsAtom,
+        errorsAtom,
         submitCountAtom,
         dirtyFieldsAtom,
         parsedMode,
@@ -455,7 +466,7 @@ const makeFieldComponents = <
     Option.Option<FormBuilder.FormState<TFields>>,
     Option.Option<FormBuilder.FormState<TFields>>
   >,
-  crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>,
+  errorsAtom: Atom.Writable<Map<string, Validation.ErrorEntry>, Map<string, Validation.ErrorEntry>>,
   submitCountAtom: Atom.Atom<number>,
   dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>,
   parsedMode: Mode.ParsedMode,
@@ -476,7 +487,7 @@ const makeFieldComponents = <
         key,
         def as Field.ArrayFieldDef<string, Schema.Schema.Any>,
         stateAtom,
-        crossFieldErrorsAtom,
+        errorsAtom,
         submitCountAtom,
         dirtyFieldsAtom,
         parsedMode,
@@ -493,7 +504,7 @@ const makeFieldComponents = <
       components[key] = makeFieldComponent(
         key,
         def,
-        crossFieldErrorsAtom,
+        errorsAtom,
         submitCountAtom,
         dirtyFieldsAtom,
         parsedMode,
@@ -614,8 +625,8 @@ export const make: {
 
   const {
     combinedSchema,
-    crossFieldErrorsAtom,
     dirtyFieldsAtom,
+    errorsAtom,
     fieldRefs,
     getFieldAtom,
     getOrCreateFieldAtoms,
@@ -677,24 +688,13 @@ export const make: {
 
     if (Option.isNone(state)) return null
 
-    return (
-      <AutoSubmitContext.Provider value={onBlurAutoSubmit}>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-          }}
-        >
-          {children}
-        </form>
-      </AutoSubmitContext.Provider>
-    )
+    return <AutoSubmitContext.Provider value={onBlurAutoSubmit}>{children}</AutoSubmitContext.Provider>
   }
 
   const fieldComponents = makeFieldComponents(
     fields,
     stateAtom,
-    crossFieldErrorsAtom,
+    errorsAtom,
     submitCountAtom,
     dirtyFieldsAtom,
     parsedMode,
@@ -804,19 +804,16 @@ export const makeField = <K extends string, S extends Schema.Schema.Any>(options
   readonly key: K
   readonly schema: S
 }): <P extends Record<string, unknown> = Record<string, never>>(
-  component: React.FC<FieldComponentProps<S, P>>
+  component: React.FC<FieldComponentProps<S, P>>,
 ) => FieldBundle<K, S, P> => {
   const field = Field.makeField(options.key, options.schema)
   return (component) => {
-    // DX: Auto-generate a readable component name for DevTools
     if (!component.displayName) {
       const displayName = `${options.key.charAt(0).toUpperCase()}${options.key.slice(1)}Field`
-      // Cast to 'any' because strict TS marks function names as readonly,
-      // but React relies on mutation here.
       try {
         ;(component as any).displayName = displayName
       } catch {
-        // Ignore errors in environments where function props are frozen
+        // Ignore - some environments freeze function properties
       }
     }
     return {

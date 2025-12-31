@@ -1,0 +1,27 @@
+{
+  "name": "@lucas-barake/effect-form-examples",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@lucas-barake/effect-form": "workspace:^",
+    "@lucas-barake/effect-form-react": "workspace:^",
+    "@effect-atom/atom": "^0.4.8",
+    "@effect-atom/atom-react": "^0.4.3",
+    "effect": "^3.19.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0"
+  }
+}
