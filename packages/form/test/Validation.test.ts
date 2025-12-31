@@ -352,6 +352,35 @@ describe("Validation", () => {
       expect(entry?.message).toBe("Passwords must match")
     })
 
+    it("tags filterEffect (async) refinement errors as 'refinement'", async () => {
+      const schema = Schema.Struct({
+        username: Schema.String.pipe(Schema.minLength(3)),
+      }).pipe(
+        Schema.filterEffect((values) =>
+          Effect.sync(() => {
+            const reserved = ["admin", "root", "taken"]
+            if (reserved.includes(values.username.toLowerCase())) {
+              return { path: ["username"], message: "Username is reserved" }
+            }
+          })
+        ),
+      )
+
+      const result = await Effect.runPromise(
+        Schema.decodeUnknown(schema)({ username: "admin" }).pipe(Effect.either),
+      )
+
+      if (result._tag === "Right") {
+        throw new Error("Expected Left")
+      }
+
+      const errors = routeErrorsWithSource(result.left)
+      const entry = errors.get("username")
+      expect(entry).toBeDefined()
+      expect(entry?.source).toBe("refinement")
+      expect(entry?.message).toBe("Username is reserved")
+    })
+
     it("routes root-level refinement errors to empty string key", async () => {
       const schema = Schema.Struct({
         a: Schema.String,

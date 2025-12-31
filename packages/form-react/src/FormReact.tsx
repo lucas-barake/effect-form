@@ -733,11 +733,15 @@ export const make: {
     )
 
     const onBlurAutoSubmit = React.useCallback(() => {
-      if (parsedMode.autoSubmit && parsedMode.validation === "onBlur") {
-        const stateOption = registry.get(stateAtom)
-        if (Option.isNone(stateOption)) return
-        callSubmit(undefined)
-      }
+      if (!parsedMode.autoSubmit || parsedMode.validation !== "onBlur") return
+
+      const stateOption = registry.get(stateAtom)
+      if (Option.isNone(stateOption)) return
+
+      const { lastSubmittedValues, values } = stateOption.value
+      if (Option.isSome(lastSubmittedValues) && values === lastSubmittedValues.value.encoded) return
+
+      callSubmit(undefined)
     }, [registry, callSubmit])
 
     if (Option.isNone(state)) return null

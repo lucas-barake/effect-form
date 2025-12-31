@@ -313,6 +313,45 @@ describe("Debounce and Auto-Submit", () => {
         { timeout: 200 },
       )
     })
+
+    it("should NOT re-submit on blur if values unchanged since last submission", async () => {
+      const user = userEvent.setup()
+      const submitHandler = vi.fn()
+
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        runtime: createRuntime(),
+        fields: { name: TextInput },
+        mode: { onBlur: { autoSubmit: true } },
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded),
+      })
+
+      render(
+        <form.Initialize defaultValues={{ name: "" }}>
+          <form.name />
+        </form.Initialize>,
+      )
+
+      const input = screen.getByTestId("text-input")
+
+      await user.type(input, "Lucas")
+      await user.tab()
+
+      await waitFor(
+        () => {
+          expect(submitHandler).toHaveBeenCalledTimes(1)
+        },
+        { timeout: 200 },
+      )
+
+      await user.click(input)
+      await user.tab()
+
+      await delay(100)
+
+      expect(submitHandler).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe("No debounce in simple onChange mode", () => {

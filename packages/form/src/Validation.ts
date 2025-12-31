@@ -122,7 +122,16 @@ const determineErrorSources = (error: ParseResult.ParseError): Map<string, Error
         break
       }
       case "Transformation":
-        walk(issue.issue, path, source)
+        // filterEffect/transformOrFail produce Transformation with FinalTransformation on composite types
+        if (
+          issue.kind === "Transformation" &&
+          issue.ast.transformation._tag === "FinalTransformation" &&
+          isCompositeType(issue.ast.from)
+        ) {
+          walk(issue.issue, path, "refinement")
+        } else {
+          walk(issue.issue, path, source)
+        }
         break
     }
   }
