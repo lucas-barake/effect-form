@@ -120,6 +120,48 @@ describe("Debounce and Auto-Submit", () => {
         { timeout: 300 },
       )
     })
+
+    it("should NOT re-trigger auto-submit after submission completes", async () => {
+      const user = userEvent.setup()
+      const submitHandler = vi.fn()
+
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        runtime: createRuntime(),
+        fields: { name: TextInput },
+        mode: { onChange: { debounce: "50 millis", autoSubmit: true } },
+        onSubmit: async (_: void, { decoded }) => {
+          // Async submit to ensure stateAtom update happens after debounce window
+          await delay(50)
+          submitHandler(decoded)
+        },
+      })
+
+      render(
+        <form.Initialize defaultValues={{ name: "" }}>
+          <form.name />
+        </form.Initialize>,
+      )
+
+      const input = screen.getByTestId("text-input")
+      await user.type(input, "Lucas")
+
+      // Wait for first submit to complete
+      await waitFor(
+        () => {
+          expect(submitHandler).toHaveBeenCalledTimes(1)
+        },
+        { timeout: 300 },
+      )
+
+      // Wait additional time - if bug exists, more submits will occur
+      await delay(200)
+
+      // Should still only be 1 submit, not an infinite loop
+      expect(submitHandler).toHaveBeenCalledTimes(1)
+      expect(submitHandler).toHaveBeenCalledWith({ name: "Lucas" })
+    })
   })
 
   describe("Race Condition Guard", () => {

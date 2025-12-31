@@ -668,14 +668,67 @@ export const make: {
       callSubmit(undefined)
     }, parsedMode.autoSubmit && parsedMode.validation === "onChange" ? parsedMode.debounce : null)
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Auto-Submit Coordination
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Two-subscription model to avoid infinite loop:
+    // - Stream 1 reacts to value changes (reference equality), triggers or queues submit
+    // - Stream 2 reacts to submit completion, flushes queued changes
+    //
+    // Single subscription to stateAtom cannot distinguish value changes from submit
+    // metadata updates (submitCount, lastSubmittedValues).
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    const lastValuesRef = React.useRef<unknown>(null)
+    const pendingChangesRef = React.useRef(false)
+    const wasSubmittingRef = React.useRef(false)
+
     useAtomSubscribe(
       stateAtom,
       React.useCallback(() => {
         if (!isInitializedRef.current) return
-        if (parsedMode.autoSubmit && parsedMode.validation === "onChange") {
+
+        const state = registry.get(stateAtom)
+        if (Option.isNone(state)) return
+        const currentValues = state.value.values
+
+        // Reference equality filters out submit metadata changes.
+        // Works because setFieldValue creates new values object (immutable update).
+        if (currentValues === lastValuesRef.current) return
+        lastValuesRef.current = currentValues
+
+        if (!parsedMode.autoSubmit || parsedMode.validation !== "onChange") return
+
+        const submitResult = registry.get(submitAtom)
+        if (submitResult.waiting) {
+          pendingChangesRef.current = true
+        } else {
           debouncedAutoSubmit()
         }
-      }, [debouncedAutoSubmit]),
+      }, [debouncedAutoSubmit, registry]),
+      { immediate: false },
+    )
+
+    useAtomSubscribe(
+      submitAtom,
+      React.useCallback(
+        (result) => {
+          if (!parsedMode.autoSubmit || parsedMode.validation !== "onChange") return
+
+          const isSubmitting = result.waiting
+          const wasSubmitting = wasSubmittingRef.current
+          wasSubmittingRef.current = isSubmitting
+
+          // Flush queued changes when submit completes
+          if (wasSubmitting && !isSubmitting) {
+            if (pendingChangesRef.current) {
+              pendingChangesRef.current = false
+              debouncedAutoSubmit()
+            }
+          }
+        },
+        [debouncedAutoSubmit],
+      ),
       { immediate: false },
     )
 
