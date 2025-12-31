@@ -3,6 +3,7 @@ import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 const UsernameField = Field.makeField(
   "username",
@@ -12,28 +13,18 @@ const UsernameField = Field.makeField(
 const formBuilder = FormBuilder.empty.addField(UsernameField)
 
 const UsernameInput: React.FC<FormReact.FieldComponentProps<typeof UsernameField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Username</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Username</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {field.isValidating && (
-      <span style={{ color: "#666", fontSize: 12, marginTop: 4, display: "block" }}>Validating...</span>
-    )}
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {field.isValidating && <span className={styles.validatingText}>Validating...</span>}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
@@ -75,9 +66,9 @@ function FormCard({
   const submit = useAtomSet(form.submit)
 
   return (
-    <div style={{ padding: 16, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 16 }}>
-      <h3 style={{ margin: "0 0 4px" }}>{title}</h3>
-      <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 16px" }}>{description}</p>
+    <div className={`${styles.card} ${styles.marginBottom16}`}>
+      <h3 className={styles.cardTitle}>{title}</h3>
+      <p className={styles.cardDescription}>{description}</p>
       <form.Initialize defaultValues={{ username: "" }}>
         <form
           onSubmit={(e) => {
@@ -89,14 +80,7 @@ function FormCard({
           <button
             type="submit"
             disabled={!isDirty || submitResult.waiting}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: !isDirty || submitResult.waiting ? "#ccc" : "#2563eb",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              cursor: !isDirty || submitResult.waiting ? "not-allowed" : "pointer",
-            }}
+            className={`${styles.button} ${styles.buttonSmall}`}
           >
             Submit
           </button>
@@ -108,9 +92,9 @@ function FormCard({
 
 export function ValidationModes() {
   return (
-    <div style={{ maxWidth: 500 }}>
-      <h1 style={{ marginTop: 0, marginBottom: 8 }}>Validation Modes</h1>
-      <p style={{ color: "#6b7280", marginBottom: 24 }}>
+    <div className={styles.pageContainerMedium}>
+      <h1 className={styles.pageTitle}>Validation Modes</h1>
+      <p className={styles.pageDescription}>
         Different validation timing strategies. Type less than 3 characters to see errors.
       </p>
 

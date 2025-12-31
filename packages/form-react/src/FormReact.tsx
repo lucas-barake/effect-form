@@ -1,4 +1,11 @@
-import { RegistryContext, useAtom, useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
+import {
+  RegistryContext,
+  useAtom,
+  useAtomMount,
+  useAtomSet,
+  useAtomSubscribe,
+  useAtomValue,
+} from "@effect-atom/atom-react"
 import * as Atom from "@effect-atom/atom/Atom"
 import { Field, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
 import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
@@ -151,6 +158,9 @@ export type BuiltForm<
   readonly setValues: Atom.Writable<void, Field.EncodedFromFields<TFields>>
   readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
   readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>
+
+  readonly mount: Atom.Atom<void>
+  readonly KeepAlive: React.FC
 } & FieldComponents<TFields, CM>
 
 type FieldComponents<TFields extends Field.FieldsRecord, CM extends FieldComponentMap<TFields>> = {
@@ -633,7 +643,9 @@ export const make: {
     getOrCreateValidationAtom,
     hasChangedSinceSubmitAtom,
     isDirtyAtom,
+    keepAliveActiveAtom,
     lastSubmittedValuesAtom,
+    mountAtom,
     operations,
     resetAtom,
     revertToLastSubmitAtom,
@@ -657,10 +669,18 @@ export const make: {
     const isInitializedRef = React.useRef(false)
 
     React.useEffect(() => {
-      setFormState(Option.some(operations.createInitialState(defaultValues)))
+      const isKeptAlive = registry.get(keepAliveActiveAtom)
+      const currentState = registry.get(stateAtom)
+
+      if (!isKeptAlive) {
+        setFormState(Option.some(operations.createInitialState(defaultValues)))
+      } else if (Option.isNone(currentState)) {
+        setFormState(Option.some(operations.createInitialState(defaultValues)))
+      }
+
       isInitializedRef.current = true
       // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
-    }, [])
+    }, [registry])
 
     const debouncedAutoSubmit = useDebounced(() => {
       const stateOption = registry.get(stateAtom)
@@ -762,6 +782,18 @@ export const make: {
     components,
   )
 
+  const KeepAlive: React.FC = () => {
+    const setKeepAliveActive = useAtomSet(keepAliveActiveAtom)
+
+    React.useLayoutEffect(() => {
+      setKeepAliveActive(true)
+      return () => setKeepAliveActive(false)
+    }, [setKeepAliveActive])
+
+    useAtomMount(mountAtom)
+    return null
+  }
+
   return {
     values: valuesAtom,
     isDirty: isDirtyAtom,
@@ -778,6 +810,8 @@ export const make: {
     setValues: setValuesAtom,
     setValue,
     getFieldAtom,
+    mount: mountAtom,
+    KeepAlive,
     ...fieldComponents,
   }
 }

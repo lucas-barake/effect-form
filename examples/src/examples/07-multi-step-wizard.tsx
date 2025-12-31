@@ -1,4 +1,4 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
 import * as Result from "@effect-atom/atom/Result"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
@@ -6,6 +6,7 @@ import { constNull } from "effect/Function"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import { useState } from "react"
+import styles from "../styles/form.module.css"
 
 const FirstNameField = Field.makeField(
   "firstName",
@@ -20,48 +21,32 @@ const LastNameField = Field.makeField(
 const step1Builder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField)
 
 const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof FirstNameField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>First Name</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>First Name</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
 const LastNameInput: React.FC<FormReact.FieldComponentProps<typeof LastNameField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Last Name</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Last Name</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
@@ -92,71 +77,47 @@ const ZipField = Field.makeField(
 const step2Builder = FormBuilder.empty.addField(StreetField).addField(CityField).addField(ZipField)
 
 const StreetInput: React.FC<FormReact.FieldComponentProps<typeof StreetField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Street Address</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Street Address</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
 const CityInput: React.FC<FormReact.FieldComponentProps<typeof CityField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>City</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>City</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
 const ZipInput: React.FC<FormReact.FieldComponentProps<typeof ZipField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>ZIP Code</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>ZIP Code</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
@@ -189,21 +150,13 @@ const finalForm = FormReact.make(finalBuilder, {
 })
 
 function FinalSubmitButton() {
-  const isDirty = useAtomValue(finalForm.isDirty)
   const submitResult = useAtomValue(finalForm.submit)
 
   return (
     <button
       type="submit"
-      disabled={!isDirty || submitResult.waiting}
-      style={{
-        padding: "10px 20px",
-        backgroundColor: !isDirty || submitResult.waiting ? "#ccc" : "#2563eb",
-        color: "white",
-        border: "none",
-        borderRadius: 4,
-        cursor: !isDirty || submitResult.waiting ? "not-allowed" : "pointer",
-      }}
+      disabled={submitResult.waiting}
+      className={styles.button}
     >
       {submitResult.waiting ? "Placing Order..." : "Place Order"}
     </button>
@@ -217,10 +170,21 @@ type StepData = {
 
 function Step1({ onComplete }: { onComplete: (data: StepData["step1"]) => void }) {
   const submit = useAtomSet(step1Form.submit)
+  const isDirty = useAtomValue(step1Form.isDirty)
   const submitResult = useAtomValue(step1Form.submit)
 
-  if (Result.isSuccess(submitResult) && !submitResult.waiting) {
-    onComplete(submitResult.value)
+  useAtomSubscribe(step1Form.submit, (result) => {
+    if (Result.isSuccess(result) && !result.waiting) {
+      onComplete(result.value)
+    }
+  }, { immediate: false })
+
+  const handleNext = () => {
+    if (isDirty) {
+      submit()
+    } else if (Result.isSuccess(submitResult)) {
+      onComplete(submitResult.value)
+    }
   }
 
   return (
@@ -228,7 +192,7 @@ function Step1({ onComplete }: { onComplete: (data: StepData["step1"]) => void }
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          submit()
+          handleNext()
         }}
       >
         <step1Form.firstName />
@@ -236,14 +200,7 @@ function Step1({ onComplete }: { onComplete: (data: StepData["step1"]) => void }
         <button
           type="submit"
           disabled={submitResult.waiting}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
+          className={styles.button}
         >
           Next →
         </button>
@@ -260,10 +217,21 @@ function Step2({
   onBack: () => void
 }) {
   const submit = useAtomSet(step2Form.submit)
+  const isDirty = useAtomValue(step2Form.isDirty)
   const submitResult = useAtomValue(step2Form.submit)
 
-  if (Result.isSuccess(submitResult) && !submitResult.waiting) {
-    onComplete(submitResult.value)
+  useAtomSubscribe(step2Form.submit, (result) => {
+    if (Result.isSuccess(result) && !result.waiting) {
+      onComplete(result.value)
+    }
+  }, { immediate: false })
+
+  const handleNext = () => {
+    if (isDirty) {
+      submit()
+    } else if (Result.isSuccess(submitResult)) {
+      onComplete(submitResult.value)
+    }
   }
 
   return (
@@ -271,38 +239,24 @@ function Step2({
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          submit()
+          handleNext()
         }}
       >
         <step2Form.street />
         <step2Form.city />
         <step2Form.zip />
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className={styles.buttonGroup}>
           <button
             type="button"
             onClick={onBack}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#6b7280",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-            }}
+            className={styles.buttonSecondary}
           >
             ← Back
           </button>
           <button
             type="submit"
             disabled={submitResult.waiting}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#2563eb",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-            }}
+            className={styles.button}
           >
             Next →
           </button>
@@ -338,19 +292,19 @@ function Step3({
           submit()
         }}
       >
-        <div style={{ backgroundColor: "#f9fafb", padding: 16, borderRadius: 8, marginBottom: 16 }}>
-          <h3 style={{ margin: "0 0 12px" }}>Review Your Order</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className={styles.reviewSection}>
+          <h3 className={styles.reviewTitle}>Review Your Order</h3>
+          <div className={`${styles.grid2Col} ${styles.gridGap16}`}>
             <div>
               <strong>Personal Info</strong>
-              <p style={{ margin: "4px 0" }}>
+              <p className={styles.reviewItem}>
                 {data.step1?.firstName} {data.step1?.lastName}
               </p>
             </div>
             <div>
               <strong>Shipping Address</strong>
-              <p style={{ margin: "4px 0" }}>{data.step2?.street}</p>
-              <p style={{ margin: "4px 0" }}>
+              <p className={styles.reviewItem}>{data.step2?.street}</p>
+              <p className={styles.reviewItem}>
                 {data.step2?.city}, {data.step2?.zip}
               </p>
             </div>
@@ -359,25 +313,18 @@ function Step3({
 
         {Result.builder(submitResult)
           .onSuccess((value) => (
-            <div style={{ padding: 16, backgroundColor: "#dcfce7", borderRadius: 8, marginBottom: 16 }}>
+            <div className={`${styles.alertSuccess} ${styles.marginBottom16}`}>
               Order submitted! Order ID: <strong>{value.orderId}</strong>
             </div>
           ))
           .orNull()}
 
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className={styles.buttonGroup}>
           <button
             type="button"
             onClick={onBack}
             disabled={submitResult.waiting}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#6b7280",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-            }}
+            className={styles.buttonSecondary}
           >
             ← Back
           </button>
@@ -393,29 +340,27 @@ export function MultiStepWizard() {
   const [stepData, setStepData] = useState<StepData>({ step1: null, step2: null })
 
   return (
-    <div style={{ maxWidth: 500 }}>
-      <h1 style={{ marginTop: 0, marginBottom: 8 }}>Multi-Step Wizard</h1>
-      <p style={{ color: "#6b7280", marginBottom: 24 }}>
+    <div className={styles.pageContainerMedium}>
+      <step1Form.KeepAlive />
+      <step2Form.KeepAlive />
+
+      <h1 className={styles.pageTitle}>Multi-Step Wizard</h1>
+      <p className={styles.pageDescription}>
         Three-step form using <code>.merge()</code>{" "}
         to combine builders. Each step validates independently, then merges into final form.
       </p>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+      <div className={styles.progressBar}>
         {[1, 2, 3].map((step) => (
           <div
             key={step}
-            style={{
-              flex: 1,
-              height: 4,
-              backgroundColor: step <= currentStep ? "#2563eb" : "#e5e7eb",
-              borderRadius: 2,
-            }}
+            className={`${styles.progressStep} ${step <= currentStep ? styles.active : ""}`}
           />
         ))}
       </div>
 
-      <div style={{ padding: 16, border: "1px solid #e5e7eb", borderRadius: 8 }}>
-        <h3 style={{ margin: "0 0 16px" }}>
+      <div className={styles.card}>
+        <h3 className={styles.marginBottom16}>
           Step {currentStep} of 3: {currentStep === 1 ? "Personal Info" : currentStep === 2 ? "Address" : "Review"}
         </h3>
 

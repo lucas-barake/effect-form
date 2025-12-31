@@ -7,6 +7,7 @@ import { AsyncValidation } from "./examples/05-async-validation"
 import { AutoSubmit } from "./examples/06-auto-submit"
 import { MultiStepWizard } from "./examples/07-multi-step-wizard"
 import { RevertChanges } from "./examples/08-revert-changes"
+import styles from "./styles/app.module.css"
 
 const examples = [
   { id: "basic", label: "Basic Form", component: BasicForm },
@@ -24,33 +25,15 @@ export function App() {
   const ActiveComponent = examples.find((e) => e.id === activeExample)?.component ?? BasicForm
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
-      <nav
-        style={{
-          width: 220,
-          padding: 16,
-          borderRight: "1px solid #e5e7eb",
-          backgroundColor: "#f9fafb",
-        }}
-      >
-        <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 600 }}>Effect Form Examples</h2>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+    <div className={styles.container}>
+      <nav className={styles.nav}>
+        <h2 className={styles.navTitle}>Effect Form Examples</h2>
+        <ul className={styles.navList}>
           {examples.map((example) => (
             <li key={example.id}>
               <button
                 onClick={() => setActiveExample(example.id)}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  marginBottom: 4,
-                  border: "none",
-                  borderRadius: 4,
-                  backgroundColor: activeExample === example.id ? "#2563eb" : "transparent",
-                  color: activeExample === example.id ? "white" : "#374151",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  fontSize: 14,
-                }}
+                className={`${styles.navButton} ${activeExample === example.id ? styles.active : ""}`}
               >
                 {example.label}
               </button>
@@ -58,7 +41,7 @@ export function App() {
           ))}
         </ul>
       </nav>
-      <main style={{ flex: 1, padding: 32 }}>
+      <main className={styles.main}>
         <ActiveComponent key={activeExample} />
       </main>
     </div>

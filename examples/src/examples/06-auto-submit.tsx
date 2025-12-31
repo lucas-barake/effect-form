@@ -4,6 +4,7 @@ import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 const DisplayNameField = Field.makeField(
   "displayName",
@@ -15,44 +16,30 @@ const BioField = Field.makeField("bio", Schema.String)
 const settingsFormBuilder = FormBuilder.empty.addField(DisplayNameField).addField(BioField)
 
 const DisplayNameInput: React.FC<FormReact.FieldComponentProps<typeof DisplayNameField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Display Name</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Display Name</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
 const BioInput: React.FC<FormReact.FieldComponentProps<typeof BioField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Bio</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Bio</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={styles.input}
     />
   </div>
 )
@@ -90,17 +77,17 @@ function SaveStatus({ form }: { form: typeof autoSubmitOnChangeForm }) {
 
   return Result.builder(submitResult)
     .onWaiting(() => (
-      <div style={{ padding: 8, backgroundColor: "#fef3c7", borderRadius: 4, fontSize: 13 }}>
+      <div className={`${styles.alertWarning} ${styles.alertSmall}`}>
         Saving...
       </div>
     ))
     .onSuccess((value) => (
-      <div style={{ padding: 8, backgroundColor: "#dcfce7", borderRadius: 4, fontSize: 13 }}>
+      <div className={`${styles.alertSuccess} ${styles.alertSmall}`}>
         Saved at {value.savedAt.toLocaleTimeString()}
       </div>
     ))
     .onError(() => (
-      <div style={{ padding: 8, backgroundColor: "#fee2e2", borderRadius: 4, fontSize: 13 }}>
+      <div className={`${styles.alertError} ${styles.alertSmall}`}>
         Failed to save
       </div>
     ))
@@ -109,16 +96,16 @@ function SaveStatus({ form }: { form: typeof autoSubmitOnChangeForm }) {
 
 export function AutoSubmit() {
   return (
-    <div style={{ maxWidth: 600 }}>
-      <h1 style={{ marginTop: 0, marginBottom: 8 }}>Auto-Submit</h1>
-      <p style={{ color: "#6b7280", marginBottom: 24 }}>
+    <div className={styles.pageContainerLarge}>
+      <h1 className={styles.pageTitle}>Auto-Submit</h1>
+      <p className={styles.pageDescription}>
         Forms that automatically save when you make changes. No submit button needed!
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-        <div style={{ padding: 16, border: "1px solid #e5e7eb", borderRadius: 8 }}>
-          <h3 style={{ margin: "0 0 4px" }}>Auto-save on Change</h3>
-          <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 16px" }}>
+      <div className={styles.grid2Col}>
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Auto-save on Change</h3>
+          <p className={styles.cardDescription}>
             Saves 500ms after you stop typing
           </p>
           <autoSubmitOnChangeForm.Initialize defaultValues={{ displayName: "John", bio: "Hello!" }}>
@@ -128,9 +115,9 @@ export function AutoSubmit() {
           </autoSubmitOnChangeForm.Initialize>
         </div>
 
-        <div style={{ padding: 16, border: "1px solid #e5e7eb", borderRadius: 8 }}>
-          <h3 style={{ margin: "0 0 4px" }}>Auto-save on Blur</h3>
-          <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 16px" }}>
+        <div className={styles.card}>
+          <h3 className={styles.cardTitle}>Auto-save on Blur</h3>
+          <p className={styles.cardDescription}>
             Saves when you leave a field
           </p>
           <autoSubmitOnBlurForm.Initialize defaultValues={{ displayName: "Jane", bio: "Hi there!" }}>

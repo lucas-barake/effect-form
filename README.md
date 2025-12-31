@@ -584,6 +584,57 @@ const profileForm = FormReact.make(profileFormBuilder, {
 })
 ```
 
+## 18. Persisting State Across Unmounts (KeepAlive)
+
+By default, form state is destroyed when `Initialize` unmounts. For multi-step wizards or conditional fields where you want state to persist, use `KeepAlive`:
+
+```tsx
+function MultiStepWizard() {
+  const [step, setStep] = useState(1)
+
+  return (
+    <div>
+      {/* Keep form state alive even when steps unmount */}
+      <step1Form.KeepAlive />
+      <step2Form.KeepAlive />
+
+      {step === 1 && <Step1 onNext={() => setStep(2)} />}
+      {step === 2 && <Step2 onBack={() => setStep(1)} />}
+    </div>
+  )
+}
+
+function Step1({ onNext }: { onNext: () => void }) {
+  return (
+    <step1Form.Initialize defaultValues={{ name: "" }}>
+      <step1Form.name />
+      <button onClick={onNext}>Next</button>
+    </step1Form.Initialize>
+  )
+}
+```
+
+Without `KeepAlive`, navigating from Step1 to Step2 and back would lose all Step1 data. With `KeepAlive` at the wizard root, state persists across step changes.
+
+**When to use:**
+- Multi-step wizards where steps unmount
+- Conditional fields (toggles between optional inputs)
+- Tab-based forms where inactive tabs unmount
+
+**Alternative: Hook-based mounting**
+
+For more control, use `useAtomMount` with the `mount` atom directly:
+
+```tsx
+import { useAtomMount } from "@effect-atom/atom-react"
+
+function Wizard() {
+  useAtomMount(step1Form.mount)
+  useAtomMount(step2Form.mount)
+  // ...
+}
+```
+
 ## Available Atoms
 
 All forms expose these atoms for fine-grained subscriptions:
@@ -597,6 +648,7 @@ form.submitCount             // Atom<number> - number of submit attempts
 form.rootError               // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
 form.submit                  // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
 form.getFieldAtom(fieldRef)  // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
+form.mount                   // Atom<void> - root anchor for state persistence (use with useAtomMount)
 ```
 
 > **Why `Option` for `values`?** Returns `None` before the form is initialized, `Some(values)` after. This allows parent components to safely subscribe and wait for initialization without throwing.

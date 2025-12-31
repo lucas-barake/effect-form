@@ -1,30 +1,25 @@
 import type { FormReact } from "@lucas-barake/effect-form-react"
 import * as Option from "effect/Option"
 import type * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 export const TextInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
+  <div className={styles.fieldContainer}>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
     {field.isValidating && (
-      <span style={{ color: "#666", fontSize: 12, marginTop: 4, display: "block" }}>
+      <span className={styles.validatingText}>
         Validating...
       </span>
     )}
     {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>
+      <span className={styles.errorText}>
         {field.error.value}
       </span>
     )}

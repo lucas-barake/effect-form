@@ -3,6 +3,7 @@ import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 const PasswordField = Field.makeField(
   "password",
@@ -24,49 +25,33 @@ const signupFormBuilder = FormBuilder.empty
   })
 
 const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof PasswordField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Password</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Password</label>
     <input
       type="password"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
 const ConfirmPasswordInput: React.FC<FormReact.FieldComponentProps<typeof ConfirmPasswordField.schema>> = ({
   field,
 }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Confirm Password</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Confirm Password</label>
     <input
       type="password"
       value={field.value}
       onChange={(e) => field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
@@ -92,14 +77,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={!isDirty || submitResult.waiting}
-      style={{
-        padding: "10px 20px",
-        backgroundColor: !isDirty || submitResult.waiting ? "#ccc" : "#2563eb",
-        color: "white",
-        border: "none",
-        borderRadius: 4,
-        cursor: !isDirty || submitResult.waiting ? "not-allowed" : "pointer",
-      }}
+      className={styles.button}
     >
       {submitResult.waiting ? "Setting Password..." : "Set Password"}
     </button>
@@ -110,9 +88,9 @@ export function CrossFieldValidation() {
   const submit = useAtomSet(signupForm.submit)
 
   return (
-    <div style={{ maxWidth: 400 }}>
-      <h1 style={{ marginTop: 0, marginBottom: 8 }}>Cross-Field Validation</h1>
-      <p style={{ color: "#6b7280", marginBottom: 24 }}>
+    <div className={styles.pageContainer}>
+      <h1 className={styles.pageTitle}>Cross-Field Validation</h1>
+      <p className={styles.pageDescription}>
         Using <code>.refine()</code> for synchronous cross-field validation. Error is routed to the{" "}
         <code>confirmPassword</code> field.
       </p>

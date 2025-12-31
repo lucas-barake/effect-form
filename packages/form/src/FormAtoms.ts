@@ -100,6 +100,29 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
 
   readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>
+
+  /**
+   * Root anchor atom for the form's dependency graph.
+   * Mount this atom to keep all form state alive even when field components unmount.
+   *
+   * Useful for:
+   * - Multi-step wizards where steps unmount but state should persist
+   * - Conditional fields (toggles) where state should survive visibility changes
+   *
+   * @example
+   * ```tsx
+   * // Keep form state alive at wizard root level
+   * function Wizard() {
+   *   useAtomMount(step1Form.mount)
+   *   useAtomMount(step2Form.mount)
+   *   return currentStep === 1 ? <Step1 /> : <Step2 />
+   * }
+   * ```
+   */
+  readonly mountAtom: Atom.Atom<void>
+
+  /** @internal */
+  readonly keepAliveActiveAtom: Atom.Writable<boolean, boolean>
 }
 
 /**
@@ -571,6 +594,14 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     return safeAtom
   }
 
+  const mountAtom = Atom.readable((get) => {
+    get(stateAtom)
+    get(errorsAtom)
+    get(submitAtom)
+  }).pipe(Atom.setIdleTTL(0))
+
+  const keepAliveActiveAtom = Atom.make(false).pipe(Atom.setIdleTTL(0))
+
   return {
     stateAtom,
     errorsAtom,
@@ -596,5 +627,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     setValuesAtom,
     setValue,
     getFieldAtom,
+    mountAtom,
+    keepAliveActiveAtom,
   } as FormAtoms<TFields, R, A, E, SubmitArgs>
 }

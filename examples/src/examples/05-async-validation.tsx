@@ -6,6 +6,7 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 class UsernameValidator extends Context.Tag("UsernameValidator")<
   UsernameValidator,
@@ -44,28 +45,18 @@ const usernameFormBuilder = FormBuilder.empty
   )
 
 const UsernameInput: React.FC<FormReact.FieldComponentProps<typeof UsernameField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Username</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Username</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {field.isValidating && (
-      <span style={{ color: "#666", fontSize: 12, marginTop: 4, display: "block" }}>Checking availability...</span>
-    )}
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {field.isValidating && <span className={styles.validatingText}>Checking availability...</span>}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
@@ -89,14 +80,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={!isDirty || submitResult.waiting}
-      style={{
-        padding: "10px 20px",
-        backgroundColor: !isDirty || submitResult.waiting ? "#ccc" : "#2563eb",
-        color: "white",
-        border: "none",
-        borderRadius: 4,
-        cursor: !isDirty || submitResult.waiting ? "not-allowed" : "pointer",
-      }}
+      className={styles.button}
     >
       {submitResult.waiting ? "Registering..." : "Register"}
     </button>
@@ -107,12 +91,12 @@ export function AsyncValidation() {
   const submit = useAtomSet(usernameForm.submit)
 
   return (
-    <div style={{ maxWidth: 400 }}>
-      <h1 style={{ marginTop: 0, marginBottom: 8 }}>Async Validation</h1>
-      <p style={{ color: "#6b7280", marginBottom: 24 }}>
+    <div className={styles.pageContainer}>
+      <h1 className={styles.pageTitle}>Async Validation</h1>
+      <p className={styles.pageDescription}>
         Using <code>.refineEffect()</code> with Effect services. Validation runs asynchronously with debouncing.
       </p>
-      <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 24 }}>
+      <p className={styles.pageHint}>
         Reserved usernames: <code>admin</code>, <code>root</code>, <code>taken</code>
       </p>
 

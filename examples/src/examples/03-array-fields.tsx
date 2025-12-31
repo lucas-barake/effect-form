@@ -3,6 +3,7 @@ import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 const TodosField = Field.makeArrayField(
   "todos",
@@ -23,12 +24,7 @@ const todoForm = FormReact.make(todoFormBuilder, {
           onChange={(e) => field.onChange(e.target.value)}
           onBlur={field.onBlur}
           placeholder="What needs to be done?"
-          style={{
-            flex: 1,
-            padding: "8px 12px",
-            border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-            borderRadius: 4,
-          }}
+          className={`${styles.listItemInput} ${Option.isSome(field.error) ? styles.error : ""}`}
         />
       ),
       completed: ({ field }) => (
@@ -36,7 +32,7 @@ const todoForm = FormReact.make(todoFormBuilder, {
           type="checkbox"
           checked={field.value}
           onChange={(e) => field.onChange(e.target.checked)}
-          style={{ width: 20, height: 20 }}
+          className={styles.checkbox}
         />
       ),
     },
@@ -56,14 +52,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={!isDirty || submitResult.waiting}
-      style={{
-        padding: "10px 20px",
-        backgroundColor: !isDirty || submitResult.waiting ? "#ccc" : "#2563eb",
-        color: "white",
-        border: "none",
-        borderRadius: 4,
-        cursor: !isDirty || submitResult.waiting ? "not-allowed" : "pointer",
-      }}
+      className={styles.button}
     >
       {submitResult.waiting ? "Saving..." : "Save Todos"}
     </button>
@@ -75,35 +64,18 @@ function TodoList() {
     <todoForm.todos>
       {({ append, items, move, swap }) => (
         <div>
-          {items.length === 0 && <p style={{ color: "#6b7280", fontStyle: "italic" }}>No todos yet. Add one below!</p>}
+          {items.length === 0 && <p className={styles.emptyState}>No todos yet. Add one below!</p>}
 
           {items.map((_, index) => (
             <todoForm.todos.Item key={index} index={index}>
               {({ remove: removeItem }) => (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                    marginBottom: 8,
-                    padding: 8,
-                    backgroundColor: "#f9fafb",
-                    borderRadius: 4,
-                  }}
-                >
+                <div className={styles.listItem}>
                   <todoForm.todos.completed />
                   <todoForm.todos.text />
                   <button
                     type="button"
                     onClick={removeItem}
-                    style={{
-                      padding: "4px 8px",
-                      backgroundColor: "#ef4444",
-                      color: "white",
-                      border: "none",
-                      borderRadius: 4,
-                      cursor: "pointer",
-                    }}
+                    className={`${styles.buttonDanger} ${styles.buttonSmall}`}
                   >
                     Remove
                   </button>
@@ -112,18 +84,11 @@ function TodoList() {
             </todoForm.todos.Item>
           ))}
 
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <div className={`${styles.buttonGroup} ${styles.marginTop16}`}>
             <button
               type="button"
               onClick={() => append({ text: "", completed: false })}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#10b981",
-                color: "white",
-                border: "none",
-                borderRadius: 4,
-                cursor: "pointer",
-              }}
+              className={styles.buttonSuccess}
             >
               Add Todo
             </button>
@@ -133,28 +98,14 @@ function TodoList() {
                 <button
                   type="button"
                   onClick={() => swap(0, 1)}
-                  style={{
-                    padding: "8px 16px",
-                    backgroundColor: "#6366f1",
-                    color: "white",
-                    border: "none",
-                    borderRadius: 4,
-                    cursor: "pointer",
-                  }}
+                  className={styles.buttonIndigo}
                 >
                   Swap 0 ↔ 1
                 </button>
                 <button
                   type="button"
                   onClick={() => move(0, items.length - 1)}
-                  style={{
-                    padding: "8px 16px",
-                    backgroundColor: "#8b5cf6",
-                    color: "white",
-                    border: "none",
-                    borderRadius: 4,
-                    cursor: "pointer",
-                  }}
+                  className={styles.buttonPurple}
                 >
                   Move first → last
                 </button>
@@ -171,9 +122,9 @@ function FormState() {
   const values = useAtomValue(todoForm.values)
 
   return (
-    <div style={{ marginTop: 24, padding: 16, backgroundColor: "#f3f4f6", borderRadius: 4, fontSize: 12 }}>
+    <div className={styles.debugBox}>
       <strong>Form Values:</strong>
-      <pre style={{ margin: "8px 0 0", whiteSpace: "pre-wrap" }}>
+      <pre className={styles.debugPre}>
         {JSON.stringify(Option.isSome(values) ? values.value : null, null, 2)}
       </pre>
     </div>
@@ -184,9 +135,9 @@ export function ArrayFields() {
   const submit = useAtomSet(todoForm.submit)
 
   return (
-    <div style={{ maxWidth: 500 }}>
-      <h1 style={{ marginTop: 0, marginBottom: 8 }}>Array Fields</h1>
-      <p style={{ color: "#6b7280", marginBottom: 24 }}>
+    <div className={styles.pageContainerMedium}>
+      <h1 className={styles.pageTitle}>Array Fields</h1>
+      <p className={styles.pageDescription}>
         Dynamic list with <code>append</code>, <code>remove</code>, <code>swap</code>, and <code>move</code> operations.
       </p>
 
@@ -198,7 +149,7 @@ export function ArrayFields() {
           }}
         >
           <TodoList />
-          <div style={{ marginTop: 24 }}>
+          <div className={styles.marginTop24}>
             <SubmitButton />
           </div>
           <FormState />

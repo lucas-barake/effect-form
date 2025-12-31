@@ -4,6 +4,7 @@ import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 const NameField = Field.makeField(
   "name",
@@ -18,48 +19,32 @@ const EmailField = Field.makeField(
 const profileFormBuilder = FormBuilder.empty.addField(NameField).addField(EmailField)
 
 const NameInput: React.FC<FormReact.FieldComponentProps<typeof NameField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Name</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Name</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
 const EmailInput: React.FC<FormReact.FieldComponentProps<typeof EmailField.schema>> = ({ field }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Email</label>
+  <div className={styles.fieldContainer}>
+    <label className={styles.label}>Email</label>
     <input
       type="text"
       value={field.value}
       onChange={(e) =>
         field.onChange(e.target.value)}
       onBlur={field.onBlur}
-      style={{
-        padding: "8px 12px",
-        border: Option.isSome(field.error) ? "1px solid #dc2626" : "1px solid #ccc",
-        borderRadius: 4,
-        width: "100%",
-        boxSizing: "border-box",
-      }}
+      className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
-    {Option.isSome(field.error) && (
-      <span style={{ color: "#dc2626", fontSize: 12, marginTop: 4, display: "block" }}>{field.error.value}</span>
-    )}
+    {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
 )
 
@@ -84,30 +69,12 @@ function UnsavedChangesBanner() {
   if (!hasChangedSinceSubmit) return null
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: 12,
-        backgroundColor: "#fef3c7",
-        borderRadius: 4,
-        marginBottom: 16,
-      }}
-    >
+    <div className={styles.unsavedBanner}>
       <span>You have unsaved changes</span>
       <button
         type="button"
         onClick={() => revertToLastSubmit()}
-        style={{
-          padding: "6px 12px",
-          backgroundColor: "#f59e0b",
-          color: "white",
-          border: "none",
-          borderRadius: 4,
-          cursor: "pointer",
-          fontSize: 13,
-        }}
+        className={styles.buttonWarning}
       >
         Revert Changes
       </button>
@@ -123,14 +90,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={!isDirty || submitResult.waiting}
-      style={{
-        padding: "10px 20px",
-        backgroundColor: !isDirty || submitResult.waiting ? "#ccc" : "#2563eb",
-        color: "white",
-        border: "none",
-        borderRadius: 4,
-        cursor: !isDirty || submitResult.waiting ? "not-allowed" : "pointer",
-      }}
+      className={styles.button}
     >
       {submitResult.waiting ? "Saving..." : "Save Profile"}
     </button>
@@ -142,20 +102,13 @@ function FormActions() {
   const reset = useAtomSet(profileForm.reset)
 
   return (
-    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+    <div className={styles.inlineFlex}>
       <SubmitButton />
       <button
         type="button"
         onClick={() => reset()}
         disabled={!isDirty}
-        style={{
-          padding: "10px 20px",
-          backgroundColor: isDirty ? "#6b7280" : "#ccc",
-          color: "white",
-          border: "none",
-          borderRadius: 4,
-          cursor: isDirty ? "pointer" : "not-allowed",
-        }}
+        className={styles.buttonSecondary}
       >
         Reset to Initial
       </button>
@@ -168,12 +121,12 @@ function SaveStatus() {
 
   return Result.builder(submitResult)
     .onWaiting(() => (
-      <div style={{ padding: 8, backgroundColor: "#dbeafe", borderRadius: 4, fontSize: 13, marginTop: 16 }}>
+      <div className={styles.alertInfo}>
         Saving...
       </div>
     ))
     .onSuccess((value) => (
-      <div style={{ padding: 8, backgroundColor: "#dcfce7", borderRadius: 4, fontSize: 13, marginTop: 16 }}>
+      <div className={`${styles.alertSuccess} ${styles.alertSmall} ${styles.marginTop16}`}>
         Last saved at {value.savedAt.toLocaleTimeString()}
       </div>
     ))
@@ -188,23 +141,23 @@ function StateComparison() {
   const submitCount = useAtomValue(profileForm.submitCount)
 
   return (
-    <div style={{ marginTop: 24, padding: 16, backgroundColor: "#f3f4f6", borderRadius: 4, fontSize: 12 }}>
+    <div className={styles.debugBox}>
       <strong>Form State:</strong>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 12 }}>
+      <div className={`${styles.grid2Col} ${styles.gridGap16}`} style={{ marginTop: 12 }}>
         <div>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>Current Values:</div>
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+          <div className={styles.stateLabel}>Current Values:</div>
+          <pre className={styles.statePre}>
             {JSON.stringify(Option.isSome(values) ? values.value : null, null, 2)}
           </pre>
         </div>
         <div>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>Last Submitted:</div>
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+          <div className={styles.stateLabel}>Last Submitted:</div>
+          <pre className={styles.statePre}>
             {JSON.stringify(Option.isSome(lastSubmittedValues) ? lastSubmittedValues.value : null, null, 2)}
           </pre>
         </div>
       </div>
-      <div style={{ marginTop: 12, display: "flex", gap: 16 }}>
+      <div className={styles.stateFlags}>
         <span>
           isDirty: <strong>{String(isDirty)}</strong>
         </span>
@@ -223,9 +176,9 @@ export function RevertChanges() {
   const submit = useAtomSet(profileForm.submit)
 
   return (
-    <div style={{ maxWidth: 500 }}>
-      <h1 style={{ marginTop: 0, marginBottom: 8 }}>Revert Changes</h1>
-      <p style={{ color: "#6b7280", marginBottom: 24 }}>
+    <div className={styles.pageContainerMedium}>
+      <h1 className={styles.pageTitle}>Revert Changes</h1>
+      <p className={styles.pageDescription}>
         Track changes since last submit with <code>hasChangedSinceSubmit</code> and{" "}
         <code>revertToLastSubmit</code>. Shows "unsaved changes" banner when form differs from last submitted state.
       </p>
