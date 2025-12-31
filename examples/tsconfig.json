@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "paths": {
+      "@lucas-barake/effect-form-react": ["../packages/form-react/src/index.ts"],
+      "@lucas-barake/effect-form": ["../packages/form/src/index.ts"],
+      "@lucas-barake/effect-form/FormBuilder": ["../packages/form/src/FormBuilder.ts"],
+      "@lucas-barake/effect-form/Path": ["../packages/form/src/Path.ts"]
+    }
+  },
+  "include": ["src"]
+}

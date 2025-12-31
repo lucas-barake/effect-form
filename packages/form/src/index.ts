@@ -4,24 +4,26 @@
 export * as Field from "./Field.js"
 
 /**
- * Path utilities for form field operations.
- */
-export * as Path from "./Path.js"
-
-export * as FormBuilder from "./FormBuilder.js"
-
-/**
- * Atom infrastructure for form state management.
+ * Atoms for a single field.
  *
- * This module provides the core atom infrastructure that framework adapters
- * (React, Vue, Svelte, Solid) can use to build reactive form components.
+ * @category Models
  */
 export * as FormAtoms from "./FormAtoms.js"
+
+/**
+ * @category Models
+ */
+export * as FormBuilder from "./FormBuilder.js"
 
 /**
  * Form validation mode configuration.
  */
 export * as Mode from "./Mode.js"
+
+/**
+ * Path utilities for form field operations.
+ */
+export * as Path from "./Path.js"
 
 /**
  * Validation utilities for form error handling.

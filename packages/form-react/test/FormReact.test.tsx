@@ -921,7 +921,7 @@ describe("FormReact.make", () => {
       expect(screen.queryByTestId("fieldA-error")).not.toBeInTheDocument()
     })
 
-    it("cross-field error clears when field value changes", async () => {
+    it("cross-field error persists when typing after failed submit (still invalid)", async () => {
       const user = userEvent.setup()
 
       const FieldInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String, { testId: string }>> = ({
@@ -983,6 +983,78 @@ describe("FormReact.make", () => {
 
       const confirmInput = screen.getByTestId("confirm")
       await user.type(confirmInput, "x")
+
+      await new Promise((r) => setTimeout(r, 50))
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
+    })
+
+    it("cross-field error clears when fixed and resubmitted", async () => {
+      const user = userEvent.setup()
+
+      const FieldInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String, { testId: string }>> = ({
+        field,
+        props,
+      }) => (
+        <div>
+          <input
+            type="text"
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
+            data-testid={props.testId}
+          />
+          {Option.isSome(field.error) && <span data-testid={`${props.testId}-error`}>{field.error.value}</span>}
+        </div>
+      )
+
+      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+        <FieldInput field={field} props={{ testId: "password" }} />
+      )
+      const ConfirmInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+        <FieldInput field={field} props={{ testId: "confirm" }} />
+      )
+
+      const PasswordField = Field.makeField("password", Schema.String)
+      const ConfirmField = Field.makeField("confirm", Schema.String)
+      const formBuilder = FormBuilder.empty
+        .addField(PasswordField)
+        .addField(ConfirmField)
+        .refine((values) => {
+          if (values.password !== values.confirm) {
+            return { path: ["confirm"], message: "Passwords must match" }
+          }
+        })
+
+      const onSubmit = () => {}
+
+      const form = FormReact.make(formBuilder, {
+        fields: { password: PasswordInput, confirm: ConfirmInput },
+        onSubmit,
+      })
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ password: "secret", confirm: "different" }}>
+          <form.password />
+          <form.confirm />
+          <SubmitButton />
+        </form.Initialize>,
+      )
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
+      })
+
+      const confirmInput = screen.getByTestId("confirm")
+      await user.clear(confirmInput)
+      await user.type(confirmInput, "secret")
+
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
+
+      await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
         expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument()
@@ -1049,69 +1121,7 @@ describe("FormReact.make", () => {
   })
 
   describe("validation modes", () => {
-    it("validates on change with validationMode='onChange'", async () => {
-      const user = userEvent.setup()
-
-      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
-      const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = FormBuilder.empty.addField(NameField)
-
-      const onSubmit = () => {}
-
-      const form = FormReact.make(formBuilder, {
-        fields: { name: TextInput },
-        mode: "onChange",
-        onSubmit,
-      })
-
-      render(
-        <form.Initialize defaultValues={{ name: "test" }}>
-          <form.name />
-        </form.Initialize>,
-      )
-
-      const input = screen.getByTestId("text-input")
-
-      // Blur to mark as touched (error only shows when touched)
-      await user.clear(input)
-      await user.tab()
-
-      await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent("Required")
-      })
-    })
-
-    it("does not validate on blur in onSubmit mode", async () => {
-      const user = userEvent.setup()
-
-      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
-      const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = FormBuilder.empty.addField(NameField)
-
-      const onSubmit = () => {}
-
-      const form = FormReact.make(formBuilder, {
-        fields: { name: TextInput },
-        mode: "onSubmit",
-        onSubmit,
-      })
-
-      render(
-        <form.Initialize defaultValues={{ name: "" }}>
-          <form.name />
-        </form.Initialize>,
-      )
-
-      const input = screen.getByTestId("text-input")
-      await user.click(input)
-      await user.tab()
-
-      // In onSubmit mode, no validation happens on blur - wait to ensure no error appears
-      await new Promise((r) => setTimeout(r, 50))
-      expect(screen.queryByTestId("error")).not.toBeInTheDocument()
-    })
-
-    it("validationMode='onSubmit' shows errors after submit attempt", async () => {
+    it("onSubmit mode shows errors after submit attempt", async () => {
       const user = userEvent.setup()
 
       const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
@@ -1142,6 +1152,379 @@ describe("FormReact.make", () => {
       await waitFor(() => {
         expect(screen.getByTestId("error")).toHaveTextContent("Required")
       })
+    })
+
+    it("onChange mode shows errors immediately without needing blur", async () => {
+      const user = userEvent.setup()
+
+      const MinLength = Schema.String.pipe(Schema.minLength(3, { message: () => "Min 3 chars" }))
+      const NameField = Field.makeField("name", MinLength)
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        mode: "onChange",
+        onSubmit: () => {},
+      })
+
+      render(
+        <form.Initialize defaultValues={{ name: "" }}>
+          <form.name />
+        </form.Initialize>,
+      )
+
+      const input = screen.getByTestId("text-input")
+
+      await user.type(input, "ab")
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Min 3 chars")
+      })
+
+      await user.type(input, "c")
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+    })
+
+    it("onSubmit mode keeps errors when typing still-invalid values after failed submit", async () => {
+      const user = userEvent.setup()
+
+      const MinLength = Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" }))
+      const PasswordField = Field.makeField("password", MinLength)
+      const formBuilder = FormBuilder.empty.addField(PasswordField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { password: TextInput },
+        mode: "onSubmit",
+        onSubmit: () => {},
+      })
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ password: "" }}>
+          <form.password />
+          <SubmitButton />
+        </form.Initialize>,
+      )
+
+      const input = screen.getByTestId("text-input")
+
+      await user.type(input, "short")
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
+      })
+
+      await user.type(input, "x")
+
+      await new Promise((r) => setTimeout(r, 50))
+      expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
+    })
+
+    it("onSubmit mode clears errors when typing valid values after failed submit", async () => {
+      const user = userEvent.setup()
+
+      const MinLength = Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" }))
+      const PasswordField = Field.makeField("password", MinLength)
+      const formBuilder = FormBuilder.empty.addField(PasswordField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { password: TextInput },
+        mode: "onSubmit",
+        onSubmit: () => {},
+      })
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ password: "" }}>
+          <form.password />
+          <SubmitButton />
+        </form.Initialize>,
+      )
+
+      const input = screen.getByTestId("text-input")
+
+      await user.type(input, "short")
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
+      })
+
+      await user.type(input, "123")
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+    })
+
+    it("cross-field refinement errors persist until re-submit", async () => {
+      const user = userEvent.setup()
+
+      const PasswordField = Field.makeField("password", Schema.String.pipe(Schema.minLength(4)))
+      const ConfirmField = Field.makeField("confirm", Schema.String)
+
+      const formBuilder = FormBuilder.empty
+        .addField(PasswordField)
+        .addField(ConfirmField)
+        .refine((values) => {
+          if (values.password !== values.confirm) {
+            return { path: ["confirm"], message: "Passwords must match" }
+          }
+        })
+
+      const form = FormReact.make(formBuilder, {
+        fields: {
+          password: TextInput,
+          confirm: ({ field }) => (
+            <div>
+              <input
+                data-testid="confirm-input"
+                type="text"
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+              {Option.isSome(field.error) && <span data-testid="confirm-error">{field.error.value}</span>}
+            </div>
+          ),
+        },
+        mode: "onSubmit",
+        onSubmit: () => {},
+      })
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ password: "test", confirm: "different" }}>
+          <form.password />
+          <form.confirm />
+          <SubmitButton />
+        </form.Initialize>,
+      )
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
+      })
+
+      await user.clear(screen.getByTestId("confirm-input"))
+      await user.type(screen.getByTestId("confirm-input"), "test")
+
+      await new Promise((r) => setTimeout(r, 100))
+
+      // Refinement errors persist until re-submit
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument()
+      })
+    })
+
+    it("per-field errors clear on valid input while refinement errors persist", async () => {
+      const user = userEvent.setup()
+
+      // Schema with both per-field validation (minLength) and cross-field refinement
+      const PasswordField = Field.makeField(
+        "password",
+        Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" })),
+      )
+      const ConfirmField = Field.makeField("confirm", Schema.String)
+
+      const formBuilder = FormBuilder.empty
+        .addField(PasswordField)
+        .addField(ConfirmField)
+        .refine((values) => {
+          if (values.password !== values.confirm) {
+            return { path: ["confirm"], message: "Must match password" }
+          }
+        })
+
+      const form = FormReact.make(formBuilder, {
+        fields: {
+          password: TextInput,
+          confirm: ({ field }) => (
+            <div>
+              <input
+                data-testid="confirm-input"
+                type="text"
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+              {Option.isSome(field.error) && <span data-testid="confirm-error">{field.error.value}</span>}
+            </div>
+          ),
+        },
+        mode: "onSubmit",
+        onSubmit: () => {},
+      })
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ password: "short", confirm: "different" }}>
+          <form.password />
+          <form.confirm />
+          <SubmitButton />
+        </form.Initialize>,
+      )
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
+      })
+
+      await user.type(screen.getByTestId("text-input"), "1234")
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Must match password")
+      })
+
+      await user.clear(screen.getByTestId("confirm-input"))
+      await user.type(screen.getByTestId("confirm-input"), "short1234")
+
+      await new Promise((r) => setTimeout(r, 100))
+
+      // Refinement errors persist until re-submit
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Must match password")
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument()
+      })
+    })
+
+    it("hides stored field error while async validation is pending (async gap)", async () => {
+      const user = userEvent.setup()
+
+      // Async schema simulates API check with delay
+      const AsyncMinLength = Schema.String.pipe(
+        Schema.minLength(8, { message: () => "Too short" }),
+        Schema.filterEffect((_value) =>
+          Effect.gen(function*() {
+            yield* Effect.sleep("200 millis")
+            return undefined
+          })
+        ),
+      )
+      const PasswordField = Field.makeField("password", AsyncMinLength)
+      const formBuilder = FormBuilder.empty.addField(PasswordField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { password: TextInput },
+        mode: "onSubmit",
+        onSubmit: () => {},
+      })
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ password: "short" }}>
+          <form.password />
+          <SubmitButton />
+        </form.Initialize>,
+      )
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      await user.type(screen.getByTestId("text-input"), "1234567")
+
+      // Stored field error hidden while async validation pending (isValidating = true)
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+    })
+
+    it("persists refinement errors across field unmount/remount", async () => {
+      const user = userEvent.setup()
+
+      const PasswordField = Field.makeField("password", Schema.String)
+      const ConfirmField = Field.makeField("confirm", Schema.String)
+
+      const formBuilder = FormBuilder.empty
+        .addField(PasswordField)
+        .addField(ConfirmField)
+        .refine((values) => {
+          if (values.password !== values.confirm) {
+            return { path: ["confirm"], message: "Passwords must match" }
+          }
+        })
+
+      const form = FormReact.make(formBuilder, {
+        fields: {
+          password: TextInput,
+          confirm: ({ field }) => (
+            <div>
+              <input
+                data-testid="confirm-input"
+                type="text"
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+              {Option.isSome(field.error) && <span data-testid="confirm-error">{field.error.value}</span>}
+            </div>
+          ),
+        },
+        mode: "onSubmit",
+        onSubmit: () => {},
+      })
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      const ToggleableForm = () => {
+        const [showConfirm, setShowConfirm] = React.useState(true)
+        return (
+          <form.Initialize defaultValues={{ password: "abc", confirm: "xyz" }}>
+            <form.password />
+            {showConfirm && <form.confirm />}
+            <button data-testid="toggle" onClick={() => setShowConfirm((v) => !v)}>
+              Toggle
+            </button>
+            <SubmitButton />
+          </form.Initialize>
+        )
+      }
+
+      render(<ToggleableForm />)
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
+      })
+
+      await user.click(screen.getByTestId("toggle"))
+      expect(screen.queryByTestId("confirm-input")).not.toBeInTheDocument()
+
+      await user.click(screen.getByTestId("toggle"))
+      expect(screen.getByTestId("confirm-input")).toBeInTheDocument()
+
+      // Error persists across unmount/remount (stored in atoms, not component state)
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
     })
   })
 
@@ -1389,7 +1772,6 @@ describe("FormReact.make", () => {
 
       expect(isDirty).toBe(true)
 
-      // Rerender with new defaultValues - form does NOT reinitialize
       rerender(<FormWrapper defaultName="new-initial" />)
 
       expect(screen.getByTestId("text-input")).toHaveValue("modified")
@@ -1435,7 +1817,6 @@ describe("FormReact.make", () => {
 
       expect(isDirty).toBe(true)
 
-      // New key forces reinitialization
       rerender(<FormWrapper defaultName="new-initial" formKey="2" />)
 
       await waitFor(() => {
@@ -1523,7 +1904,6 @@ describe("FormReact.make", () => {
 
       await user.click(screen.getByTestId("submit"))
 
-      // isDirty should still be true (form doesn't auto-reset on submit)
       await waitFor(() => {
         expect(screen.getByTestId("isDirty")).toHaveTextContent("true")
       })

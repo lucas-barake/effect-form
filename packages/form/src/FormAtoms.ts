@@ -8,7 +8,7 @@ import * as Field from "./Field.js"
 import * as FormBuilder from "./FormBuilder.js"
 import { recalculateDirtyFieldsForArray, recalculateDirtySubtree } from "./internal/dirty.js"
 import { createWeakRegistry, type WeakRegistry } from "./internal/weak-registry.js"
-import { getNestedValue, isPathUnderRoot, setNestedValue } from "./Path.js"
+import { getNestedValue, setNestedValue } from "./Path.js"
 import * as Validation from "./Validation.js"
 
 /**
@@ -20,7 +20,7 @@ export interface FieldAtoms {
   readonly valueAtom: Atom.Writable<unknown, unknown>
   readonly initialValueAtom: Atom.Atom<unknown>
   readonly touchedAtom: Atom.Writable<boolean, boolean>
-  readonly crossFieldErrorAtom: Atom.Atom<Option.Option<string>>
+  readonly errorAtom: Atom.Atom<Option.Option<Validation.ErrorEntry>>
 }
 
 /**
@@ -64,7 +64,8 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
     Option.Option<FormBuilder.FormState<TFields>>,
     Option.Option<FormBuilder.FormState<TFields>>
   >
-  readonly crossFieldErrorsAtom: Atom.Writable<Map<string, string>, Map<string, string>>
+  readonly errorsAtom: Atom.Writable<Map<string, Validation.ErrorEntry>, Map<string, Validation.ErrorEntry>>
+  readonly rootErrorAtom: Atom.Atom<Option.Option<string>>
   readonly valuesAtom: Atom.Atom<Option.Option<Field.EncodedFromFields<TFields>>>
   readonly dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly isDirtyAtom: Atom.Atom<boolean>
@@ -99,6 +100,28 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
 
   readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>
+
+  /**
+   * Root anchor atom for the form's dependency graph.
+   * Mount this atom to keep all form state alive even when field components unmount.
+   *
+   * Useful for:
+   * - Multi-step wizards where steps unmount but state should persist
+   * - Conditional fields (toggles) where state should survive visibility changes
+   *
+   * @example
+   * ```tsx
+   * // Keep form state alive at wizard root level
+   * function Wizard() {
+   *   useAtomMount(step1Form.mount)
+   *   useAtomMount(step2Form.mount)
+   *   return currentStep === 1 ? <Step1 /> : <Step2 />
+   * }
+   * ```
+   */
+  readonly mountAtom: Atom.Atom<void>
+
+  readonly keepAliveActiveAtom: Atom.Writable<boolean, boolean>
 }
 
 /**
@@ -198,7 +221,13 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
   const combinedSchema = FormBuilder.buildSchema(formBuilder)
 
   const stateAtom = Atom.make(Option.none<FormBuilder.FormState<TFields>>()).pipe(Atom.setIdleTTL(0))
-  const crossFieldErrorsAtom = Atom.make<Map<string, string>>(new Map()).pipe(Atom.setIdleTTL(0))
+  const errorsAtom = Atom.make<Map<string, Validation.ErrorEntry>>(new Map()).pipe(Atom.setIdleTTL(0))
+
+  const rootErrorAtom = Atom.readable((get) => {
+    const errors = get(errorsAtom)
+    const entry = errors.get("")
+    return entry ? Option.some(entry.message) : Option.none<string>()
+  }).pipe(Atom.setIdleTTL(0))
 
   const valuesAtom = Atom.readable((get) => Option.map(get(stateAtom), (state) => state.values)).pipe(
     Atom.setIdleTTL(0),
@@ -303,13 +332,13 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       },
     ).pipe(Atom.setIdleTTL(0))
 
-    const crossFieldErrorAtom = Atom.readable((get) => {
-      const errors = get(crossFieldErrorsAtom)
-      const error = errors.get(fieldPath)
-      return error !== undefined ? Option.some(error) : Option.none<string>()
+    const errorAtom = Atom.readable((get) => {
+      const errors = get(errorsAtom)
+      const entry = errors.get(fieldPath)
+      return entry ? Option.some(entry) : Option.none<Validation.ErrorEntry>()
     }).pipe(Atom.setIdleTTL(0))
 
-    const atoms: FieldAtoms = { valueAtom, initialValueAtom, touchedAtom, crossFieldErrorAtom }
+    const atoms: FieldAtoms = { valueAtom, initialValueAtom, touchedAtom, errorAtom }
     fieldAtomsRegistry.set(fieldPath, atoms)
     return atoms
   }
@@ -327,17 +356,17 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       const state = get(stateAtom)
       if (Option.isNone(state)) return yield* Effect.die("Form not initialized")
       const values = state.value.values
-      get.set(crossFieldErrorsAtom, new Map())
+      get.set(errorsAtom, new Map())
       const decoded = yield* pipe(
-        Schema.decodeUnknown(combinedSchema)(values) as Effect.Effect<
+        Schema.decodeUnknown(combinedSchema, { errors: "all" })(values) as Effect.Effect<
           Field.DecodedFromFields<TFields>,
           ParseResult.ParseError,
           R
         >,
         Effect.tapError((parseError) =>
           Effect.sync(() => {
-            const routedErrors = Validation.routeErrors(parseError)
-            get.set(crossFieldErrorsAtom, routedErrors)
+            const routedErrors = Validation.routeErrorsWithSource(parseError)
+            get.set(errorsAtom, routedErrors)
             get.set(stateAtom, Option.some(operations.createSubmitState(state.value)))
           })
         ),
@@ -510,7 +539,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     const state = get(stateAtom)
     if (Option.isNone(state)) return
     get.set(stateAtom, Option.some(operations.createResetState(state.value)))
-    get.set(crossFieldErrorsAtom, new Map())
+    get.set(errorsAtom, new Map())
     resetValidationAtoms(get)
     get.set(submitAtom, Atom.Reset)
   }, { initialValue: undefined as void }).pipe(Atom.setIdleTTL(0))
@@ -519,14 +548,14 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     const state = get(stateAtom)
     if (Option.isNone(state)) return
     get.set(stateAtom, Option.some(operations.revertToLastSubmit(state.value)))
-    get.set(crossFieldErrorsAtom, new Map())
+    get.set(errorsAtom, new Map())
   }, { initialValue: undefined as void }).pipe(Atom.setIdleTTL(0))
 
   const setValuesAtom = Atom.fnSync<Field.EncodedFromFields<TFields>>()((_values, get) => {
     const state = get(stateAtom)
     if (Option.isNone(state)) return
     get.set(stateAtom, Option.some(operations.setFormValues(state.value, _values)))
-    get.set(crossFieldErrorsAtom, new Map())
+    get.set(errorsAtom, new Map())
   }, { initialValue: undefined as void }).pipe(Atom.setIdleTTL(0))
 
   const setValueAtomsRegistry = createWeakRegistry<Atom.Writable<void, any>>()
@@ -545,17 +574,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
         : update
 
       get.set(stateAtom, Option.some(operations.setFieldValue(state.value, field.key, newValue)))
-
-      const currentErrors = get(crossFieldErrorsAtom)
-      const nextErrors = new Map<string, string>()
-      for (const [errorPath, message] of currentErrors) {
-        if (!isPathUnderRoot(errorPath, field.key)) {
-          nextErrors.set(errorPath, message)
-        }
-      }
-      if (nextErrors.size !== currentErrors.size) {
-        get.set(crossFieldErrorsAtom, nextErrors)
-      }
+      // Don't clear errors - display logic handles showing/hiding based on source + validation state
     }, { initialValue: undefined as void }).pipe(Atom.setIdleTTL(0))
 
     setValueAtomsRegistry.set(field.key, atom)
@@ -574,9 +593,18 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     return safeAtom
   }
 
+  const mountAtom = Atom.readable((get) => {
+    get(stateAtom)
+    get(errorsAtom)
+    get(submitAtom)
+  }).pipe(Atom.setIdleTTL(0))
+
+  const keepAliveActiveAtom = Atom.make(false).pipe(Atom.setIdleTTL(0))
+
   return {
     stateAtom,
-    crossFieldErrorsAtom,
+    errorsAtom,
+    rootErrorAtom,
     valuesAtom,
     dirtyFieldsAtom,
     isDirtyAtom,
@@ -598,5 +626,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     setValuesAtom,
     setValue,
     getFieldAtom,
+    mountAtom,
+    keepAliveActiveAtom,
   } as FormAtoms<TFields, R, A, E, SubmitArgs>
 }

@@ -1,0 +1,363 @@
+/* Field layout */
+.fieldContainer {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.dirtyIndicator {
+  color: #666;
+  margin-left: 4px;
+}
+
+/* Inputs */
+.input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input.error {
+  border-color: #dc2626;
+}
+
+.textarea {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  min-height: 100px;
+  resize: vertical;
+}
+
+.textarea.error {
+  border-color: #dc2626;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+}
+
+/* Field messages */
+.validatingText {
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Buttons */
+.button {
+  padding: 10px 20px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.buttonSecondary {
+  padding: 10px 20px;
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.buttonSecondary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.buttonDanger {
+  padding: 6px 12px;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.buttonSmall {
+  padding: 6px 12px;
+}
+
+.buttonSuccess {
+  padding: 8px 16px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.buttonIndigo {
+  padding: 8px 16px;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.buttonPurple {
+  padding: 8px 16px;
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.buttonWarning {
+  padding: 6px 12px;
+  background-color: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 8px;
+}
+
+/* Alerts */
+.alertSuccess {
+  padding: 12px;
+  background-color: #dcfce7;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+.alertError {
+  padding: 12px;
+  background-color: #fee2e2;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+.alertWarning {
+  padding: 12px;
+  background-color: #fef3c7;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+.alertInfo {
+  padding: 8px;
+  background-color: #dbeafe;
+  border-radius: 4px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.alertSmall {
+  padding: 8px;
+  font-size: 13px;
+  margin-top: 0;
+}
+
+/* Debug panel */
+.debugBox {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.debugPre {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+}
+
+/* Page layout */
+.pageContainer {
+  max-width: 400px;
+}
+
+.pageContainerMedium {
+  max-width: 500px;
+}
+
+.pageContainerLarge {
+  max-width: 600px;
+}
+
+.pageTitle {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.pageDescription {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.pageHint {
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+/* Cards */
+.card {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.cardTitle {
+  margin: 0 0 4px;
+}
+
+.cardDescription {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+/* Array fields */
+.emptyState {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.listItem {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 8px;
+  background-color: #f9fafb;
+  border-radius: 4px;
+}
+
+.listItemInput {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.listItemInput.error {
+  border-color: #dc2626;
+}
+
+/* Grid layouts */
+.grid2Col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.gridGap16 {
+  gap: 16px;
+}
+
+/* Review sections */
+.reviewSection {
+  background-color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.reviewTitle {
+  margin: 0 0 12px;
+}
+
+.reviewItem {
+  margin: 4px 0;
+}
+
+/* Progress indicator */
+.progressBar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.progressStep {
+  flex: 1;
+  height: 4px;
+  background-color: #e5e7eb;
+  border-radius: 2px;
+}
+
+.progressStep.active {
+  background-color: #2563eb;
+}
+
+/* Inline flex */
+.inlineFlex {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.marginTop16 {
+  margin-top: 16px;
+}
+
+.marginTop24 {
+  margin-top: 24px;
+}
+
+.marginBottom16 {
+  margin-bottom: 16px;
+}
+
+/* Unsaved changes banner */
+.unsavedBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background-color: #fef3c7;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+/* State comparison */
+.stateLabel {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.statePre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.stateFlags {
+  margin-top: 12px;
+  display: flex;
+  gap: 16px;
+}
