@@ -7,56 +7,80 @@
   display: block;
   margin-bottom: 4px;
   font-weight: 500;
+  color: #e5e5e5;
 }
 
 .dirtyIndicator {
-  color: #666;
+  color: #a3a3a3;
   margin-left: 4px;
 }
 
 /* Inputs */
 .input {
   padding: 8px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid #3f3f3f;
   border-radius: 4px;
   width: 100%;
   box-sizing: border-box;
+  background-color: #1a1a1a;
+  color: #e5e5e5;
+}
+
+.input::placeholder {
+  color: #737373;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #3b82f6;
 }
 
 .input.error {
-  border-color: #dc2626;
+  border-color: #ef4444;
 }
 
 .textarea {
   padding: 8px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid #3f3f3f;
   border-radius: 4px;
   width: 100%;
   box-sizing: border-box;
   font-family: inherit;
   min-height: 100px;
   resize: vertical;
+  background-color: #1a1a1a;
+  color: #e5e5e5;
+}
+
+.textarea::placeholder {
+  color: #737373;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
 }
 
 .textarea.error {
-  border-color: #dc2626;
+  border-color: #ef4444;
 }
 
 .checkbox {
   width: 20px;
   height: 20px;
+  accent-color: #3b82f6;
 }
 
 /* Field messages */
 .validatingText {
-  color: #666;
+  color: #a3a3a3;
   font-size: 12px;
   margin-top: 4px;
   display: block;
 }
 
 .errorText {
-  color: #dc2626;
+  color: #ef4444;
   font-size: 12px;
   margin-top: 4px;
   display: block;
@@ -73,22 +97,32 @@
   font-weight: 500;
 }
 
+.button:hover {
+  background-color: #1d4ed8;
+}
+
 .button:disabled {
-  background-color: #ccc;
+  background-color: #404040;
+  color: #737373;
   cursor: not-allowed;
 }
 
 .buttonSecondary {
   padding: 10px 20px;
-  background-color: #6b7280;
-  color: white;
+  background-color: #404040;
+  color: #e5e5e5;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
+.buttonSecondary:hover {
+  background-color: #525252;
+}
+
 .buttonSecondary:disabled {
-  background-color: #ccc;
+  background-color: #2a2a2a;
+  color: #737373;
   cursor: not-allowed;
 }
 
@@ -101,45 +135,65 @@
   cursor: pointer;
 }
 
+.buttonDanger:hover {
+  background-color: #b91c1c;
+}
+
 .buttonSmall {
   padding: 6px 12px;
 }
 
 .buttonSuccess {
   padding: 8px 16px;
-  background-color: #10b981;
+  background-color: #059669;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.buttonSuccess:hover {
+  background-color: #047857;
 }
 
 .buttonIndigo {
   padding: 8px 16px;
-  background-color: #6366f1;
+  background-color: #4f46e5;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.buttonIndigo:hover {
+  background-color: #4338ca;
 }
 
 .buttonPurple {
   padding: 8px 16px;
-  background-color: #8b5cf6;
+  background-color: #7c3aed;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
+.buttonPurple:hover {
+  background-color: #6d28d9;
+}
+
 .buttonWarning {
   padding: 6px 12px;
-  background-color: #f59e0b;
+  background-color: #d97706;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 13px;
+}
+
+.buttonWarning:hover {
+  background-color: #b45309;
 }
 
 .buttonGroup {
@@ -150,31 +204,39 @@
 /* Alerts */
 .alertSuccess {
   padding: 12px;
-  background-color: #dcfce7;
+  background-color: #052e16;
+  border: 1px solid #166534;
   border-radius: 4px;
   margin-top: 16px;
+  color: #4ade80;
 }
 
 .alertError {
   padding: 12px;
-  background-color: #fee2e2;
+  background-color: #2a0a0a;
+  border: 1px solid #7f1d1d;
   border-radius: 4px;
   margin-top: 16px;
+  color: #f87171;
 }
 
 .alertWarning {
   padding: 12px;
-  background-color: #fef3c7;
+  background-color: #1c1405;
+  border: 1px solid #78350f;
   border-radius: 4px;
   margin-top: 16px;
+  color: #fbbf24;
 }
 
 .alertInfo {
   padding: 8px;
-  background-color: #dbeafe;
+  background-color: #0c1929;
+  border: 1px solid #1e40af;
   border-radius: 4px;
   margin-top: 16px;
   font-size: 13px;
+  color: #60a5fa;
 }
 
 .alertSmall {
@@ -187,14 +249,17 @@
 .debugBox {
   margin-top: 24px;
   padding: 16px;
-  background-color: #f3f4f6;
+  background-color: #171717;
+  border: 1px solid #2a2a2a;
   border-radius: 4px;
   font-size: 12px;
+  color: #a3a3a3;
 }
 
 .debugPre {
   margin: 8px 0 0;
   white-space: pre-wrap;
+  color: #e5e5e5;
 }
 
 /* Page layout */
@@ -213,15 +278,16 @@
 .pageTitle {
   margin-top: 0;
   margin-bottom: 8px;
+  color: #f5f5f5;
 }
 
 .pageDescription {
-  color: #6b7280;
+  color: #a3a3a3;
   margin-bottom: 24px;
 }
 
 .pageHint {
-  color: #6b7280;
+  color: #a3a3a3;
   font-size: 13px;
   margin-bottom: 24px;
 }
@@ -229,23 +295,25 @@
 /* Cards */
 .card {
   padding: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #2a2a2a;
   border-radius: 8px;
+  background-color: #171717;
 }
 
 .cardTitle {
   margin: 0 0 4px;
+  color: #f5f5f5;
 }
 
 .cardDescription {
-  color: #6b7280;
+  color: #a3a3a3;
   font-size: 14px;
   margin: 0 0 16px;
 }
 
 /* Array fields */
 .emptyState {
-  color: #6b7280;
+  color: #737373;
   font-style: italic;
 }
 
@@ -255,19 +323,27 @@
   align-items: center;
   margin-bottom: 8px;
   padding: 8px;
-  background-color: #f9fafb;
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
   border-radius: 4px;
 }
 
 .listItemInput {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid #3f3f3f;
   border-radius: 4px;
+  background-color: #0f0f0f;
+  color: #e5e5e5;
+}
+
+.listItemInput:focus {
+  outline: none;
+  border-color: #3b82f6;
 }
 
 .listItemInput.error {
-  border-color: #dc2626;
+  border-color: #ef4444;
 }
 
 /* Grid layouts */
@@ -283,7 +359,8 @@
 
 /* Review sections */
 .reviewSection {
-  background-color: #f9fafb;
+  background-color: #171717;
+  border: 1px solid #2a2a2a;
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 16px;
@@ -291,10 +368,12 @@
 
 .reviewTitle {
   margin: 0 0 12px;
+  color: #f5f5f5;
 }
 
 .reviewItem {
   margin: 4px 0;
+  color: #a3a3a3;
 }
 
 /* Progress indicator */
@@ -307,7 +386,7 @@
 .progressStep {
   flex: 1;
   height: 4px;
-  background-color: #e5e7eb;
+  background-color: #2a2a2a;
   border-radius: 2px;
 }
 
@@ -340,20 +419,24 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background-color: #fef3c7;
+  background-color: #1c1405;
+  border: 1px solid #78350f;
   border-radius: 4px;
   margin-bottom: 16px;
+  color: #fbbf24;
 }
 
 /* State comparison */
 .stateLabel {
   font-weight: 600;
   margin-bottom: 4px;
+  color: #e5e5e5;
 }
 
 .statePre {
   margin: 0;
   white-space: pre-wrap;
+  color: #a3a3a3;
 }
 
 .stateFlags {
