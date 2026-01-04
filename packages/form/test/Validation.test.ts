@@ -407,5 +407,75 @@ describe("Validation", () => {
       expect(entry?.source).toBe("refinement")
       expect(entry?.message).toBe("Values must be different")
     })
+
+    it("tags nested struct filter errors as 'field' (not top-level refinement)", async () => {
+      const AddressSchema = Schema.Struct({
+        street: Schema.String,
+        city: Schema.String,
+      }).pipe(
+        Schema.filter((address) => {
+          if (address.street === "" && address.city === "") {
+            return "At least one address field is required"
+          }
+        }),
+      )
+
+      const schema = Schema.Struct({
+        name: Schema.String,
+        address: AddressSchema,
+      })
+
+      const result = await Effect.runPromise(
+        Schema.decodeUnknown(schema)({ name: "John", address: { street: "", city: "" } }).pipe(
+          Effect.either,
+        ),
+      )
+
+      if (result._tag === "Right") {
+        throw new Error("Expected Left")
+      }
+
+      const errors = routeErrorsWithSource(result.left)
+      const entry = errors.get("address")
+      expect(entry).toBeDefined()
+      expect(entry?.source).toBe("field")
+      expect(entry?.message).toBe("At least one address field is required")
+    })
+
+    it("tags nested struct filterEffect errors as 'field' (not top-level refinement)", async () => {
+      const AddressSchema = Schema.Struct({
+        street: Schema.String,
+        city: Schema.String,
+      }).pipe(
+        Schema.filterEffect((address) =>
+          Effect.sync(() => {
+            if (address.street === "" && address.city === "") {
+              return "Address validation failed"
+            }
+          })
+        ),
+      )
+
+      const schema = Schema.Struct({
+        name: Schema.String,
+        address: AddressSchema,
+      })
+
+      const result = await Effect.runPromise(
+        Schema.decodeUnknown(schema)({ name: "John", address: { street: "", city: "" } }).pipe(
+          Effect.either,
+        ),
+      )
+
+      if (result._tag === "Right") {
+        throw new Error("Expected Left")
+      }
+
+      const errors = routeErrorsWithSource(result.left)
+      const entry = errors.get("address")
+      expect(entry).toBeDefined()
+      expect(entry?.source).toBe("field")
+      expect(entry?.message).toBe("Address validation failed")
+    })
   })
 })
