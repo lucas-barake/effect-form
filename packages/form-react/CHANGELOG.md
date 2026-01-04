@@ -1,5 +1,12 @@
 # @lucas-barake/effect-form-react
 
+## 0.13.1
+
+### Patch Changes
+
+- Updated dependencies [[`7fb5c96`](https://github.com/lucas-barake/effect-form/commit/7fb5c96823916c95d04c8763bfe1baf7ed77c3a7)]:
+  - @lucas-barake/effect-form@0.13.0
+
 ## 0.13.0
 
 ### Minor Changes
