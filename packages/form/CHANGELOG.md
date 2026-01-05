@@ -1,5 +1,11 @@
 # @lucas-barake/effect-form
 
+## 0.13.0
+
+### Minor Changes
+
+- [#37](https://github.com/lucas-barake/effect-form/pull/37) [`7fb5c96`](https://github.com/lucas-barake/effect-form/commit/7fb5c96823916c95d04c8763bfe1baf7ed77c3a7) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Fix nested struct refinements being incorrectly classified as top-level refinements. Refinements on nested composite types (e.g., a field with `Schema.Struct(...).pipe(Schema.filterEffect(...))`) are now tagged with `source: "field"` instead of `source: "refinement"`, allowing field errors to clear when the user provides valid input.
+
 ## 0.12.0
 
 ### Minor Changes
