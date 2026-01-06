@@ -1,5 +1,16 @@
 # @lucas-barake/effect-form-react
 
+## 0.14.0
+
+### Minor Changes
+
+- [#40](https://github.com/lucas-barake/effect-form/pull/40) [`a69a9ec`](https://github.com/lucas-barake/effect-form/commit/a69a9ec02b828aa4b40e8d8ad973169758e17ffd) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Add `FieldValue<T>` and `FieldComponent<T, P>` helper types for defining field components. Components can now use either value types (`FieldComponent<string>`) or Schema types (`FieldComponent<typeof Schema.NumberFromString>`). Remove unused `forField`, `makeField`, and `FieldBundle` APIs. Remove redundant JSDoc comments.
+
+### Patch Changes
+
+- Updated dependencies [[`a69a9ec`](https://github.com/lucas-barake/effect-form/commit/a69a9ec02b828aa4b40e8d8ad973169758e17ffd)]:
+  - @lucas-barake/effect-form@0.14.0
+
 ## 0.13.1
 
 ### Patch Changes

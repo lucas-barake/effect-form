@@ -1,6 +1,6 @@
 {
   "name": "@lucas-barake/effect-form-react",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "description": "React bindings for @lucas-barake/effect-form",
   "type": "module",
   "publishConfig": {
