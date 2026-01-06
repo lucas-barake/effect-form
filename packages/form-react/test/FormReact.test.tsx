@@ -216,7 +216,6 @@ describe("FormReact.make", () => {
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
-        // age should be decoded from string "42" to number 42
         expect(submitHandler).toHaveBeenCalledWith({ name: "John", age: 42 })
       })
     })
@@ -813,7 +812,6 @@ describe("FormReact.make", () => {
         .addField(UsernameField)
         .refineEffect((values) =>
           Effect.gen(function*() {
-            // AtomRegistry is auto-provided by runtime, so this should work
             const registry = yield* Registry.AtomRegistry
             expect(typeof registry.get).toBe("function")
 
@@ -1345,7 +1343,6 @@ describe("FormReact.make", () => {
     it("per-field errors clear on valid input while refinement errors persist", async () => {
       const user = userEvent.setup()
 
-      // Schema with both per-field validation (minLength) and cross-field refinement
       const PasswordField = Field.makeField(
         "password",
         Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" })),
@@ -1427,7 +1424,6 @@ describe("FormReact.make", () => {
     it("hides stored field error while async validation is pending (async gap)", async () => {
       const user = userEvent.setup()
 
-      // Async schema simulates API check with delay
       const AsyncMinLength = Schema.String.pipe(
         Schema.minLength(8, { message: () => "Too short" }),
         Schema.filterEffect((_value) =>

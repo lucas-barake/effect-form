@@ -1270,7 +1270,6 @@ describe("FormAtoms", () => {
 
       expect(onSubmit).not.toHaveBeenCalled()
       const errors = registry.get(atoms.errorsAtom)
-      // Should have all 3 errors, not just the first
       expect(errors.size).toBe(3)
       expect(errors.has("name")).toBe(true)
       expect(errors.has("email")).toBe(true)

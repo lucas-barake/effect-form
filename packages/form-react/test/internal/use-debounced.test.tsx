@@ -179,7 +179,6 @@ describe("useDebounced", () => {
         result.current("value")
       })
 
-      // Update the function before debounce fires
       rerender({ fn: fn2 })
 
       await act(async () => {
