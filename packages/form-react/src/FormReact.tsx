@@ -15,21 +15,17 @@ import type * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as ParseResult from "effect/ParseResult"
-import * as Predicate from "effect/Predicate"
 import type * as Schema from "effect/Schema"
 import * as AST from "effect/SchemaAST"
 import * as React from "react"
 import { createContext, useContext } from "react"
 import { useDebounced } from "./internal/use-debounced.js"
 
-/**
- * Form-controlled state passed to field components.
- *
- * @category Models
- */
-export interface FieldState<S extends Schema.Schema.Any> {
-  readonly value: Schema.Schema.Encoded<S>
-  readonly onChange: (value: Schema.Schema.Encoded<S>) => void
+export type FieldValue<T> = T extends Schema.Schema.Any ? Schema.Schema.Encoded<T> : T
+
+export interface FieldState<E> {
+  readonly value: E
+  readonly onChange: (value: E) => void
   readonly onBlur: () => void
   readonly error: Option.Option<string>
   readonly isTouched: boolean
@@ -37,85 +33,31 @@ export interface FieldState<S extends Schema.Schema.Any> {
   readonly isDirty: boolean
 }
 
-/**
- * Props passed to field components.
- * Contains form-controlled state in `field` and user-defined props in `props`.
- *
- * @category Models
- */
-export interface FieldComponentProps<
-  S extends Schema.Schema.Any,
-  P extends Record<string, unknown> = Record<string, never>,
-> {
-  readonly field: FieldState<S>
+export interface FieldComponentProps<E, P = Record<string, never>> {
+  readonly field: FieldState<E>
   readonly props: P
 }
 
-/**
- * A bundled field definition + component for reusable form fields.
- * Created with `FormReact.makeField`.
- *
- * @category Models
- */
-export interface FieldBundle<
-  K extends string,
-  S extends Schema.Schema.Any,
-  P extends Record<string, unknown> = Record<string, never>,
-> {
-  readonly _tag: "FieldBundle"
-  readonly field: Field.FieldDef<K, S>
-  readonly component: React.FC<FieldComponentProps<S, P>>
-}
+export type FieldComponent<T, P = Record<string, never>> = React.FC<FieldComponentProps<FieldValue<T>, P>>
 
-const isFieldBundle = (x: unknown): x is FieldBundle<string, Schema.Schema.Any, Record<string, unknown>> =>
-  Predicate.isTagged(x, "FieldBundle")
+export type ExtractExtraProps<C> = C extends React.FC<FieldComponentProps<any, infer P>> ? P : Record<string, never>
 
-/**
- * Extracts the extra props type from a field component.
- *
- * @category Type-level utilities
- */
-export type ExtractExtraProps<C> = C extends React.FC<FieldComponentProps<any, infer P>> ? P
-  : C extends FieldBundle<any, any, infer P> ? P
-  : Record<string, never>
-
-/**
- * Extracts field component map for array item schemas.
- * - For Struct schemas: returns a map of field names to components
- * - For primitive schemas: returns a single component
- *
- * @category Models
- */
 export type ArrayItemComponentMap<S extends Schema.Schema.Any> = S extends Schema.Struct<infer Fields> ? {
-    readonly [K in keyof Fields]: Fields[K] extends Schema.Schema.Any ? React.FC<FieldComponentProps<Fields[K], any>>
+    readonly [K in keyof Fields]: Fields[K] extends Schema.Schema.Any
+      ? React.FC<FieldComponentProps<Schema.Schema.Encoded<Fields[K]>, any>>
       : never
   }
-  : React.FC<FieldComponentProps<S, any>>
+  : React.FC<FieldComponentProps<Schema.Schema.Encoded<S>, any>>
 
-/**
- * Maps field names to their React components.
- *
- * @category Models
- */
 export type FieldComponentMap<TFields extends Field.FieldsRecord> = {
   readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S>
-    ? React.FC<FieldComponentProps<S, any>> | FieldBundle<any, S, any>
+    ? React.FC<FieldComponentProps<Schema.Schema.Encoded<S>, any>>
     : TFields[K] extends Field.ArrayFieldDef<any, infer S> ? ArrayItemComponentMap<S>
     : never
 }
 
-/**
- * Maps field names to their type-safe Field references for setValue operations.
- *
- * @category Models
- */
 export type FieldRefs<TFields extends Field.FieldsRecord> = FormAtoms.FieldRefs<TFields>
 
-/**
- * Operations available for array fields.
- *
- * @category Models
- */
 export interface ArrayFieldOperations<TItem> {
   readonly items: ReadonlyArray<TItem>
   readonly append: (value?: TItem) => void
@@ -124,12 +66,6 @@ export interface ArrayFieldOperations<TItem> {
   readonly move: (from: number, to: number) => void
 }
 
-/**
- * The result of building a form, containing all components and utilities needed
- * for form rendering and submission.
- *
- * @category Models
- */
 export type BuiltForm<
   TFields extends Field.FieldsRecord,
   R,
@@ -200,7 +136,7 @@ interface ArrayItemContextValue {
 const ArrayItemContext = createContext<ArrayItemContextValue | null>(null)
 const AutoSubmitContext = createContext<(() => void) | null>(null)
 
-const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string, unknown>>(
+const makeFieldComponent = <S extends Schema.Schema.Any, P>(
   fieldKey: string,
   fieldDef: Field.FieldDef<string, S>,
   errorsAtom: Atom.Writable<Map<string, Validation.ErrorEntry>, Map<string, Validation.ErrorEntry>>,
@@ -212,7 +148,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string
     schema: Schema.Schema.Any,
   ) => Atom.AtomResultFn<unknown, void, ParseResult.ParseError>,
   getOrCreateFieldAtoms: (fieldPath: string) => FormAtoms.FieldAtoms,
-  Component: React.FC<FieldComponentProps<S, P>>,
+  Component: React.FC<FieldComponentProps<Schema.Schema.Encoded<S>, P>>,
 ): React.FC<P> => {
   const FieldComponent: React.FC<P> = (extraProps) => {
     const arrayCtx = useContext(ArrayItemContext)
@@ -315,7 +251,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P extends Record<string
       ? (isTouched || submitCount > 0)
       : submitCount > 0
 
-    const fieldState: FieldState<S> = React.useMemo(() => ({
+    const fieldState: FieldState<Schema.Schema.Encoded<S>> = React.useMemo(() => ({
       value,
       onChange,
       onBlur,
@@ -507,10 +443,7 @@ const makeFieldComponents = <
         arrayComponentMap,
       )
     } else if (Field.isFieldDef(def)) {
-      const componentOrBundle = (componentMap as Record<string, unknown>)[key]
-      const fieldComponent = isFieldBundle(componentOrBundle)
-        ? componentOrBundle.component
-        : componentOrBundle as React.FC<FieldComponentProps<any, any>>
+      const fieldComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any, any>>>)[key]
       components[key] = makeFieldComponent(
         key,
         def,
@@ -528,51 +461,6 @@ const makeFieldComponents = <
   return components as FieldComponents<TFields, CM>
 }
 
-/**
- * Creates a React form from a FormBuilder.
- *
- * @example
- * ```tsx
- * import { FormBuilder } from "@lucas-barake/effect-form"
- * import { FormReact } from "@lucas-barake/effect-form-react"
- * import { useAtomValue, useAtomSet } from "@effect-atom/atom-react"
- * import * as Schema from "effect/Schema"
- *
- * const loginFormBuilder = FormBuilder.empty
- *   .addField("email", Schema.String)
- *   .addField("password", Schema.String)
- *
- * // Runtime is optional for forms without service requirements
- * const loginForm = FormReact.make(loginFormBuilder, {
- *   fields: { email: TextInput, password: PasswordInput },
- *   onSubmit: (_, { decoded }) => Effect.log(`Login: ${decoded.email}`),
- * })
- *
- * // Subscribe to atoms anywhere in the tree
- * function SubmitButton() {
- *   const isDirty = useAtomValue(loginForm.isDirty)
- *   const submit = useAtomValue(loginForm.submit)
- *   const callSubmit = useAtomSet(loginForm.submit)
- *   return (
- *     <button onClick={() => callSubmit()} disabled={!isDirty || submit.waiting}>
- *       {submit.waiting ? "Validating..." : "Login"}
- *     </button>
- *   )
- * }
- *
- * function LoginPage() {
- *   return (
- *     <loginForm.Initialize defaultValues={{ email: "", password: "" }}>
- *       <loginForm.email />
- *       <loginForm.password />
- *       <SubmitButton />
- *     </loginForm.Initialize>
- *   )
- * }
- * ```
- *
- * @category Constructors
- */
 export const make: {
   <
     TFields extends Field.FieldsRecord,
@@ -813,106 +701,5 @@ export const make: {
     mount: mountAtom,
     KeepAlive,
     ...fieldComponents,
-  }
-}
-
-/**
- * A curried helper that infers the schema type from a field definition.
- * Provides ergonomic type inference when defining field components.
- *
- * @example
- * ```tsx
- * import { Field, FormReact } from "@lucas-barake/effect-form-react"
- *
- * const EmailField = Field.makeField("email", Schema.String)
- * const TextInput = FormReact.forField(EmailField)(({ field }) => (
- *   <input value={field.value} onChange={e => field.onChange(e.target.value)} />
- * ))
- *
- * // With extra props - just specify the props type
- * const TextInput = FormReact.forField(EmailField)<{ placeholder?: string }>(({ field, props }) => (
- *   <input value={field.value} placeholder={props.placeholder} ... />
- * ))
- * ```
- *
- * @category Constructors
- */
-export const forField = <K extends string, S extends Schema.Schema.Any>(
-  _field: Field.FieldDef<K, S>,
-): <P extends Record<string, unknown> = Record<string, never>>(
-  component: React.FC<FieldComponentProps<S, P>>,
-) => React.FC<FieldComponentProps<S, P>> =>
-(component) => component
-
-/**
- * Creates a bundled field definition + component for reusable form fields.
- * Reduces boilerplate when you need both a field and its component together.
- *
- * Uses a curried API for better type inference - the schema type is captured
- * first, so you only need to specify the extra props type (if any).
- *
- * @example
- * ```tsx
- * import { FormReact } from "@lucas-barake/effect-form-react"
- * import * as Schema from "effect/Schema"
- *
- * // Define field + component in one place (no extra props)
- * const NameInput = FormReact.makeField({
- *   key: "name",
- *   schema: Schema.String.pipe(Schema.nonEmptyString()),
- * })(({ field }) => (
- *   <input
- *     value={field.value}
- *     onChange={(e) => field.onChange(e.target.value)}
- *     onBlur={field.onBlur}
- *   />
- * ))
- *
- * // With extra props - specify only the props type
- * const EmailInput = FormReact.makeField({
- *   key: "email",
- *   schema: Schema.String,
- * })<{ placeholder: string }>(({ field, props }) => (
- *   <input
- *     value={field.value}
- *     onChange={(e) => field.onChange(e.target.value)}
- *     placeholder={props.placeholder}
- *   />
- * ))
- *
- * // Use in form builder
- * const formBuilder = FormBuilder.empty.addField(NameInput.field)
- *
- * // Use in make()
- * const form = FormReact.make(formBuilder, {
- *   runtime,
- *   fields: { name: NameInput },
- *   onSubmit: (_, { decoded }) => Effect.log(decoded.name),
- * })
- * ```
- *
- * @category Constructors
- */
-export const makeField = <K extends string, S extends Schema.Schema.Any>(options: {
-  readonly key: K
-  readonly schema: S
-}): <P extends Record<string, unknown> = Record<string, never>>(
-  component: React.FC<FieldComponentProps<S, P>>,
-) => FieldBundle<K, S, P> => {
-  const field = Field.makeField(options.key, options.schema)
-  return (component) => {
-    if (!component.displayName) {
-      const displayName = `${options.key.charAt(0).toUpperCase()}${options.key.slice(1)}Field`
-      try {
-        ;(component as any).displayName = displayName
-      } catch {
-        // Ignore - some environments freeze function properties
-      }
-    }
-    return {
-      _tag: "FieldBundle",
-      field,
-      component,
-    }
   }
 }

@@ -1,15 +1,5 @@
-/**
- * Internal debounce hook for form validation.
- *
- * @internal
- */
 import * as React from "react"
 
-/**
- * Hook that debounces a callback function.
- *
- * @internal
- */
 export const useDebounced = <T extends (...args: ReadonlyArray<any>) => void>(
   fn: T,
   delayMs: number | null,

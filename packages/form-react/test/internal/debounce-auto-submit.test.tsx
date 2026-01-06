@@ -5,14 +5,11 @@ import { userEvent } from "@testing-library/user-event"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
-import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
 const createRuntime = () => Atom.runtime(Layer.empty)
 
-const TextInput: React.FC<
-  FormReact.FieldComponentProps<typeof Schema.String, { readonly testId?: string }>
-> = ({ field, props }) => (
+const TextInput: FormReact.FieldComponent<string, { readonly testId?: string }> = ({ field, props }) => (
   <div>
     <input
       type="text"
@@ -27,11 +24,11 @@ const TextInput: React.FC<
   </div>
 )
 
-const NameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+const NameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <TextInput field={field} props={{ testId: "name-input" }} />
 )
 
-const AgeInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+const AgeInput: FormReact.FieldComponent<string> = ({ field }) => (
   <TextInput field={field} props={{ testId: "age-input" }} />
 )
 

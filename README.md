@@ -278,9 +278,7 @@ function FormStatus() {
   )
 }
 
-const EmailInput: React.FC<
-  FormReact.FieldComponentProps<typeof Schema.String>
-> = ({ field }) => (
+const EmailInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div>
     <input
       value={field.value}
@@ -398,9 +396,7 @@ function PasswordStrength() {
 ## 14. Error Display Patterns
 
 ```tsx
-const TextInput: React.FC<
-  FormReact.FieldComponentProps<typeof Schema.String>
-> = ({ field }) => (
+const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div>
     <input
       value={field.value}
@@ -511,80 +507,7 @@ const billingForm = FormBuilder.empty
   .merge(addressFields)
 ```
 
-## 17. Bundled Field + Component
-
-Use `FormReact.makeField` to bundle a field definition with its component in one place:
-
-```tsx
-import { FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
-import * as Schema from "effect/Schema"
-
-// Define field + component together (curried API)
-const NameInput = FormReact.makeField({
-  key: "name",
-  schema: Schema.String.pipe(Schema.nonEmptyString()),
-})(({ field }) => (
-  <input
-    value={field.value}
-    onChange={(e) => field.onChange(e.target.value)}
-    onBlur={field.onBlur}
-  />
-))
-
-// With extra props - specify only the props type
-const EmailInput = FormReact.makeField({
-  key: "email",
-  schema: Schema.String,
-})<{ placeholder: string }>(({ field, props }) => (
-  <input
-    value={field.value}
-    onChange={(e) => field.onChange(e.target.value)}
-    placeholder={props.placeholder}
-  />
-))
-
-// Use .field for form builder
-const formBuilder = FormBuilder.empty.addField(NameInput.field)
-
-// Use the bundle directly in make()
-const form = FormReact.make(formBuilder, {
-  runtime,
-  fields: { name: NameInput },
-  onSubmit: (_, { decoded }) => Effect.log(decoded.name),
-})
-```
-
-This reduces boilerplate when you need reusable field + component combos across multiple forms:
-
-```tsx
-// fields/name-input.tsx
-export const NameInput = FormReact.makeField({
-  key: "name",
-  schema: Schema.String.pipe(Schema.nonEmptyString()),
-})(({ field }) => <TextInput field={field} />)
-
-// forms/user-form.tsx
-import { NameInput } from "../fields/name-input"
-
-const userFormBuilder = FormBuilder.empty.addField(NameInput.field).addField("email", Schema.String)
-const userForm = FormReact.make(userFormBuilder, {
-  runtime,
-  fields: { name: NameInput, email: EmailComponent },
-  onSubmit: ...,
-})
-
-// forms/profile-form.tsx
-import { NameInput } from "../fields/name-input"
-
-const profileFormBuilder = FormBuilder.empty.addField(NameInput.field).addField("bio", Schema.String)
-const profileForm = FormReact.make(profileFormBuilder, {
-  runtime,
-  fields: { name: NameInput, bio: BioComponent },
-  onSubmit: ...,
-})
-```
-
-## 18. Persisting State Across Unmounts (KeepAlive)
+## 17. Persisting State Across Unmounts (KeepAlive)
 
 By default, form state is destroyed when `Initialize` unmounts. For multi-step wizards or conditional fields where you want state to persist, use `KeepAlive`:
 
@@ -668,9 +591,9 @@ form.submit                        // AtomResultFn<void, A, E> - trigger submit 
 ## Field Component Props Reference
 
 ```ts
-interface FieldState<S extends Schema.Schema.Any> {
-  value: Schema.Schema.Encoded<S> // Current field value
-  onChange: (value: Schema.Schema.Encoded<S>) => void
+interface FieldState<E> {
+  value: E // Current field value (encoded type)
+  onChange: (value: E) => void
   onBlur: () => void
   error: Option.Option<string> // Validation error (shown after touch/submit)
   isTouched: boolean // Field has been blurred
@@ -678,41 +601,67 @@ interface FieldState<S extends Schema.Schema.Any> {
   isDirty: boolean // Value differs from initial
 }
 
-interface FieldComponentProps<
-  S extends Schema.Schema.Any,
-  P extends Record<string, unknown> = Record<string, never>
-> {
-  field: FieldState<S> // Form-controlled state
+interface FieldComponentProps<E, P = {}> {
+  field: FieldState<E> // Form-controlled state
   props: P // Custom props passed at render time
 }
+
+// Helper type for defining field components
+type FieldComponent<T, P = {}> = React.FC<FieldComponentProps<FieldValue<T>, P>>
 ```
 
-### Defining Field Components with `forField`
+### Defining Field Components
 
-Use `FormReact.forField()` with reusable `FieldDef`s for ergonomic component definition with full type inference:
+Use `FieldComponent<T>` to define reusable field components. You can pass either:
+- A value type directly: `FieldComponent<string>`
+- A Schema type: `FieldComponent<typeof Schema.String>` (extracts the encoded type)
 
 ```tsx
-const EmailField = Field.makeField("email", Schema.String)
-
-const TextInput = FormReact.forField(EmailField)(({ field }) => (
+// With value type (recommended)
+const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   <input
     value={field.value}
     onChange={(e) => field.onChange(e.target.value)}
     onBlur={field.onBlur}
   />
-))
+)
 
-// With custom props - just specify the props type
-const TextInput = FormReact.forField(EmailField)<{ placeholder?: string }>(({ field, props }) => (
+// With Schema type
+const TextInput: FormReact.FieldComponent<typeof Schema.String> = ({ field }) => (
+  <input
+    value={field.value}
+    onChange={(e) => field.onChange(e.target.value)}
+    onBlur={field.onBlur}
+  />
+)
+
+// With custom props
+const TextInput: FormReact.FieldComponent<string, { placeholder?: string }> = ({ field, props }) => (
   <input
     value={field.value}
     onChange={(e) => field.onChange(e.target.value)}
     placeholder={props.placeholder}
   />
-))
+)
 
 // Pass props at render time
 <LoginForm.email placeholder="Enter email" />
+```
+
+Components typed with value types can be reused across schemas with the same encoded type:
+
+```tsx
+const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
+  <input value={field.value} onChange={(e) => field.onChange(e.target.value)} />
+)
+
+const form = FormReact.make(formBuilder, {
+  fields: {
+    name: TextInput,
+    age: TextInput,
+  },
+  onSubmit,
+})
 ```
 
 ## License

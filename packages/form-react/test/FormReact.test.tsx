@@ -13,7 +13,7 @@ import * as Schema from "effect/Schema"
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
 
-const TextInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div>
     <input
       type="text"
@@ -185,18 +185,30 @@ describe("FormReact.make", () => {
       const submitHandler = vi.fn()
 
       const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const AgeField = Field.makeField("age", Schema.NumberFromString)
+      const formBuilder = FormBuilder.empty.addField(NameField).addField(AgeField)
+
+      const NumberFromStringInput: FormReact.FieldComponent<typeof Schema.NumberFromString> = ({ field }) => (
+        <input
+          type="text"
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
+          data-testid="number-input"
+        />
+      )
 
       const form = FormReact.make(formBuilder, {
-        fields: { name: TextInput },
+        fields: { name: TextInput, age: NumberFromStringInput },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded),
       })
 
       const SubmitButton = makeSubmitButton(form.submit, undefined)
 
       render(
-        <form.Initialize defaultValues={{ name: "John" }}>
+        <form.Initialize defaultValues={{ name: "John", age: "42" }}>
           <form.name />
+          <form.age />
           <SubmitButton />
         </form.Initialize>,
       )
@@ -204,7 +216,8 @@ describe("FormReact.make", () => {
       await user.click(screen.getByTestId("submit"))
 
       await waitFor(() => {
-        expect(submitHandler).toHaveBeenCalledWith({ name: "John" })
+        // age should be decoded from string "42" to number 42
+        expect(submitHandler).toHaveBeenCalledWith({ name: "John", age: 42 })
       })
     })
   })
@@ -217,9 +230,7 @@ describe("FormReact.make", () => {
       const LastNameField = Field.makeField("lastName", Schema.String)
       const formBuilder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField)
 
-      const NamedInput: React.FC<
-        FormReact.FieldComponentProps<typeof Schema.String, { name: string }>
-      > = ({ field, props }) => (
+      const NamedInput: FormReact.FieldComponent<string, { name: string }> = ({ field, props }) => (
         <input
           type="text"
           value={field.value}
@@ -229,11 +240,11 @@ describe("FormReact.make", () => {
         />
       )
 
-      const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const FirstNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <NamedInput field={field} props={{ name: "firstName" }} />
       )
 
-      const LastNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const LastNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <NamedInput field={field} props={{ name: "lastName" }} />
       )
 
@@ -270,7 +281,7 @@ describe("FormReact.make", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(TitleField).addField(ItemsArrayField)
 
-      const TitleInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const TitleInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
           type="text"
           value={field.value}
@@ -280,7 +291,7 @@ describe("FormReact.make", () => {
         />
       )
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
           type="text"
           value={field.value}
@@ -338,7 +349,7 @@ describe("FormReact.make", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
           type="text"
           value={field.value}
@@ -400,7 +411,7 @@ describe("FormReact.make", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
           type="text"
           value={field.value}
@@ -459,7 +470,7 @@ describe("FormReact.make", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
           type="text"
           value={field.value}
@@ -514,7 +525,7 @@ describe("FormReact.make", () => {
       const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
           type="text"
           value={field.value}
@@ -607,7 +618,7 @@ describe("FormReact.make", () => {
         Schema.filterEffect(() => Effect.succeed(true).pipe(Effect.delay("100 millis"))),
       )
 
-      const ValidatingInput: React.FC<FormReact.FieldComponentProps<typeof AsyncField>> = ({ field }) => (
+      const ValidatingInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
           <input
             type="text"
@@ -657,7 +668,7 @@ describe("FormReact.make", () => {
     it("FormBuilder.refine validates across fields and routes error to specific field", async () => {
       const user = userEvent.setup()
 
-      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
           <input
             type="password"
@@ -670,7 +681,7 @@ describe("FormReact.make", () => {
         </div>
       )
 
-      const ConfirmPasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const ConfirmPasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
           <input
             type="password"
@@ -724,7 +735,7 @@ describe("FormReact.make", () => {
     it("refineEffect performs async cross-field validation", async () => {
       const user = userEvent.setup()
 
-      const UsernameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const UsernameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
           <input
             type="text"
@@ -784,7 +795,7 @@ describe("FormReact.make", () => {
         isTaken: (username) => Effect.succeed(username === "taken"),
       })
 
-      const UsernameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const UsernameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
           <input
             type="text"
@@ -842,7 +853,7 @@ describe("FormReact.make", () => {
     it("multiple chained refine() calls are all executed", async () => {
       const user = userEvent.setup()
 
-      const FieldInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String, { testId: string }>> = ({
+      const FieldInput: FormReact.FieldComponent<string, { testId: string }> = ({
         field,
         props,
       }) => (
@@ -858,10 +869,10 @@ describe("FormReact.make", () => {
         </div>
       )
 
-      const FieldAInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const FieldAInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "fieldA" }} />
       )
-      const FieldBInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const FieldBInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "fieldB" }} />
       )
 
@@ -924,7 +935,7 @@ describe("FormReact.make", () => {
     it("cross-field error persists when typing after failed submit (still invalid)", async () => {
       const user = userEvent.setup()
 
-      const FieldInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String, { testId: string }>> = ({
+      const FieldInput: FormReact.FieldComponent<string, { testId: string }> = ({
         field,
         props,
       }) => (
@@ -940,10 +951,10 @@ describe("FormReact.make", () => {
         </div>
       )
 
-      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "password" }} />
       )
-      const ConfirmInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const ConfirmInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "confirm" }} />
       )
 
@@ -991,7 +1002,7 @@ describe("FormReact.make", () => {
     it("cross-field error clears when fixed and resubmitted", async () => {
       const user = userEvent.setup()
 
-      const FieldInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String, { testId: string }>> = ({
+      const FieldInput: FormReact.FieldComponent<string, { testId: string }> = ({
         field,
         props,
       }) => (
@@ -1007,10 +1018,10 @@ describe("FormReact.make", () => {
         </div>
       )
 
-      const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "password" }} />
       )
-      const ConfirmInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const ConfirmInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "confirm" }} />
       )
 
@@ -1064,7 +1075,7 @@ describe("FormReact.make", () => {
     it("routes cross-field errors to nested array item fields", async () => {
       const user = userEvent.setup()
 
-      const ItemNameInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
           <input
             type="text"

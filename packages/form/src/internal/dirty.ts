@@ -1,16 +1,7 @@
-/**
- * Internal dirty tracking algorithms.
- *
- * @internal
- */
 import * as Equal from "effect/Equal"
 import * as Utils from "effect/Utils"
 import { getNestedValue, isPathUnderRoot } from "../Path.js"
 
-/**
- * Recalculates dirty fields for an array after mutation.
- * Clears all paths under the array and re-evaluates each item.
- */
 export const recalculateDirtyFieldsForArray = (
   dirtyFields: ReadonlySet<string>,
   initialValues: unknown,
@@ -50,12 +41,6 @@ export const recalculateDirtyFieldsForArray = (
   return nextDirty
 }
 
-/**
- * Recalculates dirty fields for a subtree after value change.
- * Clears the rootPath and all children, then re-evaluates recursively.
- *
- * @param rootPath - Empty string for full form, or a specific path for targeted update
- */
 export const recalculateDirtySubtree = (
   currentDirty: ReadonlySet<string>,
   allInitial: unknown,
