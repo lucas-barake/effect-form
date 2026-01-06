@@ -1,9 +1,8 @@
 import type { FormReact } from "@lucas-barake/effect-form-react"
 import * as Option from "effect/Option"
-import type * as Schema from "effect/Schema"
 import styles from "../styles/form.module.css"
 
-export const TextInput: React.FC<FormReact.FieldComponentProps<typeof Schema.String>> = ({ field }) => (
+export const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <input
       type="text"

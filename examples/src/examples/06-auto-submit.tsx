@@ -15,7 +15,7 @@ const BioField = Field.makeField("bio", Schema.String)
 
 const settingsFormBuilder = FormBuilder.empty.addField(DisplayNameField).addField(BioField)
 
-const DisplayNameInput: React.FC<FormReact.FieldComponentProps<typeof DisplayNameField.schema>> = ({ field }) => (
+const DisplayNameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>Display Name</label>
     <input
@@ -30,7 +30,7 @@ const DisplayNameInput: React.FC<FormReact.FieldComponentProps<typeof DisplayNam
   </div>
 )
 
-const BioInput: React.FC<FormReact.FieldComponentProps<typeof BioField.schema>> = ({ field }) => (
+const BioInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>Bio</label>
     <input

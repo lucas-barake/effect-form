@@ -1,22 +1,5 @@
-/**
- * Form validation mode configuration.
- */
 import * as Duration from "effect/Duration"
 
-/**
- * Controls when field validation is triggered and whether form auto-submits.
- *
- * Simple modes (string):
- * - `"onSubmit"`: Validation only runs when the form is submitted (default)
- * - `"onBlur"`: Validation runs when a field loses focus
- * - `"onChange"`: Validation runs on every value change (sync)
- *
- * Object modes (with options):
- * - `{ onChange: { debounce, autoSubmit? } }`: Debounced validation, optional auto-submit
- * - `{ onBlur: { autoSubmit: true } }`: Validate on blur, auto-submit when valid
- *
- * @category Models
- */
 export type FormMode =
   | "onSubmit"
   | "onBlur"
@@ -25,34 +8,18 @@ export type FormMode =
   | { readonly onBlur: { readonly autoSubmit: true } }
   | { readonly onChange: { readonly debounce: Duration.DurationInput; readonly autoSubmit: true } }
 
-/**
- * Form mode without auto-submit options.
- * Used when SubmitArgs is not void, since auto-submit cannot provide custom arguments.
- *
- * @category Models
- */
 export type FormModeWithoutAutoSubmit =
   | "onSubmit"
   | "onBlur"
   | "onChange"
   | { readonly onChange: { readonly debounce: Duration.DurationInput; readonly autoSubmit?: false } }
 
-/**
- * Parsed form mode with resolved values.
- *
- * @category Models
- */
 export interface ParsedMode {
   readonly validation: "onSubmit" | "onBlur" | "onChange"
   readonly debounce: number | null
   readonly autoSubmit: boolean
 }
 
-/**
- * Parses a FormMode into a normalized ParsedMode.
- *
- * @category Parsing
- */
 export const parse = (mode: FormMode = "onSubmit"): ParsedMode => {
   if (typeof mode === "string") {
     return { validation: mode, debounce: null, autoSubmit: false }

@@ -20,7 +20,7 @@ const LastNameField = Field.makeField(
 
 const step1Builder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField)
 
-const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof FirstNameField.schema>> = ({ field }) => (
+const FirstNameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>First Name</label>
     <input
@@ -35,7 +35,7 @@ const FirstNameInput: React.FC<FormReact.FieldComponentProps<typeof FirstNameFie
   </div>
 )
 
-const LastNameInput: React.FC<FormReact.FieldComponentProps<typeof LastNameField.schema>> = ({ field }) => (
+const LastNameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>Last Name</label>
     <input
@@ -76,7 +76,7 @@ const ZipField = Field.makeField(
 
 const step2Builder = FormBuilder.empty.addField(StreetField).addField(CityField).addField(ZipField)
 
-const StreetInput: React.FC<FormReact.FieldComponentProps<typeof StreetField.schema>> = ({ field }) => (
+const StreetInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>Street Address</label>
     <input
@@ -91,7 +91,7 @@ const StreetInput: React.FC<FormReact.FieldComponentProps<typeof StreetField.sch
   </div>
 )
 
-const CityInput: React.FC<FormReact.FieldComponentProps<typeof CityField.schema>> = ({ field }) => (
+const CityInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>City</label>
     <input
@@ -106,7 +106,7 @@ const CityInput: React.FC<FormReact.FieldComponentProps<typeof CityField.schema>
   </div>
 )
 
-const ZipInput: React.FC<FormReact.FieldComponentProps<typeof ZipField.schema>> = ({ field }) => (
+const ZipInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>ZIP Code</label>
     <input

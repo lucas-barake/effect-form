@@ -1,15 +1,5 @@
-/**
- * Path utilities for form field operations.
- */
-
 const BRACKET_NOTATION_REGEX = /\[(\d+)\]/g
 
-/**
- * Converts a schema path array to a dot/bracket notation string.
- *
- * @example
- * schemaPathToFieldPath(["items", 0, "name"]) // "items[0].name"
- */
 export const schemaPathToFieldPath = (path: ReadonlyArray<PropertyKey>): string => {
   if (path.length === 0) return ""
 
@@ -25,21 +15,9 @@ export const schemaPathToFieldPath = (path: ReadonlyArray<PropertyKey>): string 
   return result
 }
 
-/**
- * Checks if a path matches a root path or is a descendant of it.
- * Handles both dot notation (root.child) and bracket notation (root[0]).
- *
- * @example
- * isPathUnderRoot("items[0].name", "items[0]") // true
- * isPathUnderRoot("items[0].name", "items") // true
- * isPathUnderRoot("other", "items") // false
- */
 export const isPathUnderRoot = (path: string, rootPath: string): boolean =>
   path === rootPath || path.startsWith(rootPath + ".") || path.startsWith(rootPath + "[")
 
-/**
- * Checks if a field path or any of its parent paths are in the dirty set.
- */
 export const isPathOrParentDirty = (dirtyFields: ReadonlySet<string>, path: string): boolean => {
   if (dirtyFields.has(path)) return true
 
@@ -58,12 +36,6 @@ export const isPathOrParentDirty = (dirtyFields: ReadonlySet<string>, path: stri
   return false
 }
 
-/**
- * Gets a nested value from an object using dot/bracket notation path.
- *
- * @example
- * getNestedValue({ items: [{ name: "A" }] }, "items[0].name") // "A"
- */
 export const getNestedValue = (obj: unknown, path: string): unknown => {
   if (path === "") return obj
   const parts = path.replace(BRACKET_NOTATION_REGEX, ".$1").split(".")
@@ -75,13 +47,6 @@ export const getNestedValue = (obj: unknown, path: string): unknown => {
   return current
 }
 
-/**
- * Sets a nested value in an object immutably using dot/bracket notation path.
- *
- * @example
- * setNestedValue({ items: [{ name: "A" }] }, "items[0].name", "B")
- * // { items: [{ name: "B" }] }
- */
 export const setNestedValue = <T>(obj: T, path: string, value: unknown): T => {
   if (path === "") return value as T
   const parts = path.replace(BRACKET_NOTATION_REGEX, ".$1").split(".")

@@ -24,7 +24,7 @@ const signupFormBuilder = FormBuilder.empty
     }
   })
 
-const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof PasswordField.schema>> = ({ field }) => (
+const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>Password</label>
     <input
@@ -39,7 +39,7 @@ const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof PasswordField
   </div>
 )
 
-const ConfirmPasswordInput: React.FC<FormReact.FieldComponentProps<typeof ConfirmPasswordField.schema>> = ({
+const ConfirmPasswordInput: FormReact.FieldComponent<string> = ({
   field,
 }) => (
   <div className={styles.fieldContainer}>

@@ -18,7 +18,7 @@ const EmailField = Field.makeField(
 
 const profileFormBuilder = FormBuilder.empty.addField(NameField).addField(EmailField)
 
-const NameInput: React.FC<FormReact.FieldComponentProps<typeof NameField.schema>> = ({ field }) => (
+const NameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>Name</label>
     <input
@@ -33,7 +33,7 @@ const NameInput: React.FC<FormReact.FieldComponentProps<typeof NameField.schema>
   </div>
 )
 
-const EmailInput: React.FC<FormReact.FieldComponentProps<typeof EmailField.schema>> = ({ field }) => (
+const EmailInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>Email</label>
     <input

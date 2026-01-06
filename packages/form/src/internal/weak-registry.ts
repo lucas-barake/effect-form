@@ -1,14 +1,3 @@
-/**
- * Internal WeakRef-based registry for caching atoms.
- *
- * @internal
- */
-
-/**
- * A registry that uses WeakRef to allow garbage collection of cached values.
- *
- * @internal
- */
 export interface WeakRegistry<V extends object> {
   readonly get: (key: string) => V | undefined
   readonly set: (key: string, value: V) => void
@@ -17,12 +6,6 @@ export interface WeakRegistry<V extends object> {
   readonly values: () => IterableIterator<V>
 }
 
-/**
- * Creates a WeakRef-based registry with automatic cleanup via FinalizationRegistry.
- * Falls back to a regular Map in environments without WeakRef support.
- *
- * @internal
- */
 export const createWeakRegistry = <V extends object>(): WeakRegistry<V> => {
   if (typeof WeakRef === "undefined" || typeof FinalizationRegistry === "undefined") {
     const map = new Map<string, V>()

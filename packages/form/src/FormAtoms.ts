@@ -11,11 +11,6 @@ import { createWeakRegistry, type WeakRegistry } from "./internal/weak-registry.
 import { getNestedValue, setNestedValue } from "./Path.js"
 import * as Validation from "./Validation.js"
 
-/**
- * Atoms for a single field.
- *
- * @category Models
- */
 export interface FieldAtoms {
   readonly valueAtom: Atom.Writable<unknown, unknown>
   readonly initialValueAtom: Atom.Atom<unknown>
@@ -23,11 +18,6 @@ export interface FieldAtoms {
   readonly errorAtom: Atom.Atom<Option.Option<Validation.ErrorEntry>>
 }
 
-/**
- * Configuration for creating form atoms.
- *
- * @category Models
- */
 export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void> {
   readonly runtime: Atom.AtomRuntime<R, any>
   readonly formBuilder: FormBuilder.FormBuilder<TFields, R>
@@ -41,11 +31,6 @@ export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, Su
   ) => A | Effect.Effect<A, E, R>
 }
 
-/**
- * Maps field names to their type-safe Field references for setValue operations.
- *
- * @category Models
- */
 export type FieldRefs<TFields extends Field.FieldsRecord> = {
   readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S> ?
     FormBuilder.FieldRef<Schema.Schema.Encoded<S>>
@@ -54,11 +39,6 @@ export type FieldRefs<TFields extends Field.FieldsRecord> = {
     : never
 }
 
-/**
- * The complete form atoms infrastructure.
- *
- * @category Models
- */
 export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = never, SubmitArgs = void> {
   readonly stateAtom: Atom.Writable<
     Option.Option<FormBuilder.FormState<TFields>>,
@@ -124,11 +104,6 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly keepAliveActiveAtom: Atom.Writable<boolean, boolean>
 }
 
-/**
- * Pure state operations for form manipulation.
- *
- * @category Models
- */
 export interface FormOperations<TFields extends Field.FieldsRecord> {
   readonly createInitialState: (defaultValues: Field.EncodedFromFields<TFields>) => FormBuilder.FormState<TFields>
 
@@ -180,38 +155,9 @@ export interface FormOperations<TFields extends Field.FieldsRecord> {
     toIndex: number,
   ) => FormBuilder.FormState<TFields>
 
-  /**
-   * Reverts values to the last submitted state.
-   * No-op if form has never been submitted or is already in sync.
-   */
   readonly revertToLastSubmit: (state: FormBuilder.FormState<TFields>) => FormBuilder.FormState<TFields>
 }
 
-/**
- * Creates the complete form atoms infrastructure.
- *
- * @example
- * ```ts
- * import * as FormAtoms from "@lucas-barake/effect-form/FormAtoms"
- * import * as Form from "@lucas-barake/effect-form"
- * import * as Atom from "@effect-atom/atom/Atom"
- * import * as Layer from "effect/Layer"
- *
- * const runtime = Atom.runtime(Layer.empty)
- *
- * const loginForm = FormBuilder.empty
- *   .addField(FormBuilder.makeField("email", Schema.String))
- *   .addField(FormBuilder.makeField("password", Schema.String))
- *
- * const atoms = FormAtoms.make({
- *   runtime,
- *   formBuilder: loginForm,
- *   parsedMode: { validation: "onChange", debounce: 300, autoSubmit: false }
- * })
- * ```
- *
- * @category Constructors
- */
 export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void>(
   config: FormAtomsConfig<TFields, R, A, E, SubmitArgs>,
 ): FormAtoms<TFields, R, A, E, SubmitArgs> => {
