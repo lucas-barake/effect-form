@@ -12,7 +12,7 @@ const UsernameField = Field.makeField(
 
 const formBuilder = FormBuilder.empty.addField(UsernameField)
 
-const UsernameInput: React.FC<FormReact.FieldComponentProps<typeof UsernameField.schema>> = ({ field }) => (
+const UsernameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>Username</label>
     <input

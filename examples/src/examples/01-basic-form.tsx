@@ -30,7 +30,7 @@ const loginFormBuilder = FormBuilder.empty
   .addField(EmailField)
   .addField(PasswordField)
 
-const EmailInput: React.FC<FormReact.FieldComponentProps<typeof EmailField.schema>> = ({ field }) => (
+const EmailInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>
       Email
@@ -57,7 +57,7 @@ const EmailInput: React.FC<FormReact.FieldComponentProps<typeof EmailField.schem
   </div>
 )
 
-const PasswordInput: React.FC<FormReact.FieldComponentProps<typeof PasswordField.schema>> = ({ field }) => (
+const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <label className={styles.label}>
       Password
