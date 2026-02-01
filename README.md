@@ -570,7 +570,8 @@ form.lastSubmittedValues     // Atom<Option<SubmittedValues>> - last submitted v
 form.submitCount             // Atom<number> - number of submit attempts
 form.rootError               // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
 form.submit                  // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
-form.getFieldAtom(fieldRef)  // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
+form.getFieldAtom(fieldRef)      // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
+form.getFieldIsDirty(fieldRef)   // Atom<boolean> - subscribe to individual field dirty state
 form.mount                   // Atom<void> - root anchor for state persistence (use with useAtomMount)
 ```
 

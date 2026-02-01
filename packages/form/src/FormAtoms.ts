@@ -81,6 +81,7 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>;
 
   readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>;
+  readonly getFieldIsDirty: (field: FormBuilder.FieldRef<any>) => Atom.Atom<boolean>;
 
   /**
    * Root anchor atom for the form's dependency graph.
@@ -550,6 +551,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     return safeAtom;
   };
 
+  const getFieldIsDirty = (field: FormBuilder.FieldRef<any>): Atom.Atom<boolean> =>
+    getOrCreateFieldAtoms(field.key).isDirtyAtom;
+
   const mountAtom = Atom.readable((get) => {
     get(stateAtom);
     get(errorsAtom);
@@ -583,6 +587,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     setValuesAtom,
     setValue,
     getFieldAtom,
+    getFieldIsDirty,
     mountAtom,
     keepAliveActiveAtom,
   } as FormAtoms<TFields, R, A, E, SubmitArgs>;
