@@ -1,17 +1,17 @@
-import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
-import * as Atom from "@effect-atom/atom/Atom"
-import * as Registry from "@effect-atom/atom/Registry"
-import * as Result from "@effect-atom/atom/Result"
-import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
-import { render, screen, waitFor } from "@testing-library/react"
-import { userEvent } from "@testing-library/user-event"
-import * as Context from "effect/Context"
-import * as Effect from "effect/Effect"
-import * as Layer from "effect/Layer"
-import * as Option from "effect/Option"
-import * as Schema from "effect/Schema"
-import * as React from "react"
-import { describe, expect, it, vi } from "vitest"
+import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react";
+import * as Atom from "@effect-atom/atom/Atom";
+import * as Registry from "@effect-atom/atom/Registry";
+import * as Result from "@effect-atom/atom/Result";
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
+import * as React from "react";
+import { describe, expect, it, vi } from "vitest";
 
 const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div>
@@ -24,169 +24,169 @@ const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
     />
     {Option.isSome(field.error) && <span data-testid="error">{field.error.value}</span>}
   </div>
-)
+);
 
 const makeSubmitButton = <A,>(submitAtom: Atom.AtomResultFn<A, unknown, unknown>, args: A) => {
   const SubmitButton = () => {
-    const submit = useAtomSet(submitAtom)
-    return <button onClick={() => submit(args)} data-testid="submit">Submit</button>
-  }
-  return SubmitButton
-}
+    const submit = useAtomSet(submitAtom);
+    return <button onClick={() => submit(args)} data-testid="submit">Submit</button>;
+  };
+  return SubmitButton;
+};
 
 describe("FormReact.make", () => {
   describe("Initialize Component", () => {
     it("initializes with default values", () => {
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize defaultValues={{ name: "John" }}>
           <form.name />
         </form.Initialize>,
-      )
+      );
 
-      expect(screen.getByTestId("text-input")).toHaveValue("John")
-    })
-  })
+      expect(screen.getByTestId("text-input")).toHaveValue("John");
+    });
+  });
 
   describe("Field Component", () => {
     it("updates value on change", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize defaultValues={{ name: "" }}>
           <form.name />
         </form.Initialize>,
-      )
+      );
 
-      const input = screen.getByTestId("text-input")
-      await user.type(input, "Jane")
+      const input = screen.getByTestId("text-input");
+      await user.type(input, "Jane");
 
-      expect(input).toHaveValue("Jane")
-    })
+      expect(input).toHaveValue("Jane");
+    });
 
     it("shows validation error after touch (onBlur mode)", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
-      const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }));
+      const NameField = Field.makeField("name", NonEmpty);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         mode: "onBlur",
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize defaultValues={{ name: "" }}>
           <form.name />
         </form.Initialize>,
-      )
+      );
 
-      const input = screen.getByTestId("text-input")
-      await user.click(input)
-      await user.tab()
+      const input = screen.getByTestId("text-input");
+      await user.click(input);
+      await user.tab();
 
       await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent("Required")
-      })
-    })
-  })
+        expect(screen.getByTestId("error")).toHaveTextContent("Required");
+      });
+    });
+  });
 
   describe("isDirty atom", () => {
     it("returns isDirty = false when values match initial", () => {
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
-      let isDirty: boolean | undefined
+      let isDirty: boolean | undefined;
 
       const TestComponent = () => {
         useAtomSubscribe(form.isDirty, (dirty) => {
-          isDirty = dirty
-        }, { immediate: true })
-        return null
-      }
+          isDirty = dirty;
+        }, { immediate: true });
+        return null;
+      };
 
       render(
         <form.Initialize defaultValues={{ name: "test" }}>
           <form.name />
           <TestComponent />
         </form.Initialize>,
-      )
+      );
 
-      expect(isDirty).toBe(false)
-    })
+      expect(isDirty).toBe(false);
+    });
 
     it("returns isDirty = true when values differ from initial", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
-      let isDirty: boolean | undefined
+      let isDirty: boolean | undefined;
 
       const TestComponent = () => {
         useAtomSubscribe(form.isDirty, (dirty) => {
-          isDirty = dirty
-        }, { immediate: true })
-        return null
-      }
+          isDirty = dirty;
+        }, { immediate: true });
+        return null;
+      };
 
       render(
         <form.Initialize defaultValues={{ name: "" }}>
           <form.name />
           <TestComponent />
         </form.Initialize>,
-      )
+      );
 
-      const input = screen.getByTestId("text-input")
-      await user.type(input, "changed")
+      const input = screen.getByTestId("text-input");
+      await user.type(input, "changed");
 
-      expect(isDirty).toBe(true)
-    })
+      expect(isDirty).toBe(true);
+    });
 
     it("submit calls onSubmit with decoded values", async () => {
-      const user = userEvent.setup()
-      const submitHandler = vi.fn()
+      const user = userEvent.setup();
+      const submitHandler = vi.fn();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const AgeField = Field.makeField("age", Schema.NumberFromString)
-      const formBuilder = FormBuilder.empty.addField(NameField).addField(AgeField)
+      const NameField = Field.makeField("name", Schema.String);
+      const AgeField = Field.makeField("age", Schema.NumberFromString);
+      const formBuilder = FormBuilder.empty.addField(NameField).addField(AgeField);
 
       const NumberFromStringInput: FormReact.FieldComponent<typeof Schema.NumberFromString> = ({ field }) => (
         <input
@@ -196,14 +196,14 @@ describe("FormReact.make", () => {
           onBlur={field.onBlur}
           data-testid="number-input"
         />
-      )
+      );
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput, age: NumberFromStringInput },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded),
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ name: "John", age: "42" }}>
@@ -211,25 +211,25 @@ describe("FormReact.make", () => {
           <form.age />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(submitHandler).toHaveBeenCalledWith({ name: "John", age: 42 })
-      })
-    })
-  })
+        expect(submitHandler).toHaveBeenCalledWith({ name: "John", age: 42 });
+      });
+    });
+  });
 
   describe("multiple fields", () => {
     it("renders multiple fields correctly", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const FirstNameField = Field.makeField("firstName", Schema.String)
-      const LastNameField = Field.makeField("lastName", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField)
+      const FirstNameField = Field.makeField("firstName", Schema.String);
+      const LastNameField = Field.makeField("lastName", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField);
 
-      const NamedInput: FormReact.FieldComponent<string, { name: string }> = ({ field, props }) => (
+      const NamedInput: FormReact.FieldComponent<string, { name: string; }> = ({ field, props }) => (
         <input
           type="text"
           value={field.value}
@@ -237,17 +237,17 @@ describe("FormReact.make", () => {
           onBlur={field.onBlur}
           data-testid={props.name}
         />
-      )
+      );
 
       const FirstNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <NamedInput field={field} props={{ name: "firstName" }} />
-      )
+      );
 
       const LastNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <NamedInput field={field} props={{ name: "lastName" }} />
-      )
+      );
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: {
@@ -255,30 +255,30 @@ describe("FormReact.make", () => {
           lastName: LastNameInput,
         },
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize defaultValues={{ firstName: "", lastName: "" }}>
           <form.firstName />
           <form.lastName />
         </form.Initialize>,
-      )
+      );
 
-      await user.type(screen.getByTestId("firstName"), "John")
-      await user.type(screen.getByTestId("lastName"), "Doe")
+      await user.type(screen.getByTestId("firstName"), "John");
+      await user.type(screen.getByTestId("lastName"), "Doe");
 
-      expect(screen.getByTestId("firstName")).toHaveValue("John")
-      expect(screen.getByTestId("lastName")).toHaveValue("Doe")
-    })
-  })
+      expect(screen.getByTestId("firstName")).toHaveValue("John");
+      expect(screen.getByTestId("lastName")).toHaveValue("Doe");
+    });
+  });
 
   describe("array fields", () => {
     it("renders array field with items", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const TitleField = Field.makeField("title", Schema.String)
-      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = FormBuilder.empty.addField(TitleField).addField(ItemsArrayField)
+      const TitleField = Field.makeField("title", Schema.String);
+      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }));
+      const formBuilder = FormBuilder.empty.addField(TitleField).addField(ItemsArrayField);
 
       const TitleInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
@@ -288,7 +288,7 @@ describe("FormReact.make", () => {
           onBlur={field.onBlur}
           data-testid="title"
         />
-      )
+      );
 
       const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
@@ -298,9 +298,9 @@ describe("FormReact.make", () => {
           onBlur={field.onBlur}
           data-testid="item-name"
         />
-      )
+      );
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: {
@@ -308,7 +308,7 @@ describe("FormReact.make", () => {
           items: { name: ItemNameInput },
         },
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize
@@ -330,23 +330,23 @@ describe("FormReact.make", () => {
             )}
           </form.items>
         </form.Initialize>,
-      )
+      );
 
-      expect(screen.getByTestId("title")).toHaveValue("My List")
-      expect(screen.getByTestId("item-name")).toHaveValue("Item 1")
+      expect(screen.getByTestId("title")).toHaveValue("My List");
+      expect(screen.getByTestId("item-name")).toHaveValue("Item 1");
 
-      await user.click(screen.getByTestId("add"))
+      await user.click(screen.getByTestId("add"));
 
       await waitFor(() => {
-        expect(screen.getAllByTestId("item-name")).toHaveLength(2)
-      })
-    })
+        expect(screen.getAllByTestId("item-name")).toHaveLength(2);
+      });
+    });
 
     it("remove() removes item at specified index", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }));
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField);
 
       const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
@@ -356,14 +356,14 @@ describe("FormReact.make", () => {
           onBlur={field.onBlur}
           data-testid="item-name"
         />
-      )
+      );
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { items: { name: ItemNameInput } },
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize
@@ -386,29 +386,29 @@ describe("FormReact.make", () => {
             )}
           </form.items>
         </form.Initialize>,
-      )
+      );
 
-      expect(screen.getAllByTestId("item-name")).toHaveLength(3)
-      const inputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>
-      expect(inputs[0].value).toBe("A")
-      expect(inputs[1].value).toBe("B")
-      expect(inputs[2].value).toBe("C")
+      expect(screen.getAllByTestId("item-name")).toHaveLength(3);
+      const inputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>;
+      expect(inputs[0].value).toBe("A");
+      expect(inputs[1].value).toBe("B");
+      expect(inputs[2].value).toBe("C");
 
-      await user.click(screen.getByTestId("remove-1"))
+      await user.click(screen.getByTestId("remove-1"));
 
       await waitFor(() => {
-        expect(screen.getAllByTestId("item-name")).toHaveLength(2)
-        const updatedInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>
-        expect(updatedInputs[0].value).toBe("A")
-        expect(updatedInputs[1].value).toBe("C")
-      })
-    })
+        expect(screen.getAllByTestId("item-name")).toHaveLength(2);
+        const updatedInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>;
+        expect(updatedInputs[0].value).toBe("A");
+        expect(updatedInputs[1].value).toBe("C");
+      });
+    });
 
     it("swap() exchanges items at two indices", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }));
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField);
 
       const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
@@ -418,14 +418,14 @@ describe("FormReact.make", () => {
           onBlur={field.onBlur}
           data-testid="item-name"
         />
-      )
+      );
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { items: { name: ItemNameInput } },
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize
@@ -446,28 +446,28 @@ describe("FormReact.make", () => {
             )}
           </form.items>
         </form.Initialize>,
-      )
+      );
 
-      const initialInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>
-      expect(initialInputs[0].value).toBe("First")
-      expect(initialInputs[1].value).toBe("Second")
-      expect(initialInputs[2].value).toBe("Third")
+      const initialInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>;
+      expect(initialInputs[0].value).toBe("First");
+      expect(initialInputs[1].value).toBe("Second");
+      expect(initialInputs[2].value).toBe("Third");
 
-      await user.click(screen.getByTestId("swap"))
+      await user.click(screen.getByTestId("swap"));
 
       await waitFor(() => {
-        const swappedInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>
-        expect(swappedInputs[0].value).toBe("Third")
-        expect(swappedInputs[1].value).toBe("Second")
-        expect(swappedInputs[2].value).toBe("First")
-      })
-    })
+        const swappedInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>;
+        expect(swappedInputs[0].value).toBe("Third");
+        expect(swappedInputs[1].value).toBe("Second");
+        expect(swappedInputs[2].value).toBe("First");
+      });
+    });
 
     it("move() relocates item from one index to another", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }));
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField);
 
       const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
@@ -477,14 +477,14 @@ describe("FormReact.make", () => {
           onBlur={field.onBlur}
           data-testid="item-name"
         />
-      )
+      );
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { items: { name: ItemNameInput } },
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize
@@ -505,24 +505,24 @@ describe("FormReact.make", () => {
             )}
           </form.items>
         </form.Initialize>,
-      )
+      );
 
-      const initialInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>
-      expect(initialInputs.map((i) => i.value)).toEqual(["A", "B", "C", "D"])
+      const initialInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>;
+      expect(initialInputs.map((i) => i.value)).toEqual(["A", "B", "C", "D"]);
 
-      await user.click(screen.getByTestId("move"))
+      await user.click(screen.getByTestId("move"));
 
       await waitFor(() => {
-        const movedInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>
-        expect(movedInputs.map((i) => i.value)).toEqual(["B", "C", "A", "D"])
-      })
-    })
+        const movedInputs = screen.getAllByTestId("item-name") as Array<HTMLInputElement>;
+        expect(movedInputs.map((i) => i.value)).toEqual(["B", "C", "A", "D"]);
+      });
+    });
 
     it("Item render prop provides remove function", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
-      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }));
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField);
 
       const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <input
@@ -532,14 +532,14 @@ describe("FormReact.make", () => {
           onBlur={field.onBlur}
           data-testid="item-name"
         />
-      )
+      );
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { items: { name: ItemNameInput } },
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize
@@ -564,58 +564,58 @@ describe("FormReact.make", () => {
             )}
           </form.items>
         </form.Initialize>,
-      )
+      );
 
-      expect(screen.getAllByTestId("item-name")).toHaveLength(2)
+      expect(screen.getAllByTestId("item-name")).toHaveLength(2);
 
-      await user.click(screen.getByTestId("item-remove-0"))
+      await user.click(screen.getByTestId("item-remove-0"));
 
       await waitFor(() => {
-        expect(screen.getAllByTestId("item-name")).toHaveLength(1)
-        expect((screen.getByTestId("item-name") as HTMLInputElement).value).toBe("Item 2")
-      })
-    })
-  })
+        expect(screen.getAllByTestId("item-name")).toHaveLength(1);
+        expect((screen.getByTestId("item-name") as HTMLInputElement).value).toBe("Item 2");
+      });
+    });
+  });
 
   describe("async validation", () => {
     it("submit works with async schema validation (filterEffect)", async () => {
-      const user = userEvent.setup()
-      const submitHandler = vi.fn()
+      const user = userEvent.setup();
+      const submitHandler = vi.fn();
 
       const AsyncEmail = Schema.String.pipe(
         Schema.filterEffect(() => Effect.succeed(true).pipe(Effect.delay("10 millis"))),
-      )
+      );
 
-      const EmailField = Field.makeField("email", AsyncEmail)
-      const formBuilder = FormBuilder.empty.addField(EmailField)
+      const EmailField = Field.makeField("email", AsyncEmail);
+      const formBuilder = FormBuilder.empty.addField(EmailField);
 
       const form = FormReact.make(formBuilder, {
         fields: { email: TextInput },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded),
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ email: "test@example.com" }}>
           <form.email />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(submitHandler).toHaveBeenCalledWith({ email: "test@example.com" })
-      }, { timeout: 1000 })
-    })
+        expect(submitHandler).toHaveBeenCalledWith({ email: "test@example.com" });
+      }, { timeout: 1000 });
+    });
 
     it("exposes isValidating state during async validation", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
       const AsyncField = Schema.String.pipe(
         Schema.filterEffect(() => Effect.succeed(true).pipe(Effect.delay("100 millis"))),
-      )
+      );
 
       const ValidatingInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
@@ -628,44 +628,44 @@ describe("FormReact.make", () => {
           />
           <span data-testid="is-validating">{String(field.isValidating)}</span>
         </div>
-      )
+      );
 
-      const AsyncFieldDef = Field.makeField("asyncField", AsyncField)
-      const formBuilder = FormBuilder.empty.addField(AsyncFieldDef)
+      const AsyncFieldDef = Field.makeField("asyncField", AsyncField);
+      const formBuilder = FormBuilder.empty.addField(AsyncFieldDef);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { asyncField: ValidatingInput },
         mode: "onBlur",
         onSubmit,
-      })
+      });
 
       render(
         <form.Initialize defaultValues={{ asyncField: "" }}>
           <form.asyncField />
         </form.Initialize>,
-      )
+      );
 
-      expect(screen.getByTestId("is-validating")).toHaveTextContent("false")
+      expect(screen.getByTestId("is-validating")).toHaveTextContent("false");
 
-      const input = screen.getByTestId("async-input")
-      await user.type(input, "test")
-      await user.tab()
-
-      await waitFor(() => {
-        expect(screen.getByTestId("is-validating")).toHaveTextContent("true")
-      })
+      const input = screen.getByTestId("async-input");
+      await user.type(input, "test");
+      await user.tab();
 
       await waitFor(() => {
-        expect(screen.getByTestId("is-validating")).toHaveTextContent("false")
-      }, { timeout: 200 })
-    })
-  })
+        expect(screen.getByTestId("is-validating")).toHaveTextContent("true");
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId("is-validating")).toHaveTextContent("false");
+      }, { timeout: 200 });
+    });
+  });
 
   describe("cross-field validation", () => {
     it("FormBuilder.refine validates across fields and routes error to specific field", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
       const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
@@ -678,7 +678,7 @@ describe("FormReact.make", () => {
           />
           {Option.isSome(field.error) && <span data-testid="password-error">{field.error.value}</span>}
         </div>
-      )
+      );
 
       const ConfirmPasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
@@ -691,18 +691,18 @@ describe("FormReact.make", () => {
           />
           {Option.isSome(field.error) && <span data-testid="confirm-password-error">{field.error.value}</span>}
         </div>
-      )
+      );
 
-      const PasswordField = Field.makeField("password", Schema.String)
-      const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String)
+      const PasswordField = Field.makeField("password", Schema.String);
+      const ConfirmPasswordField = Field.makeField("confirmPassword", Schema.String);
       const formBuilder = FormBuilder.empty.addField(PasswordField).addField(ConfirmPasswordField)
         .refine((values) => {
           if (values.password !== values.confirmPassword) {
-            return { path: ["confirmPassword"], message: "Passwords must match" }
+            return { path: ["confirmPassword"], message: "Passwords must match" };
           }
-        })
+        });
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: {
@@ -710,9 +710,9 @@ describe("FormReact.make", () => {
           confirmPassword: ConfirmPasswordInput,
         },
         onSubmit,
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ password: "secret", confirmPassword: "different" }}>
@@ -720,19 +720,19 @@ describe("FormReact.make", () => {
           <form.confirmPassword />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("confirm-password-error")).toHaveTextContent("Passwords must match")
-      })
+        expect(screen.getByTestId("confirm-password-error")).toHaveTextContent("Passwords must match");
+      });
 
-      expect(screen.queryByTestId("password-error")).not.toBeInTheDocument()
-    })
+      expect(screen.queryByTestId("password-error")).not.toBeInTheDocument();
+    });
 
     it("refineEffect performs async cross-field validation", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
       const UsernameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
@@ -745,54 +745,54 @@ describe("FormReact.make", () => {
           />
           {Option.isSome(field.error) && <span data-testid="username-error">{field.error.value}</span>}
         </div>
-      )
+      );
 
-      const UsernameField = Field.makeField("username", Schema.String)
+      const UsernameField = Field.makeField("username", Schema.String);
       const formBuilder = FormBuilder.empty
         .addField(UsernameField)
         .refineEffect((values) =>
           Effect.gen(function*() {
-            yield* Effect.sleep("20 millis")
+            yield* Effect.sleep("20 millis");
             if (values.username === "taken") {
-              return { path: ["username"], message: "Username is already taken" }
+              return { path: ["username"], message: "Username is already taken" };
             }
           })
-        )
+        );
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { username: UsernameInput },
         onSubmit,
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ username: "taken" }}>
           <form.username />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("username-error")).toHaveTextContent("Username is already taken")
-      }, { timeout: 200 })
-    })
+        expect(screen.getByTestId("username-error")).toHaveTextContent("Username is already taken");
+      }, { timeout: 200 });
+    });
 
     it("refineEffect works with Effect services from runtime", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
       class UsernameValidator extends Context.Tag("UsernameValidator")<
         UsernameValidator,
-        { readonly isTaken: (username: string) => Effect.Effect<boolean> }
+        { readonly isTaken: (username: string) => Effect.Effect<boolean>; }
       >() {}
 
       const UsernameValidatorLive = Layer.succeed(UsernameValidator, {
         isTaken: (username) => Effect.succeed(username === "taken"),
-      })
+      });
 
       const UsernameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
@@ -805,53 +805,53 @@ describe("FormReact.make", () => {
           />
           {Option.isSome(field.error) && <span data-testid="username-error">{field.error.value}</span>}
         </div>
-      )
+      );
 
-      const UsernameField = Field.makeField("username", Schema.String)
+      const UsernameField = Field.makeField("username", Schema.String);
       const formBuilder = FormBuilder.empty
         .addField(UsernameField)
         .refineEffect((values) =>
           Effect.gen(function*() {
-            const registry = yield* Registry.AtomRegistry
-            expect(typeof registry.get).toBe("function")
+            const registry = yield* Registry.AtomRegistry;
+            expect(typeof registry.get).toBe("function");
 
-            const validator = yield* UsernameValidator
-            const isTaken = yield* validator.isTaken(values.username)
+            const validator = yield* UsernameValidator;
+            const isTaken = yield* validator.isTaken(values.username);
             if (isTaken) {
-              return { path: ["username"], message: "Username is already taken" }
+              return { path: ["username"], message: "Username is already taken" };
             }
           })
-        )
+        );
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
-      const runtime = Atom.runtime(UsernameValidatorLive)
+      const runtime = Atom.runtime(UsernameValidatorLive);
       const form = FormReact.make(formBuilder, {
         runtime,
         fields: { username: UsernameInput },
         onSubmit,
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ username: "taken" }}>
           <form.username />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("username-error")).toHaveTextContent("Username is already taken")
-      })
-    })
+        expect(screen.getByTestId("username-error")).toHaveTextContent("Username is already taken");
+      });
+    });
 
     it("multiple chained refine() calls are all executed", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const FieldInput: FormReact.FieldComponent<string, { testId: string }> = ({
+      const FieldInput: FormReact.FieldComponent<string, { testId: string; }> = ({
         field,
         props,
       }) => (
@@ -865,39 +865,39 @@ describe("FormReact.make", () => {
           />
           {Option.isSome(field.error) && <span data-testid={`${props.testId}-error`}>{field.error.value}</span>}
         </div>
-      )
+      );
 
       const FieldAInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "fieldA" }} />
-      )
+      );
       const FieldBInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "fieldB" }} />
-      )
+      );
 
-      const FieldAField = Field.makeField("fieldA", Schema.String)
-      const FieldBField = Field.makeField("fieldB", Schema.String)
+      const FieldAField = Field.makeField("fieldA", Schema.String);
+      const FieldBField = Field.makeField("fieldB", Schema.String);
       const formBuilder = FormBuilder.empty
         .addField(FieldAField)
         .addField(FieldBField)
         .refine((values) => {
           if (values.fieldA === "error1") {
-            return { path: ["fieldA"], message: "First validation failed" }
+            return { path: ["fieldA"], message: "First validation failed" };
           }
         })
         .refine((values) => {
           if (values.fieldB === "error2") {
-            return { path: ["fieldB"], message: "Second validation failed" }
+            return { path: ["fieldB"], message: "Second validation failed" };
           }
-        })
+        });
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { fieldA: FieldAInput, fieldB: FieldBInput },
         onSubmit,
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       const { rerender } = render(
         <form.Initialize key="1" defaultValues={{ fieldA: "error1", fieldB: "valid" }}>
@@ -905,14 +905,14 @@ describe("FormReact.make", () => {
           <form.fieldB />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("fieldA-error")).toHaveTextContent("First validation failed")
-      })
-      expect(screen.queryByTestId("fieldB-error")).not.toBeInTheDocument()
+        expect(screen.getByTestId("fieldA-error")).toHaveTextContent("First validation failed");
+      });
+      expect(screen.queryByTestId("fieldB-error")).not.toBeInTheDocument();
 
       rerender(
         <form.Initialize key="2" defaultValues={{ fieldA: "valid", fieldB: "error2" }}>
@@ -920,20 +920,20 @@ describe("FormReact.make", () => {
           <form.fieldB />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("fieldB-error")).toHaveTextContent("Second validation failed")
-      })
-      expect(screen.queryByTestId("fieldA-error")).not.toBeInTheDocument()
-    })
+        expect(screen.getByTestId("fieldB-error")).toHaveTextContent("Second validation failed");
+      });
+      expect(screen.queryByTestId("fieldA-error")).not.toBeInTheDocument();
+    });
 
     it("cross-field error persists when typing after failed submit (still invalid)", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const FieldInput: FormReact.FieldComponent<string, { testId: string }> = ({
+      const FieldInput: FormReact.FieldComponent<string, { testId: string; }> = ({
         field,
         props,
       }) => (
@@ -947,34 +947,34 @@ describe("FormReact.make", () => {
           />
           {Option.isSome(field.error) && <span data-testid={`${props.testId}-error`}>{field.error.value}</span>}
         </div>
-      )
+      );
 
       const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "password" }} />
-      )
+      );
       const ConfirmInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "confirm" }} />
-      )
+      );
 
-      const PasswordField = Field.makeField("password", Schema.String)
-      const ConfirmField = Field.makeField("confirm", Schema.String)
+      const PasswordField = Field.makeField("password", Schema.String);
+      const ConfirmField = Field.makeField("confirm", Schema.String);
       const formBuilder = FormBuilder.empty
         .addField(PasswordField)
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], message: "Passwords must match" };
           }
-        })
+        });
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { password: PasswordInput, confirm: ConfirmInput },
         onSubmit,
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ password: "secret", confirm: "different" }}>
@@ -982,25 +982,25 @@ describe("FormReact.make", () => {
           <form.confirm />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
-      })
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match");
+      });
 
-      const confirmInput = screen.getByTestId("confirm")
-      await user.type(confirmInput, "x")
+      const confirmInput = screen.getByTestId("confirm");
+      await user.type(confirmInput, "x");
 
-      await new Promise((r) => setTimeout(r, 50))
-      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
-    })
+      await new Promise((r) => setTimeout(r, 50));
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match");
+    });
 
     it("cross-field error clears when fixed and resubmitted", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const FieldInput: FormReact.FieldComponent<string, { testId: string }> = ({
+      const FieldInput: FormReact.FieldComponent<string, { testId: string; }> = ({
         field,
         props,
       }) => (
@@ -1014,34 +1014,34 @@ describe("FormReact.make", () => {
           />
           {Option.isSome(field.error) && <span data-testid={`${props.testId}-error`}>{field.error.value}</span>}
         </div>
-      )
+      );
 
       const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "password" }} />
-      )
+      );
       const ConfirmInput: FormReact.FieldComponent<string> = ({ field }) => (
         <FieldInput field={field} props={{ testId: "confirm" }} />
-      )
+      );
 
-      const PasswordField = Field.makeField("password", Schema.String)
-      const ConfirmField = Field.makeField("confirm", Schema.String)
+      const PasswordField = Field.makeField("password", Schema.String);
+      const ConfirmField = Field.makeField("confirm", Schema.String);
       const formBuilder = FormBuilder.empty
         .addField(PasswordField)
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], message: "Passwords must match" };
           }
-        })
+        });
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { password: PasswordInput, confirm: ConfirmInput },
         onSubmit,
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ password: "secret", confirm: "different" }}>
@@ -1049,29 +1049,29 @@ describe("FormReact.make", () => {
           <form.confirm />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
-
-      await waitFor(() => {
-        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
-      })
-
-      const confirmInput = screen.getByTestId("confirm")
-      await user.clear(confirmInput)
-      await user.type(confirmInput, "secret")
-
-      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
-
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument()
-      })
-    })
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match");
+      });
+
+      const confirmInput = screen.getByTestId("confirm");
+      await user.clear(confirmInput);
+      await user.type(confirmInput, "secret");
+
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match");
+
+      await user.click(screen.getByTestId("submit"));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument();
+      });
+    });
 
     it("routes cross-field errors to nested array item fields", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
       const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
         <div>
@@ -1084,23 +1084,23 @@ describe("FormReact.make", () => {
           />
           {Option.isSome(field.error) && <span data-testid="item-name-error">{field.error.value}</span>}
         </div>
-      )
+      );
 
       const ItemSchema = Schema.Struct({
         name: Schema.String.pipe(Schema.minLength(3, { message: () => "Name must be at least 3 characters" })),
-      })
+      });
 
-      const ItemsArrayField = Field.makeArrayField("items", ItemSchema)
-      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+      const ItemsArrayField = Field.makeArrayField("items", ItemSchema);
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { items: { name: ItemNameInput } },
         onSubmit,
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ items: [{ name: "AB" }] }}>
@@ -1117,177 +1117,177 @@ describe("FormReact.make", () => {
           </form.items>
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
         expect(screen.getByTestId("item-name-error")).toHaveTextContent(
           "Name must be at least 3 characters",
-        )
-      })
-    })
-  })
+        );
+      });
+    });
+  });
 
   describe("validation modes", () => {
     it("onSubmit mode shows errors after submit attempt", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
-      const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }));
+      const NameField = Field.makeField("name", NonEmpty);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         mode: "onSubmit",
         onSubmit,
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ name: "" }}>
           <form.name />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      expect(screen.queryByTestId("error")).not.toBeInTheDocument();
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent("Required")
-      })
-    })
+        expect(screen.getByTestId("error")).toHaveTextContent("Required");
+      });
+    });
 
     it("onChange mode shows errors immediately without needing blur", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const MinLength = Schema.String.pipe(Schema.minLength(3, { message: () => "Min 3 chars" }))
-      const NameField = Field.makeField("name", MinLength)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const MinLength = Schema.String.pipe(Schema.minLength(3, { message: () => "Min 3 chars" }));
+      const NameField = Field.makeField("name", MinLength);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         mode: "onChange",
         onSubmit: () => {},
-      })
+      });
 
       render(
         <form.Initialize defaultValues={{ name: "" }}>
           <form.name />
         </form.Initialize>,
-      )
+      );
 
-      const input = screen.getByTestId("text-input")
+      const input = screen.getByTestId("text-input");
 
-      await user.type(input, "ab")
-
-      await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent("Min 3 chars")
-      })
-
-      await user.type(input, "c")
+      await user.type(input, "ab");
 
       await waitFor(() => {
-        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
-      })
-    })
+        expect(screen.getByTestId("error")).toHaveTextContent("Min 3 chars");
+      });
+
+      await user.type(input, "c");
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument();
+      });
+    });
 
     it("onSubmit mode keeps errors when typing still-invalid values after failed submit", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const MinLength = Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" }))
-      const PasswordField = Field.makeField("password", MinLength)
-      const formBuilder = FormBuilder.empty.addField(PasswordField)
+      const MinLength = Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" }));
+      const PasswordField = Field.makeField("password", MinLength);
+      const formBuilder = FormBuilder.empty.addField(PasswordField);
 
       const form = FormReact.make(formBuilder, {
         fields: { password: TextInput },
         mode: "onSubmit",
         onSubmit: () => {},
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ password: "" }}>
           <form.password />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      const input = screen.getByTestId("text-input")
+      const input = screen.getByTestId("text-input");
 
-      await user.type(input, "short")
+      await user.type(input, "short");
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
-      })
+        expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars");
+      });
 
-      await user.type(input, "x")
+      await user.type(input, "x");
 
-      await new Promise((r) => setTimeout(r, 50))
-      expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
-    })
+      await new Promise((r) => setTimeout(r, 50));
+      expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars");
+    });
 
     it("onSubmit mode clears errors when typing valid values after failed submit", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const MinLength = Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" }))
-      const PasswordField = Field.makeField("password", MinLength)
-      const formBuilder = FormBuilder.empty.addField(PasswordField)
+      const MinLength = Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" }));
+      const PasswordField = Field.makeField("password", MinLength);
+      const formBuilder = FormBuilder.empty.addField(PasswordField);
 
       const form = FormReact.make(formBuilder, {
         fields: { password: TextInput },
         mode: "onSubmit",
         onSubmit: () => {},
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ password: "" }}>
           <form.password />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      const input = screen.getByTestId("text-input")
+      const input = screen.getByTestId("text-input");
 
-      await user.type(input, "short")
+      await user.type(input, "short");
 
-      await user.click(screen.getByTestId("submit"))
-
-      await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
-      })
-
-      await user.type(input, "123")
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
-      })
-    })
+        expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars");
+      });
+
+      await user.type(input, "123");
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument();
+      });
+    });
 
     it("cross-field refinement errors persist until re-submit", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const PasswordField = Field.makeField("password", Schema.String.pipe(Schema.minLength(4)))
-      const ConfirmField = Field.makeField("confirm", Schema.String)
+      const PasswordField = Field.makeField("password", Schema.String.pipe(Schema.minLength(4)));
+      const ConfirmField = Field.makeField("confirm", Schema.String);
 
       const formBuilder = FormBuilder.empty
         .addField(PasswordField)
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], message: "Passwords must match" };
           }
-        })
+        });
 
       const form = FormReact.make(formBuilder, {
         fields: {
@@ -1307,9 +1307,9 @@ describe("FormReact.make", () => {
         },
         mode: "onSubmit",
         onSubmit: () => {},
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ password: "test", confirm: "different" }}>
@@ -1317,46 +1317,46 @@ describe("FormReact.make", () => {
           <form.confirm />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
-      })
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match");
+      });
 
-      await user.clear(screen.getByTestId("confirm-input"))
-      await user.type(screen.getByTestId("confirm-input"), "test")
+      await user.clear(screen.getByTestId("confirm-input"));
+      await user.type(screen.getByTestId("confirm-input"), "test");
 
-      await new Promise((r) => setTimeout(r, 100))
+      await new Promise((r) => setTimeout(r, 100));
 
       // Refinement errors persist until re-submit
-      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match");
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument()
-      })
-    })
+        expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument();
+      });
+    });
 
     it("per-field errors clear on valid input while refinement errors persist", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
       const PasswordField = Field.makeField(
         "password",
         Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" })),
-      )
-      const ConfirmField = Field.makeField("confirm", Schema.String)
+      );
+      const ConfirmField = Field.makeField("confirm", Schema.String);
 
       const formBuilder = FormBuilder.empty
         .addField(PasswordField)
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Must match password" }
+            return { path: ["confirm"], message: "Must match password" };
           }
-        })
+        });
 
       const form = FormReact.make(formBuilder, {
         fields: {
@@ -1376,9 +1376,9 @@ describe("FormReact.make", () => {
         },
         mode: "onSubmit",
         onSubmit: () => {},
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ password: "short", confirm: "different" }}>
@@ -1386,99 +1386,99 @@ describe("FormReact.make", () => {
           <form.confirm />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
-
-      await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars")
-      })
-
-      await user.type(screen.getByTestId("text-input"), "1234")
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
-      })
+        expect(screen.getByTestId("error")).toHaveTextContent("Min 8 chars");
+      });
 
-      await user.click(screen.getByTestId("submit"))
+      await user.type(screen.getByTestId("text-input"), "1234");
 
       await waitFor(() => {
-        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Must match password")
-      })
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument();
+      });
 
-      await user.clear(screen.getByTestId("confirm-input"))
-      await user.type(screen.getByTestId("confirm-input"), "short1234")
+      await user.click(screen.getByTestId("submit"));
 
-      await new Promise((r) => setTimeout(r, 100))
+      await waitFor(() => {
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Must match password");
+      });
+
+      await user.clear(screen.getByTestId("confirm-input"));
+      await user.type(screen.getByTestId("confirm-input"), "short1234");
+
+      await new Promise((r) => setTimeout(r, 100));
 
       // Refinement errors persist until re-submit
-      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Must match password")
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Must match password");
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument()
-      })
-    })
+        expect(screen.queryByTestId("confirm-error")).not.toBeInTheDocument();
+      });
+    });
 
     it("hides stored field error while async validation is pending (async gap)", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
       const AsyncMinLength = Schema.String.pipe(
         Schema.minLength(8, { message: () => "Too short" }),
         Schema.filterEffect((_value) =>
           Effect.gen(function*() {
-            yield* Effect.sleep("200 millis")
-            return undefined
+            yield* Effect.sleep("200 millis");
+            return undefined;
           })
         ),
-      )
-      const PasswordField = Field.makeField("password", AsyncMinLength)
-      const formBuilder = FormBuilder.empty.addField(PasswordField)
+      );
+      const PasswordField = Field.makeField("password", AsyncMinLength);
+      const formBuilder = FormBuilder.empty.addField(PasswordField);
 
       const form = FormReact.make(formBuilder, {
         fields: { password: TextInput },
         mode: "onSubmit",
         onSubmit: () => {},
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ password: "short" }}>
           <form.password />
           <SubmitButton />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
-      })
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short");
+      });
 
-      await user.type(screen.getByTestId("text-input"), "1234567")
+      await user.type(screen.getByTestId("text-input"), "1234567");
 
       // Stored field error hidden while async validation pending (isValidating = true)
       await waitFor(() => {
-        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
-      })
-    })
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument();
+      });
+    });
 
     it("persists refinement errors across field unmount/remount", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const PasswordField = Field.makeField("password", Schema.String)
-      const ConfirmField = Field.makeField("confirm", Schema.String)
+      const PasswordField = Field.makeField("password", Schema.String);
+      const ConfirmField = Field.makeField("confirm", Schema.String);
 
       const formBuilder = FormBuilder.empty
         .addField(PasswordField)
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], message: "Passwords must match" };
           }
-        })
+        });
 
       const form = FormReact.make(formBuilder, {
         fields: {
@@ -1498,12 +1498,12 @@ describe("FormReact.make", () => {
         },
         mode: "onSubmit",
         onSubmit: () => {},
-      })
+      });
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       const ToggleableForm = () => {
-        const [showConfirm, setShowConfirm] = React.useState(true)
+        const [showConfirm, setShowConfirm] = React.useState(true);
         return (
           <form.Initialize defaultValues={{ password: "abc", confirm: "xyz" }}>
             <form.password />
@@ -1513,53 +1513,53 @@ describe("FormReact.make", () => {
             </button>
             <SubmitButton />
           </form.Initialize>
-        )
-      }
+        );
+      };
 
-      render(<ToggleableForm />)
+      render(<ToggleableForm />);
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
-      })
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match");
+      });
 
-      await user.click(screen.getByTestId("toggle"))
-      expect(screen.queryByTestId("confirm-input")).not.toBeInTheDocument()
+      await user.click(screen.getByTestId("toggle"));
+      expect(screen.queryByTestId("confirm-input")).not.toBeInTheDocument();
 
-      await user.click(screen.getByTestId("toggle"))
-      expect(screen.getByTestId("confirm-input")).toBeInTheDocument()
+      await user.click(screen.getByTestId("toggle"));
+      expect(screen.getByTestId("confirm-input")).toBeInTheDocument();
 
       // Error persists across unmount/remount (stored in atoms, not component state)
-      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
-    })
-  })
+      expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match");
+    });
+  });
 
   describe("error handling", () => {
     it("captures error when onSubmit Effect fails", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => Effect.fail(new Error("Submission failed"))
+      const onSubmit = () => Effect.fail(new Error("Submission failed"));
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
       const SubmitResultDisplay = () => {
-        const submitResult = useAtomValue(form.submit)
+        const submitResult = useAtomValue(form.submit);
         return (
           <>
             <span data-testid="result-tag">{submitResult._tag}</span>
             <span data-testid="result-waiting">{String(submitResult.waiting)}</span>
           </>
-        )
-      }
+        );
+      };
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ name: "test" }}>
@@ -1567,77 +1567,77 @@ describe("FormReact.make", () => {
           <SubmitButton />
           <SubmitResultDisplay />
         </form.Initialize>,
-      )
+      );
 
-      expect(screen.getByTestId("result-tag")).toHaveTextContent("Initial")
+      expect(screen.getByTestId("result-tag")).toHaveTextContent("Initial");
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("result-tag")).toHaveTextContent("Failure")
-        expect(screen.getByTestId("result-waiting")).toHaveTextContent("false")
-      })
-    })
-  })
+        expect(screen.getByTestId("result-tag")).toHaveTextContent("Failure");
+        expect(screen.getByTestId("result-waiting")).toHaveTextContent("false");
+      });
+    });
+  });
 
   describe("form atoms", () => {
     it("exposes submitResult with initial state", () => {
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
-      let capturedIsDirty: boolean | undefined
-      let capturedSubmitResult: Result.Result<unknown, unknown> | undefined
+      let capturedIsDirty: boolean | undefined;
+      let capturedSubmitResult: Result.Result<unknown, unknown> | undefined;
 
       const Consumer = () => {
         useAtomSubscribe(form.isDirty, (v) => {
-          capturedIsDirty = v
-        }, { immediate: true })
+          capturedIsDirty = v;
+        }, { immediate: true });
         useAtomSubscribe(form.submit, (v) => {
-          capturedSubmitResult = v
-        }, { immediate: true })
-        return null
-      }
+          capturedSubmitResult = v;
+        }, { immediate: true });
+        return null;
+      };
 
       render(
         <form.Initialize defaultValues={{ name: "test" }}>
           <form.name />
           <Consumer />
         </form.Initialize>,
-      )
+      );
 
-      expect(capturedIsDirty).toBe(false)
-      expect(Result.isInitial(capturedSubmitResult!)).toBe(true)
-    })
+      expect(capturedIsDirty).toBe(false);
+      expect(Result.isInitial(capturedSubmitResult!)).toBe(true);
+    });
 
     it("exposes submitResult.waiting during submission", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => Effect.void.pipe(Effect.delay("50 millis"))
+      const onSubmit = () => Effect.void.pipe(Effect.delay("50 millis"));
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
-      const states: Array<{ waiting: boolean; tag: string }> = []
+      const states: Array<{ waiting: boolean; tag: string; }> = [];
 
       const Consumer = () => {
-        const submitResult = useAtomValue(form.submit)
-        states.push({ waiting: submitResult.waiting, tag: submitResult._tag })
-        return null
-      }
+        const submitResult = useAtomValue(form.submit);
+        states.push({ waiting: submitResult.waiting, tag: submitResult._tag });
+        return null;
+      };
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ name: "test" }}>
@@ -1645,45 +1645,45 @@ describe("FormReact.make", () => {
           <SubmitButton />
           <Consumer />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
-
-      await waitFor(() => {
-        expect(states.some((s) => s.waiting)).toBe(true)
-      })
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        const lastState = states[states.length - 1]
-        expect(lastState.tag).toBe("Success")
-        expect(lastState.waiting).toBe(false)
-      }, { timeout: 1000 })
-    })
+        expect(states.some((s) => s.waiting)).toBe(true);
+      });
+
+      await waitFor(() => {
+        const lastState = states[states.length - 1];
+        expect(lastState.tag).toBe("Success");
+        expect(lastState.waiting).toBe(false);
+      }, { timeout: 1000 });
+    });
 
     it("exposes submitResult with failure on validation error", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
-      const NameField = Field.makeField("name", NonEmpty)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }));
+      const NameField = Field.makeField("name", NonEmpty);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
-      let capturedResult: Result.Result<unknown, unknown> | undefined
+      let capturedResult: Result.Result<unknown, unknown> | undefined;
 
       const Consumer = () => {
         useAtomSubscribe(form.submit, (v) => {
-          capturedResult = v
-        }, { immediate: true })
-        return null
-      }
+          capturedResult = v;
+        }, { immediate: true });
+        return null;
+      };
 
-      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
 
       render(
         <form.Initialize defaultValues={{ name: "" }}>
@@ -1691,249 +1691,249 @@ describe("FormReact.make", () => {
           <SubmitButton />
           <Consumer />
         </form.Initialize>,
-      )
+      );
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(capturedResult).toBeDefined()
-        expect(Result.isFailure(capturedResult!)).toBe(true)
-      })
-    })
+        expect(capturedResult).toBeDefined();
+        expect(Result.isFailure(capturedResult!)).toBe(true);
+      });
+    });
 
     it("updates isDirty when values change", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
-      const dirtyStates: Array<boolean> = []
+      const dirtyStates: Array<boolean> = [];
 
       const Consumer = () => {
-        const isDirty = useAtomValue(form.isDirty)
-        dirtyStates.push(isDirty)
-        return null
-      }
+        const isDirty = useAtomValue(form.isDirty);
+        dirtyStates.push(isDirty);
+        return null;
+      };
 
       render(
         <form.Initialize defaultValues={{ name: "initial" }}>
           <form.name />
           <Consumer />
         </form.Initialize>,
-      )
+      );
 
-      expect(dirtyStates[dirtyStates.length - 1]).toBe(false)
+      expect(dirtyStates[dirtyStates.length - 1]).toBe(false);
 
-      const input = screen.getByTestId("text-input")
-      await user.clear(input)
-      await user.type(input, "changed")
+      const input = screen.getByTestId("text-input");
+      await user.clear(input);
+      await user.type(input, "changed");
 
-      expect(dirtyStates[dirtyStates.length - 1]).toBe(true)
-    })
-  })
+      expect(dirtyStates[dirtyStates.length - 1]).toBe(true);
+    });
+  });
 
   describe("isDirty lifecycle", () => {
     it("form does not reinitialize on rerender (mount-only initialization)", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
-      let isDirty: boolean | undefined
+      let isDirty: boolean | undefined;
 
       const TestComponent = () => {
         useAtomSubscribe(form.isDirty, (v) => {
-          isDirty = v
-        }, { immediate: true })
-        return null
-      }
+          isDirty = v;
+        }, { immediate: true });
+        return null;
+      };
 
-      const FormWrapper = ({ defaultName }: { defaultName: string }) => (
+      const FormWrapper = ({ defaultName }: { defaultName: string; }) => (
         <form.Initialize defaultValues={{ name: defaultName }}>
           <form.name />
           <TestComponent />
         </form.Initialize>
-      )
+      );
 
-      const { rerender } = render(<FormWrapper defaultName="initial" />)
+      const { rerender } = render(<FormWrapper defaultName="initial" />);
 
-      expect(isDirty).toBe(false)
+      expect(isDirty).toBe(false);
 
-      const input = screen.getByTestId("text-input")
-      await user.clear(input)
-      await user.type(input, "modified")
+      const input = screen.getByTestId("text-input");
+      await user.clear(input);
+      await user.type(input, "modified");
 
-      expect(isDirty).toBe(true)
+      expect(isDirty).toBe(true);
 
-      rerender(<FormWrapper defaultName="new-initial" />)
+      rerender(<FormWrapper defaultName="new-initial" />);
 
-      expect(screen.getByTestId("text-input")).toHaveValue("modified")
-      expect(isDirty).toBe(true)
-    })
+      expect(screen.getByTestId("text-input")).toHaveValue("modified");
+      expect(isDirty).toBe(true);
+    });
 
     it("form reinitializes when using React key to force remount", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
-      let isDirty: boolean | undefined
+      let isDirty: boolean | undefined;
 
       const TestComponent = () => {
         useAtomSubscribe(form.isDirty, (v) => {
-          isDirty = v
-        }, { immediate: true })
-        return null
-      }
+          isDirty = v;
+        }, { immediate: true });
+        return null;
+      };
 
-      const FormWrapper = ({ defaultName, formKey }: { defaultName: string; formKey: string }) => (
+      const FormWrapper = ({ defaultName, formKey }: { defaultName: string; formKey: string; }) => (
         <form.Initialize key={formKey} defaultValues={{ name: defaultName }}>
           <form.name />
           <TestComponent />
         </form.Initialize>
-      )
+      );
 
-      const { rerender } = render(<FormWrapper defaultName="initial" formKey="1" />)
+      const { rerender } = render(<FormWrapper defaultName="initial" formKey="1" />);
 
-      expect(isDirty).toBe(false)
+      expect(isDirty).toBe(false);
 
-      const input = screen.getByTestId("text-input")
-      await user.clear(input)
-      await user.type(input, "modified")
+      const input = screen.getByTestId("text-input");
+      await user.clear(input);
+      await user.type(input, "modified");
 
-      expect(isDirty).toBe(true)
+      expect(isDirty).toBe(true);
 
-      rerender(<FormWrapper defaultName="new-initial" formKey="2" />)
+      rerender(<FormWrapper defaultName="new-initial" formKey="2" />);
 
       await waitFor(() => {
-        expect(screen.getByTestId("text-input")).toHaveValue("new-initial")
-        expect(isDirty).toBe(false)
-      })
-    })
+        expect(screen.getByTestId("text-input")).toHaveValue("new-initial");
+        expect(isDirty).toBe(false);
+      });
+    });
 
     it("isDirty becomes false when value returns to initial", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
-      let isDirty: boolean | undefined
+      let isDirty: boolean | undefined;
 
       const TestComponent = () => {
         useAtomSubscribe(form.isDirty, (v) => {
-          isDirty = v
-        }, { immediate: true })
-        return null
-      }
+          isDirty = v;
+        }, { immediate: true });
+        return null;
+      };
 
       render(
         <form.Initialize defaultValues={{ name: "initial" }}>
           <form.name />
           <TestComponent />
         </form.Initialize>,
-      )
+      );
 
-      expect(isDirty).toBe(false)
+      expect(isDirty).toBe(false);
 
-      const input = screen.getByTestId("text-input")
-      await user.clear(input)
-      await user.type(input, "changed")
-      expect(isDirty).toBe(true)
+      const input = screen.getByTestId("text-input");
+      await user.clear(input);
+      await user.type(input, "changed");
+      expect(isDirty).toBe(true);
 
-      await user.clear(input)
-      await user.type(input, "initial")
-      expect(isDirty).toBe(false)
-    })
+      await user.clear(input);
+      await user.type(input, "initial");
+      expect(isDirty).toBe(false);
+    });
 
     it("isDirty remains after successful submission", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
       const TestComponent = () => {
-        const isDirty = useAtomValue(form.isDirty)
-        const submit = useAtomSet(form.submit)
+        const isDirty = useAtomValue(form.isDirty);
+        const submit = useAtomSet(form.submit);
         return (
           <>
             <span data-testid="isDirty">{String(isDirty)}</span>
             <button onClick={() => submit()} data-testid="submit">Submit</button>
           </>
-        )
-      }
+        );
+      };
 
       render(
         <form.Initialize defaultValues={{ name: "initial" }}>
           <form.name />
           <TestComponent />
         </form.Initialize>,
-      )
+      );
 
-      const input = screen.getByTestId("text-input")
-      await user.clear(input)
-      await user.type(input, "changed")
-      expect(screen.getByTestId("isDirty")).toHaveTextContent("true")
+      const input = screen.getByTestId("text-input");
+      await user.clear(input);
+      await user.type(input, "changed");
+      expect(screen.getByTestId("isDirty")).toHaveTextContent("true");
 
-      await user.click(screen.getByTestId("submit"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("isDirty")).toHaveTextContent("true")
-      })
-    })
+        expect(screen.getByTestId("isDirty")).toHaveTextContent("true");
+      });
+    });
 
     it("reset() restores form to initial values", async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      const NameField = Field.makeField("name", Schema.String)
-      const formBuilder = FormBuilder.empty.addField(NameField)
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
 
-      const onSubmit = () => {}
+      const onSubmit = () => {};
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
         onSubmit,
-      })
+      });
 
       const TestComponent = () => {
-        const isDirty = useAtomValue(form.isDirty)
-        const submitResult = useAtomValue(form.submit)
-        const submit = useAtomSet(form.submit)
-        const reset = useAtomSet(form.reset)
+        const isDirty = useAtomValue(form.isDirty);
+        const submitResult = useAtomValue(form.submit);
+        const submit = useAtomSet(form.submit);
+        const reset = useAtomSet(form.reset);
         return (
           <>
             <span data-testid="isDirty">{String(isDirty)}</span>
@@ -1941,38 +1941,38 @@ describe("FormReact.make", () => {
             <button onClick={() => submit()} data-testid="submit">Submit</button>
             <button onClick={() => reset()} data-testid="reset">Reset</button>
           </>
-        )
-      }
+        );
+      };
 
       render(
         <form.Initialize defaultValues={{ name: "initial" }}>
           <form.name />
           <TestComponent />
         </form.Initialize>,
-      )
+      );
 
-      expect(screen.getByTestId("isDirty")).toHaveTextContent("false")
-      expect(screen.getByTestId("submitResultTag")).toHaveTextContent("Initial")
+      expect(screen.getByTestId("isDirty")).toHaveTextContent("false");
+      expect(screen.getByTestId("submitResultTag")).toHaveTextContent("Initial");
 
-      const input = screen.getByTestId("text-input")
-      await user.clear(input)
-      await user.type(input, "modified")
-      expect(screen.getByTestId("isDirty")).toHaveTextContent("true")
-      expect(screen.getByTestId("text-input")).toHaveValue("modified")
+      const input = screen.getByTestId("text-input");
+      await user.clear(input);
+      await user.type(input, "modified");
+      expect(screen.getByTestId("isDirty")).toHaveTextContent("true");
+      expect(screen.getByTestId("text-input")).toHaveValue("modified");
 
-      await user.click(screen.getByTestId("submit"))
-
-      await waitFor(() => {
-        expect(screen.getByTestId("submitResultTag")).toHaveTextContent("Success")
-      })
-
-      await user.click(screen.getByTestId("reset"))
+      await user.click(screen.getByTestId("submit"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("text-input")).toHaveValue("initial")
-        expect(screen.getByTestId("isDirty")).toHaveTextContent("false")
-        expect(screen.getByTestId("submitResultTag")).toHaveTextContent("Initial")
-      })
-    })
-  })
-})
+        expect(screen.getByTestId("submitResultTag")).toHaveTextContent("Success");
+      });
+
+      await user.click(screen.getByTestId("reset"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("text-input")).toHaveValue("initial");
+        expect(screen.getByTestId("isDirty")).toHaveTextContent("false");
+        expect(screen.getByTestId("submitResultTag")).toHaveTextContent("Initial");
+      });
+    });
+  });
+});

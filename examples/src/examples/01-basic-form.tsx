@@ -1,34 +1,34 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
-import * as Result from "@effect-atom/atom/Result"
-import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
-import * as Data from "effect/Data"
-import * as Effect from "effect/Effect"
-import * as Option from "effect/Option"
-import * as Schema from "effect/Schema"
-import styles from "../styles/form.module.css"
+import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
+import * as Result from "@effect-atom/atom/Result";
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react";
+import * as Data from "effect/Data";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
+import styles from "../styles/form.module.css";
 
 class InvalidCredentialsError extends Data.TaggedError("InvalidCredentialsError")<{
-  readonly email: string
+  readonly email: string;
 }> {}
 
 class AccountLockedError extends Data.TaggedError("AccountLockedError")<{
-  readonly email: string
-  readonly unlockAt: Date
+  readonly email: string;
+  readonly unlockAt: Date;
 }> {}
 
 const EmailField = Field.makeField(
   "email",
   Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" })),
-)
+);
 
 const PasswordField = Field.makeField(
   "password",
   Schema.String.pipe(Schema.minLength(8, { message: () => "Password must be at least 8 characters" })),
-)
+);
 
 const loginFormBuilder = FormBuilder.empty
   .addField(EmailField)
-  .addField(PasswordField)
+  .addField(PasswordField);
 
 const EmailInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -39,8 +39,7 @@ const EmailInput: FormReact.FieldComponent<string> = ({ field }) => (
     <input
       type="email"
       value={field.value}
-      onChange={(e) =>
-        field.onChange(e.target.value)}
+      onChange={(e) => field.onChange(e.target.value)}
       onBlur={field.onBlur}
       className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
@@ -55,7 +54,7 @@ const EmailInput: FormReact.FieldComponent<string> = ({ field }) => (
       </span>
     )}
   </div>
-)
+);
 
 const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -66,8 +65,7 @@ const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
     <input
       type="password"
       value={field.value}
-      onChange={(e) =>
-        field.onChange(e.target.value)}
+      onChange={(e) => field.onChange(e.target.value)}
       onBlur={field.onBlur}
       className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
@@ -77,7 +75,7 @@ const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
       </span>
     )}
   </div>
-)
+);
 
 const loginForm = FormReact.make(loginFormBuilder, {
   fields: {
@@ -86,27 +84,27 @@ const loginForm = FormReact.make(loginFormBuilder, {
   },
   onSubmit: (_, { decoded }) =>
     Effect.gen(function*() {
-      yield* Effect.sleep("500 millis")
+      yield* Effect.sleep("500 millis");
 
       if (decoded.email === "locked@example.com") {
         return yield* new AccountLockedError({
           email: decoded.email,
           unlockAt: new Date(Date.now() + 1000 * 60 * 30),
-        })
+        });
       }
 
       if (decoded.email === "invalid@example.com") {
-        return yield* new InvalidCredentialsError({ email: decoded.email })
+        return yield* new InvalidCredentialsError({ email: decoded.email });
       }
 
-      yield* Effect.log(`Login successful: ${decoded.email}`)
-      return { email: decoded.email }
+      yield* Effect.log(`Login successful: ${decoded.email}`);
+      return { email: decoded.email };
     }),
-})
+});
 
 function SubmitButton() {
-  const isDirty = useAtomValue(loginForm.isDirty)
-  const submitResult = useAtomValue(loginForm.submit)
+  const isDirty = useAtomValue(loginForm.isDirty);
+  const submitResult = useAtomValue(loginForm.submit);
 
   return (
     <button
@@ -116,11 +114,11 @@ function SubmitButton() {
     >
       {submitResult.waiting ? "Logging in..." : "Login"}
     </button>
-  )
+  );
 }
 
 function SubmitStatus() {
-  const submitResult = useAtomValue(loginForm.submit)
+  const submitResult = useAtomValue(loginForm.submit);
 
   return Result.builder(submitResult)
     .onWaiting(() => null)
@@ -158,13 +156,13 @@ function SubmitStatus() {
         Unexpected error: {String(defect)}
       </div>
     ))
-    .orNull()
+    .orNull();
 }
 
 function FormDebug() {
-  const isDirty = useAtomValue(loginForm.isDirty)
-  const submitCount = useAtomValue(loginForm.submitCount)
-  const values = useAtomValue(loginForm.values)
+  const isDirty = useAtomValue(loginForm.isDirty);
+  const submitCount = useAtomValue(loginForm.submitCount);
+  const values = useAtomValue(loginForm.values);
 
   return (
     <div className={styles.debugBox}>
@@ -181,11 +179,11 @@ function FormDebug() {
         )}
       </pre>
     </div>
-  )
+  );
 }
 
 export function BasicForm() {
-  const submit = useAtomSet(loginForm.submit)
+  const submit = useAtomSet(loginForm.submit);
 
   return (
     <div className={styles.pageContainer}>
@@ -201,8 +199,8 @@ export function BasicForm() {
       <loginForm.Initialize defaultValues={{ email: "", password: "" }}>
         <form
           onSubmit={(e) => {
-            e.preventDefault()
-            submit()
+            e.preventDefault();
+            submit();
           }}
         >
           <loginForm.email />
@@ -213,5 +211,5 @@ export function BasicForm() {
         </form>
       </loginForm.Initialize>
     </div>
-  )
+  );
 }

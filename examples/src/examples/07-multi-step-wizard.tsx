@@ -1,24 +1,24 @@
-import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
-import * as Result from "@effect-atom/atom/Result"
-import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
-import * as Effect from "effect/Effect"
-import { constNull } from "effect/Function"
-import * as Option from "effect/Option"
-import * as Schema from "effect/Schema"
-import { useState } from "react"
-import styles from "../styles/form.module.css"
+import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react";
+import * as Result from "@effect-atom/atom/Result";
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react";
+import * as Effect from "effect/Effect";
+import { constNull } from "effect/Function";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
+import { useState } from "react";
+import styles from "../styles/form.module.css";
 
 const FirstNameField = Field.makeField(
   "firstName",
   Schema.String.pipe(Schema.nonEmptyString({ message: () => "First name is required" })),
-)
+);
 
 const LastNameField = Field.makeField(
   "lastName",
   Schema.String.pipe(Schema.nonEmptyString({ message: () => "Last name is required" })),
-)
+);
 
-const step1Builder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField)
+const step1Builder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField);
 
 const FirstNameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -26,14 +26,13 @@ const FirstNameInput: FormReact.FieldComponent<string> = ({ field }) => (
     <input
       type="text"
       value={field.value}
-      onChange={(e) =>
-        field.onChange(e.target.value)}
+      onChange={(e) => field.onChange(e.target.value)}
       onBlur={field.onBlur}
       className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
     {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
-)
+);
 
 const LastNameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -41,14 +40,13 @@ const LastNameInput: FormReact.FieldComponent<string> = ({ field }) => (
     <input
       type="text"
       value={field.value}
-      onChange={(e) =>
-        field.onChange(e.target.value)}
+      onChange={(e) => field.onChange(e.target.value)}
       onBlur={field.onBlur}
       className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
     {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
-)
+);
 
 const step1Form = FormReact.make(step1Builder, {
   mode: "onBlur",
@@ -57,24 +55,24 @@ const step1Form = FormReact.make(step1Builder, {
     lastName: LastNameInput,
   },
   onSubmit: (_, { decoded }) => Effect.succeed(decoded),
-})
+});
 
 const StreetField = Field.makeField(
   "street",
   Schema.String.pipe(Schema.nonEmptyString({ message: () => "Street is required" })),
-)
+);
 
 const CityField = Field.makeField(
   "city",
   Schema.String.pipe(Schema.nonEmptyString({ message: () => "City is required" })),
-)
+);
 
 const ZipField = Field.makeField(
   "zip",
   Schema.String.pipe(Schema.nonEmptyString({ message: () => "ZIP code is required" })),
-)
+);
 
-const step2Builder = FormBuilder.empty.addField(StreetField).addField(CityField).addField(ZipField)
+const step2Builder = FormBuilder.empty.addField(StreetField).addField(CityField).addField(ZipField);
 
 const StreetInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -82,14 +80,13 @@ const StreetInput: FormReact.FieldComponent<string> = ({ field }) => (
     <input
       type="text"
       value={field.value}
-      onChange={(e) =>
-        field.onChange(e.target.value)}
+      onChange={(e) => field.onChange(e.target.value)}
       onBlur={field.onBlur}
       className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
     {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
-)
+);
 
 const CityInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -97,14 +94,13 @@ const CityInput: FormReact.FieldComponent<string> = ({ field }) => (
     <input
       type="text"
       value={field.value}
-      onChange={(e) =>
-        field.onChange(e.target.value)}
+      onChange={(e) => field.onChange(e.target.value)}
       onBlur={field.onBlur}
       className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
     {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
-)
+);
 
 const ZipInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -112,14 +108,13 @@ const ZipInput: FormReact.FieldComponent<string> = ({ field }) => (
     <input
       type="text"
       value={field.value}
-      onChange={(e) =>
-        field.onChange(e.target.value)}
+      onChange={(e) => field.onChange(e.target.value)}
       onBlur={field.onBlur}
       className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
     {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
-)
+);
 
 const step2Form = FormReact.make(step2Builder, {
   mode: "onBlur",
@@ -129,9 +124,9 @@ const step2Form = FormReact.make(step2Builder, {
     zip: ZipInput,
   },
   onSubmit: (_, { decoded }) => Effect.succeed(decoded),
-})
+});
 
-const finalBuilder = FormBuilder.empty.merge(step1Builder).merge(step2Builder)
+const finalBuilder = FormBuilder.empty.merge(step1Builder).merge(step2Builder);
 
 const finalForm = FormReact.make(finalBuilder, {
   fields: {
@@ -143,14 +138,14 @@ const finalForm = FormReact.make(finalBuilder, {
   },
   onSubmit: (_, { decoded }) =>
     Effect.gen(function*() {
-      yield* Effect.sleep("1 second")
-      yield* Effect.log(`Order submitted for ${decoded.firstName} ${decoded.lastName}`)
-      return { orderId: `ORD-${Date.now()}` }
+      yield* Effect.sleep("1 second");
+      yield* Effect.log(`Order submitted for ${decoded.firstName} ${decoded.lastName}`);
+      return { orderId: `ORD-${Date.now()}` };
     }),
-})
+});
 
 function FinalSubmitButton() {
-  const submitResult = useAtomValue(finalForm.submit)
+  const submitResult = useAtomValue(finalForm.submit);
 
   return (
     <button
@@ -160,39 +155,39 @@ function FinalSubmitButton() {
     >
       {submitResult.waiting ? "Placing Order..." : "Place Order"}
     </button>
-  )
+  );
 }
 
 type StepData = {
-  step1: { firstName: string; lastName: string } | null
-  step2: { street: string; city: string; zip: string } | null
-}
+  step1: { firstName: string; lastName: string; } | null;
+  step2: { street: string; city: string; zip: string; } | null;
+};
 
-function Step1({ onComplete }: { onComplete: (data: StepData["step1"]) => void }) {
-  const submit = useAtomSet(step1Form.submit)
-  const isDirty = useAtomValue(step1Form.isDirty)
-  const submitResult = useAtomValue(step1Form.submit)
+function Step1({ onComplete }: { onComplete: (data: StepData["step1"]) => void; }) {
+  const submit = useAtomSet(step1Form.submit);
+  const isDirty = useAtomValue(step1Form.isDirty);
+  const submitResult = useAtomValue(step1Form.submit);
 
   useAtomSubscribe(step1Form.submit, (result) => {
     if (Result.isSuccess(result) && !result.waiting) {
-      onComplete(result.value)
+      onComplete(result.value);
     }
-  }, { immediate: false })
+  }, { immediate: false });
 
   const handleNext = () => {
     if (isDirty) {
-      submit()
+      submit();
     } else if (Result.isSuccess(submitResult)) {
-      onComplete(submitResult.value)
+      onComplete(submitResult.value);
     }
-  }
+  };
 
   return (
     <step1Form.Initialize defaultValues={{ firstName: "", lastName: "" }}>
       <form
         onSubmit={(e) => {
-          e.preventDefault()
-          handleNext()
+          e.preventDefault();
+          handleNext();
         }}
       >
         <step1Form.firstName />
@@ -206,40 +201,40 @@ function Step1({ onComplete }: { onComplete: (data: StepData["step1"]) => void }
         </button>
       </form>
     </step1Form.Initialize>
-  )
+  );
 }
 
 function Step2({
   onBack,
   onComplete,
 }: {
-  onComplete: (data: StepData["step2"]) => void
-  onBack: () => void
+  onComplete: (data: StepData["step2"]) => void;
+  onBack: () => void;
 }) {
-  const submit = useAtomSet(step2Form.submit)
-  const isDirty = useAtomValue(step2Form.isDirty)
-  const submitResult = useAtomValue(step2Form.submit)
+  const submit = useAtomSet(step2Form.submit);
+  const isDirty = useAtomValue(step2Form.isDirty);
+  const submitResult = useAtomValue(step2Form.submit);
 
   useAtomSubscribe(step2Form.submit, (result) => {
     if (Result.isSuccess(result) && !result.waiting) {
-      onComplete(result.value)
+      onComplete(result.value);
     }
-  }, { immediate: false })
+  }, { immediate: false });
 
   const handleNext = () => {
     if (isDirty) {
-      submit()
+      submit();
     } else if (Result.isSuccess(submitResult)) {
-      onComplete(submitResult.value)
+      onComplete(submitResult.value);
     }
-  }
+  };
 
   return (
     <step2Form.Initialize defaultValues={{ street: "", city: "", zip: "" }}>
       <form
         onSubmit={(e) => {
-          e.preventDefault()
-          handleNext()
+          e.preventDefault();
+          handleNext();
         }}
       >
         <step2Form.street />
@@ -263,18 +258,18 @@ function Step2({
         </div>
       </form>
     </step2Form.Initialize>
-  )
+  );
 }
 
 function Step3({
   data,
   onBack,
 }: {
-  data: StepData
-  onBack: () => void
+  data: StepData;
+  onBack: () => void;
 }) {
-  const submit = useAtomSet(finalForm.submit)
-  const submitResult = useAtomValue(finalForm.submit)
+  const submit = useAtomSet(finalForm.submit);
+  const submitResult = useAtomValue(finalForm.submit);
 
   return (
     <finalForm.Initialize
@@ -288,8 +283,8 @@ function Step3({
     >
       <form
         onSubmit={(e) => {
-          e.preventDefault()
-          submit()
+          e.preventDefault();
+          submit();
         }}
       >
         <div className={styles.reviewSection}>
@@ -332,12 +327,12 @@ function Step3({
         </div>
       </form>
     </finalForm.Initialize>
-  )
+  );
 }
 
 export function MultiStepWizard() {
-  const [currentStep, setCurrentStep] = useState(1)
-  const [stepData, setStepData] = useState<StepData>({ step1: null, step2: null })
+  const [currentStep, setCurrentStep] = useState(1);
+  const [stepData, setStepData] = useState<StepData>({ step1: null, step2: null });
 
   return (
     <div className={styles.pageContainerMedium}>
@@ -367,8 +362,8 @@ export function MultiStepWizard() {
         {currentStep === 1 && (
           <Step1
             onComplete={(data) => {
-              setStepData((prev) => ({ ...prev, step1: data }))
-              setCurrentStep(2)
+              setStepData((prev) => ({ ...prev, step1: data }));
+              setCurrentStep(2);
             }}
           />
         )}
@@ -376,8 +371,8 @@ export function MultiStepWizard() {
         {currentStep === 2 && (
           <Step2
             onComplete={(data) => {
-              setStepData((prev) => ({ ...prev, step2: data }))
-              setCurrentStep(3)
+              setStepData((prev) => ({ ...prev, step2: data }));
+              setCurrentStep(3);
             }}
             onBack={() => setCurrentStep(1)}
           />
@@ -386,5 +381,5 @@ export function MultiStepWizard() {
         {currentStep === 3 && <Step3 data={stepData} onBack={() => setCurrentStep(2)} />}
       </div>
     </div>
-  )
+  );
 }

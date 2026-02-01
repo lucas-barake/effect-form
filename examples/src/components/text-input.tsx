@@ -1,14 +1,13 @@
-import type { FormReact } from "@lucas-barake/effect-form-react"
-import * as Option from "effect/Option"
-import styles from "../styles/form.module.css"
+import type { FormReact } from "@lucas-barake/effect-form-react";
+import * as Option from "effect/Option";
+import styles from "../styles/form.module.css";
 
 export const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
     <input
       type="text"
       value={field.value}
-      onChange={(e) =>
-        field.onChange(e.target.value)}
+      onChange={(e) => field.onChange(e.target.value)}
       onBlur={field.onBlur}
       className={`${styles.input} ${Option.isSome(field.error) ? styles.error : ""}`}
     />
@@ -23,4 +22,4 @@ export const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
       </span>
     )}
   </div>
-)
+);
