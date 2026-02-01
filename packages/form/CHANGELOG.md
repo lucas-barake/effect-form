@@ -1,5 +1,11 @@
 # @lucas-barake/effect-form
 
+## 0.17.0
+
+### Minor Changes
+
+- [#48](https://github.com/lucas-barake/effect-form/pull/48) [`dbfe27d`](https://github.com/lucas-barake/effect-form/commit/dbfe27d85310d6bf52256c2ffead05dedbef9b7f) Thanks [@lucas-barake](https://github.com/lucas-barake)! - rename getFieldAtom to getFieldValue
+
 ## 0.16.0
 
 ### Minor Changes
