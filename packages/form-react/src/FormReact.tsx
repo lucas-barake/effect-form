@@ -93,7 +93,7 @@ export type BuiltForm<
   readonly revertToLastSubmit: Atom.Writable<void, void>;
   readonly setValues: Atom.Writable<void, Field.EncodedFromFields<TFields>>;
   readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>;
-  readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>;
+  readonly getFieldValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>;
   readonly getFieldIsDirty: (field: FormBuilder.FieldRef<any>) => Atom.Atom<boolean>;
 
   readonly mount: Atom.Atom<void>;
@@ -516,7 +516,7 @@ export const make: {
     dirtyFieldsAtom,
     errorsAtom,
     fieldRefs,
-    getFieldAtom,
+    getFieldValue,
     getFieldIsDirty,
     getOrCreateFieldAtoms,
     getOrCreateValidationAtom,
@@ -691,7 +691,7 @@ export const make: {
     revertToLastSubmit: revertToLastSubmitAtom,
     setValues: setValuesAtom,
     setValue,
-    getFieldAtom,
+    getFieldValue,
     getFieldIsDirty,
     mount: mountAtom,
     KeepAlive,
