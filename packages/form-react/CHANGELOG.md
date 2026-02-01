@@ -1,5 +1,16 @@
 # @lucas-barake/effect-form-react
 
+## 0.16.0
+
+### Minor Changes
+
+- [#45](https://github.com/lucas-barake/effect-form/pull/45) [`2fc45d4`](https://github.com/lucas-barake/effect-form/commit/2fc45d483d512a61238cc694ed7a4eb62a032ec1) Thanks [@lucas-barake](https://github.com/lucas-barake)! - add getFieldIsDirty for per-field dirty subscriptions
+
+### Patch Changes
+
+- Updated dependencies [[`2fc45d4`](https://github.com/lucas-barake/effect-form/commit/2fc45d483d512a61238cc694ed7a4eb62a032ec1)]:
+  - @lucas-barake/effect-form@0.16.0
+
 ## 0.15.0
 
 ### Minor Changes
