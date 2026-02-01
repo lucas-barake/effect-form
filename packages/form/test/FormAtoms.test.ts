@@ -1093,7 +1093,7 @@ describe("FormAtoms", () => {
     });
   });
 
-  describe("getFieldAtom", () => {
+  describe("getFieldValue", () => {
     it("returns Option.some(value) when initialized", () => {
       const runtime = Atom.runtime(Layer.empty);
       const form = makeTestForm();
@@ -1106,7 +1106,7 @@ describe("FormAtoms", () => {
       });
       registry.set(atoms.stateAtom, Option.some(initialState));
 
-      const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name);
+      const nameAtom = atoms.getFieldValue(atoms.fieldRefs.name);
 
       expect(registry.get(nameAtom)).toEqual(Option.some("John"));
     });
@@ -1123,7 +1123,7 @@ describe("FormAtoms", () => {
       });
       registry.set(atoms.stateAtom, Option.some(state));
 
-      const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name);
+      const nameAtom = atoms.getFieldValue(atoms.fieldRefs.name);
       expect(registry.get(nameAtom)).toEqual(Option.some("John"));
 
       state = atoms.operations.setFieldValue(state, "name", "Jane");
@@ -1143,8 +1143,8 @@ describe("FormAtoms", () => {
         Option.some(atoms.operations.createInitialState({ name: "John", email: "john@test.com" })),
       );
 
-      const nameAtom1 = atoms.getFieldAtom(atoms.fieldRefs.name);
-      const nameAtom2 = atoms.getFieldAtom(atoms.fieldRefs.name);
+      const nameAtom1 = atoms.getFieldValue(atoms.fieldRefs.name);
+      const nameAtom2 = atoms.getFieldValue(atoms.fieldRefs.name);
 
       expect(nameAtom1).toBe(nameAtom2);
     });
@@ -1155,7 +1155,7 @@ describe("FormAtoms", () => {
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} });
       const registry = Registry.make();
 
-      const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name);
+      const nameAtom = atoms.getFieldValue(atoms.fieldRefs.name);
 
       expect(registry.get(nameAtom)).toEqual(Option.none());
     });
@@ -1166,7 +1166,7 @@ describe("FormAtoms", () => {
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} });
       const registry = Registry.make();
 
-      const nameAtom = atoms.getFieldAtom(atoms.fieldRefs.name);
+      const nameAtom = atoms.getFieldValue(atoms.fieldRefs.name);
       expect(registry.get(nameAtom)).toEqual(Option.none());
 
       const initialState = atoms.operations.createInitialState({

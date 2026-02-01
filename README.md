@@ -365,13 +365,13 @@ function FormSideEffects() {
 
 ## 13. Subscribing to Individual Field Values
 
-Use `getFieldAtom` to subscribe to a specific field's value without re-rendering when other fields change.
+Use `getFieldValue` to subscribe to a specific field's value without re-rendering when other fields change.
 The atom returns `Option<T>` - `None` before initialization, `Some(value)` after:
 
 ```tsx
 function EmailDisplay() {
   // Only re-renders when email changes, not when password changes
-  const emailAtom = loginForm.getFieldAtom(loginForm.fields.email)
+  const emailAtom = loginForm.getFieldValue(loginForm.fields.email)
   const emailOption = useAtomValue(emailAtom)
 
   // Safe to use outside Initialize - returns None before form mounts
@@ -383,7 +383,7 @@ function EmailDisplay() {
 
 // Inside Initialize where state is guaranteed
 function PasswordStrength() {
-  const passwordAtom = loginForm.getFieldAtom(loginForm.fields.password)
+  const passwordAtom = loginForm.getFieldValue(loginForm.fields.password)
   const passwordOption = useAtomValue(passwordAtom)
 
   // Can safely getOrThrow inside Initialize
@@ -570,7 +570,7 @@ form.lastSubmittedValues     // Atom<Option<SubmittedValues>> - last submitted v
 form.submitCount             // Atom<number> - number of submit attempts
 form.rootError               // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
 form.submit                  // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
-form.getFieldAtom(fieldRef)      // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
+form.getFieldValue(fieldRef)      // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
 form.getFieldIsDirty(fieldRef)   // Atom<boolean> - subscribe to individual field dirty state
 form.mount                   // Atom<void> - root anchor for state persistence (use with useAtomMount)
 ```
