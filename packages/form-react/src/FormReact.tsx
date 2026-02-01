@@ -94,6 +94,7 @@ export type BuiltForm<
   readonly setValues: Atom.Writable<void, Field.EncodedFromFields<TFields>>;
   readonly setValue: <S>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>;
   readonly getFieldAtom: <S>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>;
+  readonly getFieldIsDirty: (field: FormBuilder.FieldRef<any>) => Atom.Atom<boolean>;
 
   readonly mount: Atom.Atom<void>;
   readonly KeepAlive: React.FC;
@@ -516,6 +517,7 @@ export const make: {
     errorsAtom,
     fieldRefs,
     getFieldAtom,
+    getFieldIsDirty,
     getOrCreateFieldAtoms,
     getOrCreateValidationAtom,
     hasChangedSinceSubmitAtom,
@@ -690,6 +692,7 @@ export const make: {
     setValues: setValuesAtom,
     setValue,
     getFieldAtom,
+    getFieldIsDirty,
     mount: mountAtom,
     KeepAlive,
     ...fieldComponents,
