@@ -1,5 +1,16 @@
 # @lucas-barake/effect-form-react
 
+## 0.15.0
+
+### Minor Changes
+
+- [#43](https://github.com/lucas-barake/effect-form/pull/43) [`25d0da1`](https://github.com/lucas-barake/effect-form/commit/25d0da132f6cedbace49a284e1995e42ff6a43b6) Thanks [@lucas-barake](https://github.com/lucas-barake)! - expose per-field isDirtyAtom on FieldAtoms
+
+### Patch Changes
+
+- Updated dependencies [[`25d0da1`](https://github.com/lucas-barake/effect-form/commit/25d0da132f6cedbace49a284e1995e42ff6a43b6)]:
+  - @lucas-barake/effect-form@0.15.0
+
 ## 0.14.0
 
 ### Minor Changes
