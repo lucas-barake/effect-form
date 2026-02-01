@@ -1,13 +1,13 @@
-import { useState } from "react"
-import { BasicForm } from "./examples/01-basic-form"
-import { ValidationModes } from "./examples/02-validation-modes"
-import { ArrayFields } from "./examples/03-array-fields"
-import { CrossFieldValidation } from "./examples/04-cross-field-validation"
-import { AsyncValidation } from "./examples/05-async-validation"
-import { AutoSubmit } from "./examples/06-auto-submit"
-import { MultiStepWizard } from "./examples/07-multi-step-wizard"
-import { RevertChanges } from "./examples/08-revert-changes"
-import styles from "./styles/app.module.css"
+import { useState } from "react";
+import { BasicForm } from "./examples/01-basic-form";
+import { ValidationModes } from "./examples/02-validation-modes";
+import { ArrayFields } from "./examples/03-array-fields";
+import { CrossFieldValidation } from "./examples/04-cross-field-validation";
+import { AsyncValidation } from "./examples/05-async-validation";
+import { AutoSubmit } from "./examples/06-auto-submit";
+import { MultiStepWizard } from "./examples/07-multi-step-wizard";
+import { RevertChanges } from "./examples/08-revert-changes";
+import styles from "./styles/app.module.css";
 
 const examples = [
   { id: "basic", label: "Basic Form", component: BasicForm },
@@ -18,11 +18,11 @@ const examples = [
   { id: "auto-submit", label: "Auto-Submit", component: AutoSubmit },
   { id: "multi-step", label: "Multi-Step Wizard", component: MultiStepWizard },
   { id: "revert", label: "Revert Changes", component: RevertChanges },
-] as const
+] as const;
 
 export function App() {
-  const [activeExample, setActiveExample] = useState<string>("basic")
-  const ActiveComponent = examples.find((e) => e.id === activeExample)?.component ?? BasicForm
+  const [activeExample, setActiveExample] = useState<string>("basic");
+  const ActiveComponent = examples.find((e) => e.id === activeExample)?.component ?? BasicForm;
 
   return (
     <div className={styles.container}>
@@ -45,5 +45,5 @@ export function App() {
         <ActiveComponent key={activeExample} />
       </main>
     </div>
-  )
+  );
 }
