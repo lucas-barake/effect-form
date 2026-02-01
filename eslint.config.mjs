@@ -125,7 +125,7 @@ export default [
           config: {
             indentWidth: 2,
             lineWidth: 120,
-            semiColons: "asi",
+            semiColons: "always",
             quoteStyle: "alwaysDouble",
             trailingCommas: "onlyMultiLine",
             operatorPosition: "maintain",
