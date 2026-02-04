@@ -11,9 +11,9 @@
   "dependencies": {
     "@lucas-barake/effect-form": "workspace:^",
     "@lucas-barake/effect-form-react": "workspace:^",
-    "@effect-atom/atom": "^0.4.8",
-    "@effect-atom/atom-react": "^0.4.3",
-    "effect": "^3.19.0",
+    "@effect-atom/atom": "^0.5.0",
+    "@effect-atom/atom-react": "^0.5.0",
+    "effect": "^3.19.15",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
