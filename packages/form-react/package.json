@@ -36,9 +36,9 @@
     "@vitejs/plugin-react": "^5.1.1"
   },
   "peerDependencies": {
-    "@effect-atom/atom": "^0.4.8",
-    "@effect-atom/atom-react": "^0.4.3",
-    "effect": "^3.19.0",
+    "@effect-atom/atom": "^0.5.0",
+    "@effect-atom/atom-react": "^0.5.0",
+    "effect": "^3.19.15",
     "react": "^18.0.0 || ^19.0.0"
   }
 }

@@ -30,7 +30,7 @@
   "license": "MIT",
   "sideEffects": [],
   "peerDependencies": {
-    "@effect-atom/atom": "^0.4.8",
-    "effect": "^3.19.0"
+    "@effect-atom/atom": "^0.5.0",
+    "effect": "^3.19.15"
   }
 }
