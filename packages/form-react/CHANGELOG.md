@@ -1,5 +1,16 @@
 # @lucas-barake/effect-form-react
 
+## 0.18.0
+
+### Minor Changes
+
+- [#52](https://github.com/lucas-barake/effect-form/pull/52) [`f1c4e93`](https://github.com/lucas-barake/effect-form/commit/f1c4e934c8a7edcedc7680d48c2da75d105b4941) Thanks [@lucas-barake](https://github.com/lucas-barake)! - update @effect-atom peer dependency to ^0.5.0
+
+### Patch Changes
+
+- Updated dependencies [[`f1c4e93`](https://github.com/lucas-barake/effect-form/commit/f1c4e934c8a7edcedc7680d48c2da75d105b4941)]:
+  - @lucas-barake/effect-form@0.18.0
+
 ## 0.17.0
 
 ### Minor Changes
