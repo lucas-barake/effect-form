@@ -1,19 +1,19 @@
-import { useAtomValue } from "@effect-atom/atom-react";
-import * as Result from "@effect-atom/atom/Result";
-import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react";
-import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
-import * as Schema from "effect/Schema";
-import styles from "../styles/form.module.css";
+import { useAtomValue } from "@effect-atom/atom-react"
+import * as Result from "@effect-atom/atom/Result"
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
+import * as Effect from "effect/Effect"
+import * as Option from "effect/Option"
+import * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 const DisplayNameField = Field.makeField(
   "displayName",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Display name is required" })),
-);
+  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Display name is required" }))
+)
 
-const BioField = Field.makeField("bio", Schema.String);
+const BioField = Field.makeField("bio", Schema.String)
 
-const settingsFormBuilder = FormBuilder.empty.addField(DisplayNameField).addField(BioField);
+const settingsFormBuilder = FormBuilder.empty.addField(DisplayNameField).addField(BioField)
 
 const DisplayNameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -27,7 +27,7 @@ const DisplayNameInput: FormReact.FieldComponent<string> = ({ field }) => (
     />
     {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
-);
+)
 
 const BioInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -40,38 +40,38 @@ const BioInput: FormReact.FieldComponent<string> = ({ field }) => (
       className={styles.input}
     />
   </div>
-);
+)
 
 const autoSubmitOnChangeForm = FormReact.make(settingsFormBuilder, {
   mode: { onChange: { debounce: "500 millis", autoSubmit: true } },
   fields: {
     displayName: DisplayNameInput,
-    bio: BioInput,
+    bio: BioInput
   },
   onSubmit: (_, { decoded }) =>
     Effect.gen(function*() {
-      yield* Effect.sleep("300 millis");
-      yield* Effect.log(`Auto-saved: ${decoded.displayName}`);
-      return { savedAt: new Date() };
-    }),
-});
+      yield* Effect.sleep("300 millis")
+      yield* Effect.log(`Auto-saved: ${decoded.displayName}`)
+      return { savedAt: new Date() }
+    })
+})
 
 const autoSubmitOnBlurForm = FormReact.make(settingsFormBuilder, {
   mode: { onBlur: { autoSubmit: true } },
   fields: {
     displayName: DisplayNameInput,
-    bio: BioInput,
+    bio: BioInput
   },
   onSubmit: (_, { decoded }) =>
     Effect.gen(function*() {
-      yield* Effect.sleep("300 millis");
-      yield* Effect.log(`Auto-saved on blur: ${decoded.displayName}`);
-      return { savedAt: new Date() };
-    }),
-});
+      yield* Effect.sleep("300 millis")
+      yield* Effect.log(`Auto-saved on blur: ${decoded.displayName}`)
+      return { savedAt: new Date() }
+    })
+})
 
-function SaveStatus({ form }: { form: typeof autoSubmitOnChangeForm; }) {
-  const submitResult = useAtomValue(form.submit);
+function SaveStatus({ form }: { form: typeof autoSubmitOnChangeForm }) {
+  const submitResult = useAtomValue(form.submit)
 
   return Result.builder(submitResult)
     .onWaiting(() => (
@@ -89,7 +89,7 @@ function SaveStatus({ form }: { form: typeof autoSubmitOnChangeForm; }) {
         Failed to save
       </div>
     ))
-    .orNull();
+    .orNull()
 }
 
 export function AutoSubmit() {
@@ -126,5 +126,5 @@ export function AutoSubmit() {
         </div>
       </div>
     </div>
-  );
+  )
 }

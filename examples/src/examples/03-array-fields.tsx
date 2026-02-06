@@ -1,19 +1,19 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
-import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react";
-import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
-import * as Schema from "effect/Schema";
-import styles from "../styles/form.module.css";
+import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
+import * as Effect from "effect/Effect"
+import * as Option from "effect/Option"
+import * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 const TodosField = Field.makeArrayField(
   "todos",
   Schema.Struct({
     text: Schema.String.pipe(Schema.nonEmptyString({ message: () => "Todo text is required" })),
-    completed: Schema.Boolean,
-  }),
-);
+    completed: Schema.Boolean
+  })
+)
 
-const todoFormBuilder = FormBuilder.empty.addField(TodosField);
+const todoFormBuilder = FormBuilder.empty.addField(TodosField)
 
 const todoForm = FormReact.make(todoFormBuilder, {
   fields: {
@@ -34,19 +34,19 @@ const todoForm = FormReact.make(todoFormBuilder, {
           onChange={(e) => field.onChange(e.target.checked)}
           className={styles.checkbox}
         />
-      ),
-    },
+      )
+    }
   },
   onSubmit: (_, { decoded }) =>
     Effect.gen(function*() {
-      yield* Effect.log(`Submitting ${decoded.todos.length} todos`);
-      return { count: decoded.todos.length };
-    }),
-});
+      yield* Effect.log(`Submitting ${decoded.todos.length} todos`)
+      return { count: decoded.todos.length }
+    })
+})
 
 function SubmitButton() {
-  const isDirty = useAtomValue(todoForm.isDirty);
-  const submitResult = useAtomValue(todoForm.submit);
+  const isDirty = useAtomValue(todoForm.isDirty)
+  const submitResult = useAtomValue(todoForm.submit)
 
   return (
     <button
@@ -56,7 +56,7 @@ function SubmitButton() {
     >
       {submitResult.waiting ? "Saving..." : "Save Todos"}
     </button>
-  );
+  )
 }
 
 function TodoList() {
@@ -115,11 +115,11 @@ function TodoList() {
         </div>
       )}
     </todoForm.todos>
-  );
+  )
 }
 
 function FormState() {
-  const values = useAtomValue(todoForm.values);
+  const values = useAtomValue(todoForm.values)
 
   return (
     <div className={styles.debugBox}>
@@ -128,11 +128,11 @@ function FormState() {
         {JSON.stringify(Option.isSome(values) ? values.value : null, null, 2)}
       </pre>
     </div>
-  );
+  )
 }
 
 export function ArrayFields() {
-  const submit = useAtomSet(todoForm.submit);
+  const submit = useAtomSet(todoForm.submit)
 
   return (
     <div className={styles.pageContainerMedium}>
@@ -144,8 +144,8 @@ export function ArrayFields() {
       <todoForm.Initialize defaultValues={{ todos: [] }}>
         <form
           onSubmit={(e) => {
-            e.preventDefault();
-            submit();
+            e.preventDefault()
+            submit()
           }}
         >
           <TodoList />
@@ -156,5 +156,5 @@ export function ArrayFields() {
         </form>
       </todoForm.Initialize>
     </div>
-  );
+  )
 }

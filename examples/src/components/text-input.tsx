@@ -1,6 +1,6 @@
-import type { FormReact } from "@lucas-barake/effect-form-react";
-import * as Option from "effect/Option";
-import styles from "../styles/form.module.css";
+import type { FormReact } from "@lucas-barake/effect-form-react"
+import * as Option from "effect/Option"
+import styles from "../styles/form.module.css"
 
 export const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -22,4 +22,4 @@ export const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
       </span>
     )}
   </div>
-);
+)

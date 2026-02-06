@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "oxc", "eslint", "unicorn", "node"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "ignorePatterns": ["**/dist", "**/build", "**/docs", "**/.tsbuildinfo"],
+  "rules": {
+    "typescript/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports" }],
+    "typescript/no-import-type-side-effects": "error",
+    "import/no-duplicates": "error",
+    "import/no-self-import": "error",
+    "import/no-empty-named-blocks": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
+    "typescript/no-useless-empty-export": "error",
+    "eslint/no-console": "error",
+    "eslint/no-var": "error",
+    "eslint/no-useless-constructor": "error",
+    "unicorn/no-abusive-eslint-disable": "error",
+    "eslint/no-unneeded-ternary": "error",
+    "eslint/no-useless-concat": "error",
+    "oxc/misrefactored-assign-op": "error",
+    "unicorn/prefer-array-flat-map": "error",
+    "unicorn/no-accessor-recursion": "error",
+    "typescript/array-type": ["error", { "default": "generic", "readonly": "generic" }],
+    "typescript/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+
+    "typescript/no-explicit-any": "off",
+    "typescript/ban-ts-comment": "off",
+    "typescript/no-namespace": "off",
+    "typescript/no-non-null-assertion": "off",
+    "typescript/no-require-imports": "off",
+    "eslint/no-unused-vars": "off",
+    "eslint/require-yield": "off",
+    "eslint/no-fallthrough": "off",
+    "eslint/no-case-declarations": "off",
+    "eslint/no-prototype-builtins": "off",
+    "eslint/no-control-regex": "off",
+    "eslint/no-useless-escape": "off",
+    "typescript/no-loss-of-precision": "off",
+    "import/no-named-as-default": "off",
+    "import/no-named-as-default-member": "off",
+    "unicorn/no-nested-ternary": "off",
+    "typescript/no-this-alias": "off",
+    "typescript/no-empty-object-type": "off",
+    "unicorn/prefer-node-protocol": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "import/no-unassigned-import": "off",
+    "node/no-unsupported-features/node-builtins": "off"
+  },
+  "overrides": [{
+    "files": ["**/test/**"],
+    "rules": {
+      "eslint/no-console": "off"
+    }
+  }]
+}

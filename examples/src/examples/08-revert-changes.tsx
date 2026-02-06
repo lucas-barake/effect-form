@@ -1,22 +1,22 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
-import * as Result from "@effect-atom/atom/Result";
-import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react";
-import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
-import * as Schema from "effect/Schema";
-import styles from "../styles/form.module.css";
+import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import * as Result from "@effect-atom/atom/Result"
+import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
+import * as Effect from "effect/Effect"
+import * as Option from "effect/Option"
+import * as Schema from "effect/Schema"
+import styles from "../styles/form.module.css"
 
 const NameField = Field.makeField(
   "name",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" })),
-);
+  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+)
 
 const EmailField = Field.makeField(
   "email",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" })),
-);
+  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" }))
+)
 
-const profileFormBuilder = FormBuilder.empty.addField(NameField).addField(EmailField);
+const profileFormBuilder = FormBuilder.empty.addField(NameField).addField(EmailField)
 
 const NameInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -30,7 +30,7 @@ const NameInput: FormReact.FieldComponent<string> = ({ field }) => (
     />
     {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
-);
+)
 
 const EmailInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div className={styles.fieldContainer}>
@@ -44,27 +44,27 @@ const EmailInput: FormReact.FieldComponent<string> = ({ field }) => (
     />
     {Option.isSome(field.error) && <span className={styles.errorText}>{field.error.value}</span>}
   </div>
-);
+)
 
 const profileForm = FormReact.make(profileFormBuilder, {
   mode: "onBlur",
   fields: {
     name: NameInput,
-    email: EmailInput,
+    email: EmailInput
   },
   onSubmit: (_, { decoded }) =>
     Effect.gen(function*() {
-      yield* Effect.sleep("500 millis");
-      yield* Effect.log(`Profile updated: ${decoded.name}`);
-      return { savedAt: new Date() };
-    }),
-});
+      yield* Effect.sleep("500 millis")
+      yield* Effect.log(`Profile updated: ${decoded.name}`)
+      return { savedAt: new Date() }
+    })
+})
 
 function UnsavedChangesBanner() {
-  const hasChangedSinceSubmit = useAtomValue(profileForm.hasChangedSinceSubmit);
-  const revertToLastSubmit = useAtomSet(profileForm.revertToLastSubmit);
+  const hasChangedSinceSubmit = useAtomValue(profileForm.hasChangedSinceSubmit)
+  const revertToLastSubmit = useAtomSet(profileForm.revertToLastSubmit)
 
-  if (!hasChangedSinceSubmit) return null;
+  if (!hasChangedSinceSubmit) return null
 
   return (
     <div className={styles.unsavedBanner}>
@@ -77,12 +77,12 @@ function UnsavedChangesBanner() {
         Revert Changes
       </button>
     </div>
-  );
+  )
 }
 
 function SubmitButton() {
-  const isDirty = useAtomValue(profileForm.isDirty);
-  const submitResult = useAtomValue(profileForm.submit);
+  const isDirty = useAtomValue(profileForm.isDirty)
+  const submitResult = useAtomValue(profileForm.submit)
 
   return (
     <button
@@ -92,12 +92,12 @@ function SubmitButton() {
     >
       {submitResult.waiting ? "Saving..." : "Save Profile"}
     </button>
-  );
+  )
 }
 
 function FormActions() {
-  const isDirty = useAtomValue(profileForm.isDirty);
-  const reset = useAtomSet(profileForm.reset);
+  const isDirty = useAtomValue(profileForm.isDirty)
+  const reset = useAtomSet(profileForm.reset)
 
   return (
     <div className={styles.inlineFlex}>
@@ -111,11 +111,11 @@ function FormActions() {
         Reset to Initial
       </button>
     </div>
-  );
+  )
 }
 
 function SaveStatus() {
-  const submitResult = useAtomValue(profileForm.submit);
+  const submitResult = useAtomValue(profileForm.submit)
 
   return Result.builder(submitResult)
     .onWaiting(() => (
@@ -128,15 +128,15 @@ function SaveStatus() {
         Last saved at {value.savedAt.toLocaleTimeString()}
       </div>
     ))
-    .orNull();
+    .orNull()
 }
 
 function StateComparison() {
-  const values = useAtomValue(profileForm.values);
-  const lastSubmittedValues = useAtomValue(profileForm.lastSubmittedValues);
-  const isDirty = useAtomValue(profileForm.isDirty);
-  const hasChangedSinceSubmit = useAtomValue(profileForm.hasChangedSinceSubmit);
-  const submitCount = useAtomValue(profileForm.submitCount);
+  const values = useAtomValue(profileForm.values)
+  const lastSubmittedValues = useAtomValue(profileForm.lastSubmittedValues)
+  const isDirty = useAtomValue(profileForm.isDirty)
+  const hasChangedSinceSubmit = useAtomValue(profileForm.hasChangedSinceSubmit)
+  const submitCount = useAtomValue(profileForm.submitCount)
 
   return (
     <div className={styles.debugBox}>
@@ -167,11 +167,11 @@ function StateComparison() {
         </span>
       </div>
     </div>
-  );
+  )
 }
 
 export function RevertChanges() {
-  const submit = useAtomSet(profileForm.submit);
+  const submit = useAtomSet(profileForm.submit)
 
   return (
     <div className={styles.pageContainerMedium}>
@@ -184,8 +184,8 @@ export function RevertChanges() {
       <profileForm.Initialize defaultValues={{ name: "John Doe", email: "john@example.com" }}>
         <form
           onSubmit={(e) => {
-            e.preventDefault();
-            submit();
+            e.preventDefault()
+            submit()
           }}
         >
           <UnsavedChangesBanner />
@@ -197,5 +197,5 @@ export function RevertChanges() {
         </form>
       </profileForm.Initialize>
     </div>
-  );
+  )
 }

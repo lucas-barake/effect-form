@@ -1,11 +1,24 @@
 {
+  "$schema": "http://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.base.json",
-  "references": [
-    {
-      "path": "packages/form"
+  "references": [{ "path": "tsconfig.packages.json" }],
+  "include": [
+    "**/vitest.*.ts",
+    "./packages/*/vitest-setup.ts",
+    "./packages/*/test/**/*.ts",
+    "./packages/*/test/**/*.tsx"
+  ],
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "erasableSyntaxOnly": false,
+    "types": ["node"],
+    "paths": {
+      "@lucas-barake/effect-form": ["./packages/form/src/index.ts"],
+      "@lucas-barake/effect-form/*": ["./packages/form/src/*.ts"],
+      "@lucas-barake/effect-form-react": ["./packages/form-react/src/index.ts"],
+      "@lucas-barake/effect-form-react/*": ["./packages/form-react/src/*.ts"]
     },
-    {
-      "path": "packages/form-react"
-    }
-  ]
+    "plugins": [{ "name": "@effect/language-service" }]
+  }
 }

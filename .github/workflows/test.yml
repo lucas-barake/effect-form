@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install dependencies
         uses: ./.github/actions/setup
       - run: pnpm run test

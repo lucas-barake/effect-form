@@ -187,7 +187,7 @@
   const emailOption = useAtomValue(form.getFieldAtom(form.fields.email))
   return Option.match(emailOption, {
     onNone: () => <span>Loading...</span>,
-    onSome: (email) => <span>{email}</span>,
+    onSome: (email) => <span>{email}</span>
   })
   ```
 
@@ -378,9 +378,7 @@
   })
 
   // Still works - Effect
-  const handleSubmit = MyForm.submit((values) =>
-    Effect.log(`Submitted: ${values.email}`),
-  )
+  const handleSubmit = MyForm.submit((values) => Effect.log(`Submitted: ${values.email}`))
   ```
 
   BREAKING CHANGE: Renamed `Form` module to `FormBuilder` to avoid namespace conflicts with user components. Also renamed `Form.Field<S>` to `FormBuilder.FieldRef<S>`.
