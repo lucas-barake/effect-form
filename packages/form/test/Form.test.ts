@@ -1,5 +1,6 @@
 import { Field, FormBuilder } from "@lucas-barake/effect-form"
 import * as Effect from "effect/Effect"
+import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
 
@@ -72,6 +73,46 @@ describe("Form", () => {
         .merge(addressFields)
 
       expect(Object.keys(builder.fields)).toEqual(["name", "street", "city"])
+    })
+
+    it("merge preserves refinements from both builders", () => {
+      const builderA = FormBuilder.empty
+        .addField("a", Schema.String)
+        .refine((values) => {
+          if (values.a !== "a") {
+            return { path: ["a"], message: "A invalid" }
+          }
+        })
+
+      const builderB = FormBuilder.empty
+        .addField("b", Schema.String)
+        .refine((values) => {
+          if (values.b !== "b") {
+            return { path: ["b"], message: "B invalid" }
+          }
+        })
+
+      const schema = FormBuilder.buildSchema(builderA.merge(builderB))
+
+      const resultA = Schema.decodeUnknownEither(schema)({ a: "x", b: "b" })
+      if (resultA._tag === "Right") throw new Error("Expected Left")
+      const messagesA = ParseResult.ArrayFormatter.formatErrorSync(resultA.left).map((issue) => issue.message)
+      expect(messagesA).toContain("A invalid")
+
+      const resultB = Schema.decodeUnknownEither(schema)({ a: "a", b: "x" })
+      if (resultB._tag === "Right") throw new Error("Expected Left")
+      const messagesB = ParseResult.ArrayFormatter.formatErrorSync(resultB.left).map((issue) => issue.message)
+      expect(messagesB).toContain("B invalid")
+    })
+
+    it("merge prefers fields from the second builder on key collision", () => {
+      const first = FormBuilder.empty.addField("value", Schema.String)
+      const second = FormBuilder.empty.addField("value", Schema.Number)
+
+      const schema = FormBuilder.buildSchema(first.merge(second))
+
+      expect(Schema.decodeUnknownSync(schema)({ value: 123 })).toEqual({ value: 123 })
+      expect(() => Schema.decodeUnknownSync(schema)({ value: "text" })).toThrow()
     })
   })
 

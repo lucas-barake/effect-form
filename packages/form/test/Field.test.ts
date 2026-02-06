@@ -3,6 +3,38 @@ import { describe, expect, it } from "vitest"
 import * as Field from "../src/Field.js"
 
 describe("Field", () => {
+  describe("getDefaultFromSchema", () => {
+    it("returns defaults for primitive keywords", () => {
+      expect(Field.getDefaultFromSchema(Schema.Number)).toBe(0)
+      expect(Field.getDefaultFromSchema(Schema.Boolean)).toBe(false)
+    })
+
+    it("unwraps refinements and transformations", () => {
+      const refined = Schema.Number.pipe(Schema.greaterThan(1))
+      const transformed = Schema.transform(
+        Schema.Number,
+        Schema.String,
+        {
+          decode: (value) => String(value),
+          encode: (value) => Number(value)
+        }
+      )
+
+      expect(Field.getDefaultFromSchema(refined)).toBe(0)
+      expect(Field.getDefaultFromSchema(transformed)).toBe(0)
+    })
+
+    it("returns defaults for literals, enums, and unions", () => {
+      const literal = Schema.Literal("pending")
+      const enums = Schema.Enums({ Red: "red", Blue: "blue" })
+      const union = Schema.Union(Schema.Literal("a"), Schema.Literal("b"))
+
+      expect(Field.getDefaultFromSchema(literal)).toBe("pending")
+      expect(Field.getDefaultFromSchema(enums)).toBe("red")
+      expect(Field.getDefaultFromSchema(union)).toBe("a")
+    })
+  })
+
   describe("getDefaultEncodedValues", () => {
     it("returns empty string for scalar fields", () => {
       const EmailField = Field.makeField("email", Schema.String)

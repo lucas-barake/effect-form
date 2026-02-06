@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as Field from "../src/Field.js"
 import * as FormAtoms from "../src/FormAtoms.js"
 import * as FormBuilder from "../src/FormBuilder.js"
+import { isPathOrParentDirty } from "../src/Path.js"
 
 const makeTestForm = () => {
   const NameField = Field.makeField("name", Schema.String)
@@ -403,6 +404,28 @@ describe("FormAtoms", () => {
       expect(newState.values.items).toHaveLength(1)
       expect(newState.values.items[0]).toEqual({ name: "A" })
     })
+
+    it("marks parent paths dirty after swap and clears after swapping back", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeArrayTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+
+      const initialState = atoms.operations.createInitialState({
+        title: "My List",
+        items: [{ name: "A" }, { name: "B" }]
+      })
+
+      const swapped = atoms.operations.swapArrayItems(initialState, "items", 0, 1)
+
+      expect(isPathOrParentDirty(swapped.dirtyFields, "items[0].name")).toBe(true)
+      expect(isPathOrParentDirty(swapped.dirtyFields, "items[1].name")).toBe(true)
+
+      const swappedBack = atoms.operations.swapArrayItems(swapped, "items", 0, 1)
+
+      expect(isPathOrParentDirty(swappedBack.dirtyFields, "items[0].name")).toBe(false)
+      expect(isPathOrParentDirty(swappedBack.dirtyFields, "items[1].name")).toBe(false)
+      expect(swappedBack.dirtyFields.size).toBe(0)
+    })
   })
 
   describe("operations.moveArrayItem", () => {
@@ -456,6 +479,23 @@ describe("FormAtoms", () => {
       expect(newState).toBe(initialState)
       expect(newState.values.items).toHaveLength(1)
       expect(newState.values.items[0]).toEqual({ name: "A" })
+    })
+
+    it("allows moving an item to the end index", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeArrayTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+
+      const initialState = atoms.operations.createInitialState({
+        title: "My List",
+        items: [{ name: "A" }, { name: "B" }, { name: "C" }]
+      })
+
+      const newState = atoms.operations.moveArrayItem(initialState, "items", 0, 3)
+
+      expect(newState.values.items[0]).toEqual({ name: "B" })
+      expect(newState.values.items[1]).toEqual({ name: "C" })
+      expect(newState.values.items[2]).toEqual({ name: "A" })
     })
   })
 

@@ -66,12 +66,22 @@ export const getDefaultFromSchema = (schema: Schema.Schema.Any): unknown => {
       return 0
     case "BooleanKeyword":
       return false
+    case "Literal":
+      return ast.literal
+    case "Enums": {
+      const first = ast.enums[0]
+      return first ? first[1] : ""
+    }
     case "TypeLiteral": {
       const result: Record<string, unknown> = {}
       for (const prop of ast.propertySignatures) {
         result[prop.name as string] = getDefaultFromSchema(Schema.make(prop.type))
       }
       return result
+    }
+    case "Union": {
+      const first = ast.types[0]
+      return first ? getDefaultFromSchema(Schema.make(first)) : ""
     }
     case "Transformation":
       return getDefaultFromSchema(Schema.make(ast.from))
