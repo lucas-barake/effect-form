@@ -22,6 +22,7 @@ export interface FieldAtoms {
 export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void> {
   readonly runtime: Atom.AtomRuntime<R, any>;
   readonly formBuilder: FormBuilder.FormBuilder<TFields, R>;
+  readonly reactivityKeys?: ReadonlyArray<unknown> | Readonly<Record<string, ReadonlyArray<unknown>>> | undefined;
   readonly onSubmit: (
     args: SubmitArgs,
     ctx: {
@@ -309,40 +310,42 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
   };
 
   const submitAtom = runtime
-    .fn<SubmitArgs>()((args, get) =>
-      Effect.gen(function*() {
-        const state = get(stateAtom);
-        if (Option.isNone(state)) return yield* Effect.die("Form not initialized");
-        const values = state.value.values;
-        get.set(errorsAtom, new Map());
-        const decoded = yield* pipe(
-          Schema.decodeUnknown(combinedSchema, { errors: "all" })(values) as Effect.Effect<
-            Field.DecodedFromFields<TFields>,
-            ParseResult.ParseError,
-            R
-          >,
-          Effect.tapError((parseError) =>
-            Effect.sync(() => {
-              const routedErrors = Validation.routeErrorsWithSource(parseError);
-              get.set(errorsAtom, routedErrors);
-              get.set(stateAtom, Option.some(operations.createSubmitState(state.value)));
-            })
-          ),
-        );
-        const submitState = operations.createSubmitState(state.value);
-        get.set(
-          stateAtom,
-          Option.some({
-            ...submitState,
-            lastSubmittedValues: Option.some({ encoded: values, decoded }),
-          }),
-        );
-        const result = config.onSubmit(args, { decoded, encoded: values, get });
-        if (Effect.isEffect(result)) {
-          return yield* result as Effect.Effect<A, E, R>;
-        }
-        return result as A;
-      })
+    .fn<SubmitArgs>()(
+      (args, get) =>
+        Effect.gen(function*() {
+          const state = get(stateAtom);
+          if (Option.isNone(state)) return yield* Effect.die("Form not initialized");
+          const values = state.value.values;
+          get.set(errorsAtom, new Map());
+          const decoded = yield* pipe(
+            Schema.decodeUnknown(combinedSchema, { errors: "all" })(values) as Effect.Effect<
+              Field.DecodedFromFields<TFields>,
+              ParseResult.ParseError,
+              R
+            >,
+            Effect.tapError((parseError) =>
+              Effect.sync(() => {
+                const routedErrors = Validation.routeErrorsWithSource(parseError);
+                get.set(errorsAtom, routedErrors);
+                get.set(stateAtom, Option.some(operations.createSubmitState(state.value)));
+              })
+            ),
+          );
+          const submitState = operations.createSubmitState(state.value);
+          get.set(
+            stateAtom,
+            Option.some({
+              ...submitState,
+              lastSubmittedValues: Option.some({ encoded: values, decoded }),
+            }),
+          );
+          const result = config.onSubmit(args, { decoded, encoded: values, get });
+          if (Effect.isEffect(result)) {
+            return yield* result as Effect.Effect<A, E, R>;
+          }
+          return result as A;
+        }),
+      config.reactivityKeys ? { reactivityKeys: config.reactivityKeys } : undefined,
     )
     .pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>;
 

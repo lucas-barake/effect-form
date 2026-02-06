@@ -463,7 +463,28 @@ The `onSubmit` callback receives:
 
 > **Note:** Auto-submit mode is only available when `args` is `void`. TypeScript will prevent using `autoSubmit: true` with custom arguments since there's no way to provide them automatically.
 
-## 16. Reusable Field Definitions
+## 16. Reactivity (Query Invalidation)
+
+Invalidate reactive queries (`AtomRpc`, `AtomHttpApi`, etc.) after successful form submission using `reactivityKeys`:
+
+```tsx
+import * as Atom from "@effect-atom/atom/Atom"
+
+const userListAtom = runtime.atom(fetchUsers).pipe(
+  Atom.withReactivity(["users"]),
+)
+
+const createUserForm = FormReact.make(formBuilder, {
+  runtime,
+  fields: { name: TextInput, email: TextInput },
+  reactivityKeys: ["users"],
+  onSubmit: (_, { decoded }) => createUser(decoded),
+})
+```
+
+After a successful submit, all atoms registered with matching keys will rebuild. Invalidation does **not** fire on validation failure or `onSubmit` effect failure.
+
+## 17. Reusable Field Definitions
 
 For fields shared across multiple forms, use `Field.makeField` to define them once:
 
@@ -507,7 +528,7 @@ const billingForm = FormBuilder.empty
   .merge(addressFields)
 ```
 
-## 17. Persisting State Across Unmounts (KeepAlive)
+## 18. Persisting State Across Unmounts (KeepAlive)
 
 By default, form state is destroyed when `Initialize` unmounts. For multi-step wizards or conditional fields where you want state to persist, use `KeepAlive`:
 

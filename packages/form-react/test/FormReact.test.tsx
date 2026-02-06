@@ -2021,4 +2021,143 @@ describe("FormReact.make", () => {
       });
     });
   });
+
+  describe("reactivity", () => {
+    it("reactivityKeys triggers invalidation after successful submit", async () => {
+      const user = userEvent.setup();
+
+      let rebuilds = 0;
+      const counterAtom = Atom.make(() => rebuilds++).pipe(
+        Atom.withReactivity(["form-submit"]),
+        Atom.keepAlive,
+      );
+
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        reactivityKeys: ["form-submit"],
+        onSubmit: () => {},
+      });
+
+      const CounterDisplay = () => {
+        const count = useAtomValue(counterAtom);
+        return <span data-testid="rebuild-count">{count}</span>;
+      };
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
+
+      render(
+        <form.Initialize defaultValues={{ name: "test" }}>
+          <form.name />
+          <SubmitButton />
+          <CounterDisplay />
+        </form.Initialize>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("rebuild-count")).toHaveTextContent("0");
+      });
+
+      await user.click(screen.getByTestId("submit"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("rebuild-count")).toHaveTextContent("1");
+      });
+    });
+
+    it("no invalidation when reactivityKeys is not provided", async () => {
+      const user = userEvent.setup();
+      const submitHandler = vi.fn();
+
+      let rebuilds = 0;
+      const counterAtom = Atom.make(() => rebuilds++).pipe(
+        Atom.withReactivity(["no-keys-test"]),
+        Atom.keepAlive,
+      );
+
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => submitHandler(),
+      });
+
+      const CounterDisplay = () => {
+        const count = useAtomValue(counterAtom);
+        return <span data-testid="rebuild-count">{count}</span>;
+      };
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
+
+      render(
+        <form.Initialize defaultValues={{ name: "test" }}>
+          <form.name />
+          <SubmitButton />
+          <CounterDisplay />
+        </form.Initialize>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("rebuild-count")).toHaveTextContent("0");
+      });
+
+      await user.click(screen.getByTestId("submit"));
+
+      await waitFor(() => {
+        expect(submitHandler).toHaveBeenCalled();
+      });
+
+      expect(screen.getByTestId("rebuild-count")).toHaveTextContent("0");
+    });
+
+    it("no invalidation on validation failure", async () => {
+      const user = userEvent.setup();
+
+      let rebuilds = 0;
+      const counterAtom = Atom.make(() => rebuilds++).pipe(
+        Atom.withReactivity(["validation-fail-test"]),
+        Atom.keepAlive,
+      );
+
+      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }));
+      const NameField = Field.makeField("name", NonEmpty);
+      const formBuilder = FormBuilder.empty.addField(NameField);
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        reactivityKeys: ["validation-fail-test"],
+        onSubmit: () => {},
+      });
+
+      const CounterDisplay = () => {
+        const count = useAtomValue(counterAtom);
+        return <span data-testid="rebuild-count">{count}</span>;
+      };
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined);
+
+      render(
+        <form.Initialize defaultValues={{ name: "" }}>
+          <form.name />
+          <SubmitButton />
+          <CounterDisplay />
+        </form.Initialize>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("rebuild-count")).toHaveTextContent("0");
+      });
+
+      await user.click(screen.getByTestId("submit"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Required");
+      });
+
+      expect(screen.getByTestId("rebuild-count")).toHaveTextContent("0");
+    });
+  });
 });
