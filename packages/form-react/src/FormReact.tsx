@@ -546,6 +546,7 @@ export const make: {
     const setFormState = useAtomSet(stateAtom);
     const callSubmit = useAtomSet(submitAtom);
     const isInitializedRef = React.useRef(false);
+    const [isInitialized, setIsInitialized] = React.useState(false);
 
     React.useEffect(() => {
       const isKeptAlive = registry.get(keepAliveActiveAtom);
@@ -558,6 +559,7 @@ export const make: {
       }
 
       isInitializedRef.current = true;
+      setIsInitialized(true);
       // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
     }, [registry]);
 
@@ -646,6 +648,7 @@ export const make: {
       callSubmit(undefined);
     }, [registry, callSubmit]);
 
+    if (!isInitialized) return null;
     if (Option.isNone(state)) return null;
 
     return <AutoSubmitContext.Provider value={onBlurAutoSubmit}>{children}</AutoSubmitContext.Provider>;

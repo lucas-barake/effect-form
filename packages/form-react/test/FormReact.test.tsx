@@ -1832,6 +1832,52 @@ describe("FormReact.make", () => {
       });
     });
 
+    it("key-change remount with parent subscription does not render stale values", async () => {
+      const NameField = Field.makeField("name", Schema.String);
+      const formBuilder = FormBuilder.empty.addField(NameField);
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {},
+      });
+
+      const renderedValues: Array<string> = [];
+
+      const ValueTracker = () => {
+        const values = useAtomValue(form.values);
+        if (Option.isSome(values)) {
+          renderedValues.push(values.value.name as string);
+        }
+        return null;
+      };
+
+      const Parent = ({ defaultName, variantId }: { variantId: string; defaultName: string; }) => {
+        useAtomValue(form.values);
+        return (
+          <form.Initialize key={variantId} defaultValues={{ name: defaultName }}>
+            <form.name />
+            <ValueTracker />
+          </form.Initialize>
+        );
+      };
+
+      const { rerender } = render(<Parent variantId="1" defaultName="alice" />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("text-input")).toHaveValue("alice");
+      });
+
+      renderedValues.length = 0;
+
+      rerender(<Parent variantId="2" defaultName="bob" />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("text-input")).toHaveValue("bob");
+      });
+
+      expect(renderedValues.every((v) => v === "bob")).toBe(true);
+    });
+
     it("isDirty becomes false when value returns to initial", async () => {
       const user = userEvent.setup();
 
