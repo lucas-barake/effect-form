@@ -1,5 +1,11 @@
 # @lucas-barake/effect-form-react
 
+## 0.19.0
+
+### Minor Changes
+
+- [#56](https://github.com/lucas-barake/effect-form/pull/56) [`8a2b13f`](https://github.com/lucas-barake/effect-form/commit/8a2b13f5a9cb10b0629f464d2efff290eaa2cfee) Thanks [@lucas-barake](https://github.com/lucas-barake)! - fix Initialize rendering children with stale state on key-change remount
+
 ## 0.18.0
 
 ### Minor Changes
