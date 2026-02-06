@@ -464,6 +464,7 @@ export const make: {
       readonly runtime?: Atom.AtomRuntime<never, never>;
       readonly fields: CM;
       readonly mode?: SubmitArgs extends void ? Mode.FormMode : Mode.FormModeWithoutAutoSubmit;
+      readonly reactivityKeys?: ReadonlyArray<unknown> | Readonly<Record<string, ReadonlyArray<unknown>>> | undefined;
       readonly onSubmit: (
         args: SubmitArgs,
         ctx: {
@@ -489,6 +490,7 @@ export const make: {
       readonly runtime: Atom.AtomRuntime<R, ER>;
       readonly fields: CM;
       readonly mode?: SubmitArgs extends void ? Mode.FormMode : Mode.FormModeWithoutAutoSubmit;
+      readonly reactivityKeys?: ReadonlyArray<unknown> | Readonly<Record<string, ReadonlyArray<unknown>>> | undefined;
       readonly onSubmit: (
         args: SubmitArgs,
         ctx: {
@@ -500,7 +502,7 @@ export const make: {
     },
   ): BuiltForm<TFields, R, A, E, SubmitArgs, CM>;
 } = (self: any, options: any): any => {
-  const { fields: components, mode, onSubmit, runtime: providedRuntime } = options;
+  const { fields: components, mode, onSubmit, runtime: providedRuntime, reactivityKeys } = options;
   const runtime = providedRuntime ?? Atom.runtime(Layer.empty);
   const parsedMode = Mode.parse(mode);
   const { fields } = self;
@@ -509,6 +511,7 @@ export const make: {
     formBuilder: self,
     runtime,
     onSubmit,
+    reactivityKeys,
   });
 
   const {
