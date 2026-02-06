@@ -33,6 +33,23 @@ describe("Field", () => {
     })
   })
 
+  describe("extractStructFieldDefs", () => {
+    it("returns field defs for struct schema", () => {
+      const schema = Schema.Struct({ name: Schema.String, age: Schema.Number })
+      const defs = Field.extractStructFieldDefs(schema)
+
+      expect(defs).toBeDefined()
+      expect(defs).toHaveLength(2)
+      expect(defs![0]!.key).toBe("name")
+      expect(defs![1]!.key).toBe("age")
+    })
+
+    it("returns undefined for non-struct schema", () => {
+      const defs = Field.extractStructFieldDefs(Schema.String)
+      expect(defs).toBeUndefined()
+    })
+  })
+
   describe("type guards", () => {
     it("isFieldDef identifies scalar field definitions", () => {
       const EmailField = Field.makeField("email", Schema.String)

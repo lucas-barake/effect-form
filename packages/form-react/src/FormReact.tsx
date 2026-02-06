@@ -1,37 +1,22 @@
-import {
-  RegistryContext,
-  useAtom,
-  useAtomMount,
-  useAtomSet,
-  useAtomSubscribe,
-  useAtomValue
-} from "@effect-atom/atom-react"
+import { RegistryContext, useAtom, useAtomMount, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
 import * as Atom from "@effect-atom/atom/Atom"
-import { Field, FormAtoms, Mode, Validation } from "@lucas-barake/effect-form"
+import { Field, FormAtoms } from "@lucas-barake/effect-form"
+import type { FieldState as FieldStateModule, Mode } from "@lucas-barake/effect-form"
 import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
 import { getNestedValue } from "@lucas-barake/effect-form/Path"
-import * as Cause from "effect/Cause"
 import type * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
-import * as ParseResult from "effect/ParseResult"
+import type * as ParseResult from "effect/ParseResult"
 import type * as Schema from "effect/Schema"
-import * as AST from "effect/SchemaAST"
 import * as React from "react"
 import { createContext, useContext } from "react"
-import { useDebounced } from "./internal/use-debounced.ts"
 
-export type FieldValue<T,> = T extends Schema.Schema.Any ? Schema.Schema.Encoded<T> : T
+export type FieldValue<T,> = FieldStateModule.FieldValue<T>
 
-export interface FieldState<E,> {
-  readonly value: E
-  readonly onChange: (value: E) => void
-  readonly onBlur: () => void
-  readonly error: Option.Option<string>
-  readonly isTouched: boolean
-  readonly isValidating: boolean
-  readonly isDirty: boolean
-}
+export type FieldState<E,> = FieldStateModule.FieldState<E>
+
+export type ArrayFieldOperations<TItem,> = FieldStateModule.ArrayFieldOperations<TItem>
 
 export interface FieldComponentProps<E, P = Record<string, never>,> {
   readonly field: FieldState<E>
@@ -57,14 +42,6 @@ export type FieldComponentMap<TFields extends Field.FieldsRecord,> = {
 }
 
 export type FieldRefs<TFields extends Field.FieldsRecord,> = FormAtoms.FieldRefs<TFields>
-
-export interface ArrayFieldOperations<TItem,> {
-  readonly items: ReadonlyArray<TItem>
-  readonly append: (value?: TItem) => void
-  readonly remove: (index: number) => void
-  readonly swap: (indexA: number, indexB: number) => void
-  readonly move: (from: number, to: number) => void
-}
 
 export type BuiltForm<
   TFields extends Field.FieldsRecord,
@@ -135,130 +112,57 @@ interface ArrayItemContextValue {
 }
 
 const ArrayItemContext = createContext<ArrayItemContextValue | null>(null)
-const AutoSubmitContext = createContext<(() => void) | null>(null)
 
 const makeFieldComponent = <S extends Schema.Schema.Any, P,>(
   fieldKey: string,
   fieldDef: Field.FieldDef<string, S>,
-  errorsAtom: Atom.Writable<Map<string, Validation.ErrorEntry>, Map<string, Validation.ErrorEntry>>,
-  submitCountAtom: Atom.Atom<number>,
-  parsedMode: Mode.ParsedMode,
-  getOrCreateValidationAtom: (
-    fieldPath: string,
-    schema: Schema.Schema.Any
-  ) => Atom.AtomResultFn<unknown, void, ParseResult.ParseError>,
-  getOrCreateFieldAtoms: (fieldPath: string) => FormAtoms.FieldAtoms,
-  Component: React.FC<FieldComponentProps<Schema.Schema.Encoded<S>, P>>
+  getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Schema.Any) => FormAtoms.FieldAtoms,
+  Component: React.FC<FieldComponentProps<Schema.Schema.Encoded<S>, P>>,
+  onBlurSubmitAtom: Atom.Writable<void, void>
 ): React.FC<P> => {
   const FieldComponent: React.FC<P> = (extraProps) => {
     const arrayCtx = useContext(ArrayItemContext)
-    const autoSubmitOnBlur = useContext(AutoSubmitContext)
     const fieldPath = arrayCtx ? `${arrayCtx.parentPath}.${fieldKey}` : fieldKey
 
-    const { errorAtom, isDirtyAtom, touchedAtom, valueAtom } = React.useMemo(
-      () => getOrCreateFieldAtoms(fieldPath),
+    const fieldAtoms = React.useMemo(
+      () => getOrCreateFieldAtoms(fieldPath, fieldDef.schema),
       [fieldPath]
     )
 
-    const [value, setValue] = useAtom(valueAtom) as [Schema.Schema.Encoded<S>, (v: unknown) => void]
-    const [isTouched, setTouched] = useAtom(touchedAtom)
-    const storedError = useAtomValue(errorAtom)
-    const submitCount = useAtomValue(submitCountAtom)
+    const [value, setValue] = useAtom(fieldAtoms.valueAtom) as [Schema.Schema.Encoded<S>, (v: unknown) => void]
+    const [isTouched, setTouched] = useAtom(fieldAtoms.touchedAtom)
+    const displayError = useAtomValue(fieldAtoms.displayErrorAtom)
+    const isDirty = useAtomValue(fieldAtoms.isDirtyAtom)
+    const isValidating = useAtomValue(fieldAtoms.validationAtom).waiting
+    const setOnBlurSubmit = useAtomSet(onBlurSubmitAtom)
 
-    const validationAtom = React.useMemo(() => getOrCreateValidationAtom(fieldPath, fieldDef.schema), [fieldPath])
-    const validationResult = useAtomValue(validationAtom)
-    const validateImmediate = useAtomSet(validationAtom)
-
-    const shouldDebounceValidation = parsedMode.validation === "onChange" && parsedMode.debounce !== null &&
-      !parsedMode.autoSubmit
-    const validate = useDebounced(validateImmediate, shouldDebounceValidation ? parsedMode.debounce : null)
-
-    const prevValueRef = React.useRef(value)
-    React.useEffect(() => {
-      if (prevValueRef.current === value) {
-        return
-      }
-      prevValueRef.current = value
-
-      const shouldValidate = parsedMode.validation === "onChange" ||
-        (parsedMode.validation === "onBlur" && isTouched) ||
-        (parsedMode.validation === "onSubmit" && submitCount > 0)
-
-      if (shouldValidate) {
-        validate(value)
-      }
-    }, [value, isTouched, submitCount, validate])
-
-    const livePerFieldError: Option.Option<string> = React.useMemo(() => {
-      if (validationResult._tag === "Failure") {
-        const parseError = Cause.failureOption(validationResult.cause)
-        if (Option.isSome(parseError) && ParseResult.isParseError(parseError.value)) {
-          return Validation.extractFirstError(parseError.value)
-        }
-      }
-      return Option.none()
-    }, [validationResult])
-
-    const isValidating = validationResult.waiting
-
-    const validationError: Option.Option<string> = React.useMemo(() => {
-      if (Option.isSome(livePerFieldError)) {
-        return livePerFieldError
-      }
-
-      if (Option.isSome(storedError)) {
-        // Hide field-sourced errors when validation passes or is pending (async gap).
-        // Refinement errors persist until re-submit - they can't be cleared by typing.
-        const shouldHideStoredError = storedError.value.source === "field" &&
-          (validationResult._tag === "Success" || isValidating)
-
-        if (shouldHideStoredError) {
-          return Option.none()
-        }
-        return Option.some(storedError.value.message)
-      }
-
-      return Option.none()
-    }, [livePerFieldError, storedError, validationResult, isValidating])
+    useAtomMount(fieldAtoms.triggerValidationAtom)
 
     const onChange = React.useCallback(
-      (newValue: Schema.Schema.Encoded<S>) => {
-        setValue(newValue)
-      },
+      (newValue: Schema.Schema.Encoded<S>) => setValue(newValue),
       [setValue]
     )
 
     const onBlur = React.useCallback(() => {
       setTouched(true)
-      if (parsedMode.validation === "onBlur") {
-        validate(value)
-      }
-      autoSubmitOnBlur?.()
-    }, [setTouched, validate, value, autoSubmitOnBlur])
+      setOnBlurSubmit()
+    }, [setTouched, setOnBlurSubmit])
 
-    const isDirty = useAtomValue(isDirtyAtom)
-    const shouldShowError = parsedMode.validation === "onChange"
-      ? isDirty || submitCount > 0
-      : parsedMode.validation === "onBlur"
-      ? isTouched || submitCount > 0
-      : submitCount > 0
-
-    const fieldState: FieldState<Schema.Schema.Encoded<S>> = React.useMemo(
+    const fieldState = React.useMemo(
       () => ({
         value,
         onChange,
         onBlur,
-        error: shouldShowError ? validationError : Option.none<string>(),
+        error: displayError,
         isTouched,
         isValidating,
         isDirty
       }),
-      [value, onChange, onBlur, shouldShowError, validationError, isTouched, isValidating, isDirty]
+      [value, onChange, onBlur, displayError, isTouched, isValidating, isDirty]
     )
 
     return <Component field={fieldState} props={extraProps} />
   }
-
   return React.memo(FieldComponent) as React.FC<P>
 }
 
@@ -266,20 +170,11 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any,>(
   fieldKey: string,
   def: Field.ArrayFieldDef<string, S>,
   stateAtom: Atom.Writable<Option.Option<FormBuilder.FormState<any>>, Option.Option<FormBuilder.FormState<any>>>,
-  errorsAtom: Atom.Writable<Map<string, Validation.ErrorEntry>, Map<string, Validation.ErrorEntry>>,
-  submitCountAtom: Atom.Atom<number>,
-  dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>,
-  parsedMode: Mode.ParsedMode,
-  getOrCreateValidationAtom: (
-    fieldPath: string,
-    schema: Schema.Schema.Any
-  ) => Atom.AtomResultFn<unknown, void, ParseResult.ParseError>,
-  getOrCreateFieldAtoms: (fieldPath: string) => FormAtoms.FieldAtoms,
+  getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Schema.Any) => FormAtoms.FieldAtoms,
   operations: FormAtoms.FormOperations<any>,
-  componentMap: ArrayItemComponentMap<S>
+  componentMap: ArrayItemComponentMap<S>,
+  onBlurSubmitAtom: Atom.Writable<void, void>
 ): ArrayFieldComponent<S, any> => {
-  const isStructSchema = AST.isTypeLiteral(def.itemSchema.ast)
-
   const ArrayWrapper: React.FC<{
     readonly children: (ops: ArrayFieldOperations<Schema.Schema.Encoded<S>>) => React.ReactNode
   }> = ({ children }) => {
@@ -362,22 +257,16 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any,>(
 
   const itemFieldComponents: Record<string, React.FC> = {}
 
-  if (isStructSchema) {
-    const ast = def.itemSchema.ast as AST.TypeLiteral
-    for (const prop of ast.propertySignatures) {
-      const itemKey = prop.name as string
-      const itemSchema = { ast: prop.type } as Schema.Schema.Any
-      const itemDef = Field.makeField(itemKey, itemSchema)
-      const itemComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any, any>>>)[itemKey]
-      itemFieldComponents[itemKey] = makeFieldComponent(
-        itemKey,
-        itemDef,
-        errorsAtom,
-        submitCountAtom,
-        parsedMode,
-        getOrCreateValidationAtom,
+  const subFieldDefs = Field.extractStructFieldDefs(def.itemSchema)
+  if (subFieldDefs) {
+    for (const subDef of subFieldDefs) {
+      const itemComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any, any>>>)[subDef.key]
+      itemFieldComponents[subDef.key] = makeFieldComponent(
+        subDef.key,
+        subDef,
         getOrCreateFieldAtoms,
-        itemComponent
+        itemComponent,
+        onBlurSubmitAtom
       )
     }
   }
@@ -403,17 +292,10 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord, CM extends Fiel
     Option.Option<FormBuilder.FormState<TFields>>,
     Option.Option<FormBuilder.FormState<TFields>>
   >,
-  errorsAtom: Atom.Writable<Map<string, Validation.ErrorEntry>, Map<string, Validation.ErrorEntry>>,
-  submitCountAtom: Atom.Atom<number>,
-  dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>,
-  parsedMode: Mode.ParsedMode,
-  getOrCreateValidationAtom: (
-    fieldPath: string,
-    schema: Schema.Schema.Any
-  ) => Atom.AtomResultFn<unknown, void, ParseResult.ParseError>,
-  getOrCreateFieldAtoms: (fieldPath: string) => FormAtoms.FieldAtoms,
+  getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Schema.Any) => FormAtoms.FieldAtoms,
   operations: FormAtoms.FormOperations<TFields>,
-  componentMap: CM
+  componentMap: CM,
+  onBlurSubmitAtom: Atom.Writable<void, void>
 ): FieldComponents<TFields, CM> => {
   const components: Record<string, any> = {}
 
@@ -424,26 +306,19 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord, CM extends Fiel
         key,
         def as Field.ArrayFieldDef<string, Schema.Schema.Any>,
         stateAtom,
-        errorsAtom,
-        submitCountAtom,
-        dirtyFieldsAtom,
-        parsedMode,
-        getOrCreateValidationAtom,
         getOrCreateFieldAtoms,
         operations,
-        arrayComponentMap
+        arrayComponentMap,
+        onBlurSubmitAtom
       )
     } else if (Field.isFieldDef(def)) {
       const fieldComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any, any>>>)[key]
       components[key] = makeFieldComponent(
         key,
         def,
-        errorsAtom,
-        submitCountAtom,
-        parsedMode,
-        getOrCreateValidationAtom,
         getOrCreateFieldAtoms,
-        fieldComponent
+        fieldComponent,
+        onBlurSubmitAtom
       )
     }
   }
@@ -504,30 +379,29 @@ export const make: {
 } = (self: any, options: any): any => {
   const { fields: components, mode, onSubmit, runtime: providedRuntime, reactivityKeys } = options
   const runtime = providedRuntime ?? Atom.runtime(Layer.empty)
-  const parsedMode = Mode.parse(mode)
   const { fields } = self
 
   const formAtoms = FormAtoms.make({
     formBuilder: self,
     runtime,
     onSubmit,
-    reactivityKeys
+    reactivityKeys,
+    mode
   })
 
   const {
+    autoSubmitAtom,
     combinedSchema,
-    dirtyFieldsAtom,
-    errorsAtom,
     fieldRefs,
     getFieldIsDirty,
     getFieldValue,
     getOrCreateFieldAtoms,
-    getOrCreateValidationAtom,
     hasChangedSinceSubmitAtom,
     isDirtyAtom,
     keepAliveActiveAtom,
     lastSubmittedValuesAtom,
     mountAtom,
+    onBlurSubmitAtom,
     operations,
     resetAtom,
     revertToLastSubmitAtom,
@@ -547,127 +421,34 @@ export const make: {
     const registry = React.useContext(RegistryContext)
     const state = useAtomValue(stateAtom)
     const setFormState = useAtomSet(stateAtom)
-    const callSubmit = useAtomSet(submitAtom)
-    const isInitializedRef = React.useRef(false)
     const [isInitialized, setIsInitialized] = React.useState(false)
 
     React.useEffect(() => {
       const isKeptAlive = registry.get(keepAliveActiveAtom)
       const currentState = registry.get(stateAtom)
-
       if (!isKeptAlive) {
         setFormState(Option.some(operations.createInitialState(defaultValues)))
       } else if (Option.isNone(currentState)) {
         setFormState(Option.some(operations.createInitialState(defaultValues)))
       }
-
-      isInitializedRef.current = true
       setIsInitialized(true)
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
     }, [registry])
 
-    const debouncedAutoSubmit = useDebounced(
-      () => {
-        const stateOption = registry.get(stateAtom)
-        if (Option.isNone(stateOption)) return
-        callSubmit(undefined)
-      },
-      parsedMode.autoSubmit && parsedMode.validation === "onChange" ? parsedMode.debounce : null
-    )
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Auto-Submit Coordination
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Two-subscription model to avoid infinite loop:
-    // - Stream 1 reacts to value changes (reference equality), triggers or queues submit
-    // - Stream 2 reacts to submit completion, flushes queued changes
-    //
-    // Single subscription to stateAtom cannot distinguish value changes from submit
-    // metadata updates (submitCount, lastSubmittedValues).
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    const lastValuesRef = React.useRef<unknown>(null)
-    const pendingChangesRef = React.useRef(false)
-    const wasSubmittingRef = React.useRef(false)
-
-    useAtomSubscribe(
-      stateAtom,
-      React.useCallback(() => {
-        if (!isInitializedRef.current) return
-
-        const state = registry.get(stateAtom)
-        if (Option.isNone(state)) return
-        const currentValues = state.value.values
-
-        // Reference equality filters out submit metadata changes.
-        // Works because setFieldValue creates new values object (immutable update).
-        if (currentValues === lastValuesRef.current) return
-        lastValuesRef.current = currentValues
-
-        if (!parsedMode.autoSubmit || parsedMode.validation !== "onChange") return
-
-        const submitResult = registry.get(submitAtom)
-        if (submitResult.waiting) {
-          pendingChangesRef.current = true
-        } else {
-          debouncedAutoSubmit()
-        }
-      }, [debouncedAutoSubmit, registry]),
-      { immediate: false }
-    )
-
-    useAtomSubscribe(
-      submitAtom,
-      React.useCallback(
-        (result) => {
-          if (!parsedMode.autoSubmit || parsedMode.validation !== "onChange") return
-
-          const isSubmitting = result.waiting
-          const wasSubmitting = wasSubmittingRef.current
-          wasSubmittingRef.current = isSubmitting
-
-          // Flush queued changes when submit completes
-          if (wasSubmitting && !isSubmitting) {
-            if (pendingChangesRef.current) {
-              pendingChangesRef.current = false
-              debouncedAutoSubmit()
-            }
-          }
-        },
-        [debouncedAutoSubmit]
-      ),
-      { immediate: false }
-    )
-
-    const onBlurAutoSubmit = React.useCallback(() => {
-      if (!parsedMode.autoSubmit || parsedMode.validation !== "onBlur") return
-
-      const stateOption = registry.get(stateAtom)
-      if (Option.isNone(stateOption)) return
-
-      const { lastSubmittedValues, values } = stateOption.value
-      if (Option.isSome(lastSubmittedValues) && values === lastSubmittedValues.value.encoded) return
-
-      callSubmit(undefined)
-    }, [registry, callSubmit])
+    useAtomMount(autoSubmitAtom)
 
     if (!isInitialized) return null
     if (Option.isNone(state)) return null
 
-    return <AutoSubmitContext.Provider value={onBlurAutoSubmit}>{children}</AutoSubmitContext.Provider>
+    return <>{children}</>
   }
 
   const fieldComponents = makeFieldComponents(
     fields,
     stateAtom,
-    errorsAtom,
-    submitCountAtom,
-    dirtyFieldsAtom,
-    parsedMode,
-    getOrCreateValidationAtom,
     getOrCreateFieldAtoms,
     operations,
-    components
+    components,
+    onBlurSubmitAtom
   )
 
   const KeepAlive: React.FC = () => {

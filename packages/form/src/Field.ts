@@ -1,4 +1,5 @@
 import * as Schema from "effect/Schema"
+import * as AST from "effect/SchemaAST"
 
 export const TypeId: unique symbol = Symbol.for("@lucas-barake/effect-form/Field")
 
@@ -101,4 +102,13 @@ export const createTouchedRecord = (fields: FieldsRecord, value: boolean): Recor
     result[key] = value
   }
   return result
+}
+
+export const extractStructFieldDefs = (
+  schema: Schema.Schema.Any
+): ReadonlyArray<FieldDef<string, Schema.Schema.Any>> | undefined => {
+  if (!AST.isTypeLiteral(schema.ast)) return undefined
+  return schema.ast.propertySignatures.map((prop) =>
+    makeField(prop.name as string, { ast: prop.type } as Schema.Schema.Any)
+  )
 }
