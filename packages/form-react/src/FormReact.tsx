@@ -425,10 +425,7 @@ export const make: {
 
     React.useEffect(() => {
       const isKeptAlive = registry.get(keepAliveActiveAtom)
-      const currentState = registry.get(stateAtom)
-      if (!isKeptAlive) {
-        setFormState(Option.some(operations.createInitialState(defaultValues)))
-      } else if (Option.isNone(currentState)) {
+      if (!isKeptAlive || Option.isNone(registry.get(stateAtom))) {
         setFormState(Option.some(operations.createInitialState(defaultValues)))
       }
       setIsInitialized(true)
