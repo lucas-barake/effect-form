@@ -1,5 +1,11 @@
 # @lucas-barake/effect-form
 
+## 0.19.0
+
+### Minor Changes
+
+- [#58](https://github.com/lucas-barake/effect-form/pull/58) [`c36e40d`](https://github.com/lucas-barake/effect-form/commit/c36e40d464995c82536dc42f5d5d67b756d773b5) Thanks [@lucas-barake](https://github.com/lucas-barake)! - add `reactivityKeys` option to invalidate reactive queries after successful form submission
+
 ## 0.18.0
 
 ### Minor Changes
