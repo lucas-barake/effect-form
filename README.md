@@ -11,11 +11,11 @@ pnpm add @lucas-barake/effect-form-react
 ## 1. Basic Form Setup
 
 ```tsx
+import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
 import { FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
-import { useAtomValue, useAtomSet } from "@effect-atom/atom-react"
-import * as Schema from "effect/Schema"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
+import * as Schema from "effect/Schema"
 
 const loginFormBuilder = FormBuilder.empty
   .addField("email", Schema.String.pipe(Schema.nonEmptyString()))
@@ -43,9 +43,9 @@ const loginForm = FormReact.make(loginFormBuilder, {
         />
         {Option.isSome(field.error) && <span className="error">{field.error.value}</span>}
       </div>
-    ),
+    )
   },
-  onSubmit: (_, { decoded }) => Effect.log(`Login: ${decoded.email}`),
+  onSubmit: (_, { decoded }) => Effect.log(`Login: ${decoded.email}`)
 })
 
 // Subscribe to atoms anywhere in the tree
@@ -84,9 +84,9 @@ const orderForm = FormReact.make(orderFormBuilder, {
   runtime,
   fields: {
     title: TitleInput,
-    items: { name: ItemNameInput },
+    items: { name: ItemNameInput }
   },
-  onSubmit: (_, { decoded }) => Effect.log(`Order: ${decoded.title}`),
+  onSubmit: (_, { decoded }) => Effect.log(`Order: ${decoded.title}`)
 })
 
 function OrderPage() {
@@ -158,13 +158,13 @@ Option.isSome(rootError) && <div className="error">{rootError.value}</div>
 const usernameForm = FormBuilder.empty
   .addField("username", Schema.String)
   .refineEffect((values) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       yield* Effect.sleep("100 millis")
       const isTaken = values.username === "taken"
       if (isTaken) {
         return { path: ["username"], message: "Username is already taken" }
       }
-    }),
+    })
   )
 ```
 
@@ -180,10 +180,10 @@ class UsernameValidator extends Context.Tag("UsernameValidator")<
 
 const UsernameValidatorLive = Layer.succeed(UsernameValidator, {
   isTaken: (username) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       yield* Effect.sleep("100 millis")
       return username === "taken"
-    }),
+    })
 })
 
 const runtime = Atom.runtime(UsernameValidatorLive)
@@ -191,19 +191,19 @@ const runtime = Atom.runtime(UsernameValidatorLive)
 const signupFormBuilder = FormBuilder.empty
   .addField("username", Schema.String)
   .refineEffect((values) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const validator = yield* UsernameValidator
       const isTaken = yield* validator.isTaken(values.username)
       if (isTaken) {
         return { path: ["username"], message: "Username is already taken" }
       }
-    }),
+    })
   )
 
 const signupForm = FormReact.make(signupFormBuilder, {
   runtime,
   fields: { username: UsernameInput },
-  onSubmit: (_, { decoded }) => Effect.log(`Signup: ${decoded.username}`),
+  onSubmit: (_, { decoded }) => Effect.log(`Signup: ${decoded.username}`)
 })
 ```
 
@@ -241,13 +241,13 @@ function FormControls() {
 FormReact.make(formBuilder, {
   fields,
   mode: { onChange: { debounce: "300 millis", autoSubmit: true } },
-  onSubmit,
+  onSubmit
 })
 
 FormReact.make(formBuilder, {
   fields,
   mode: { onBlur: { autoSubmit: true } },
-  onSubmit,
+  onSubmit
 })
 ```
 
@@ -257,7 +257,7 @@ FormReact.make(formBuilder, {
 FormReact.make(formBuilder, {
   fields,
   mode: { onChange: { debounce: "300 millis" } },
-  onSubmit,
+  onSubmit
 })
 ```
 
@@ -308,9 +308,7 @@ function FormStatus() {
           <button onClick={() => revertToLastSubmit()}>Revert to Last Submit</button>
         </div>
       )}
-      {Option.isSome(lastSubmittedValues) && (
-        <span>Last submitted: {lastSubmittedValues.value.email}</span>
-      )}
+      {Option.isSome(lastSubmittedValues) && <span>Last submitted: {lastSubmittedValues.value.email}</span>}
     </>
   )
 }
@@ -332,7 +330,7 @@ function FormStatus() {
 Subscribe to fine-grained atoms anywhere in the tree:
 
 ```tsx
-import { useAtomValue, useAtomSubscribe } from "@effect-atom/atom-react"
+import { useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
 
 // Read atoms directly
 function FormDebug() {
@@ -356,7 +354,7 @@ function FormSideEffects() {
     (isDirty) => {
       console.log("Dirty state changed:", isDirty)
     },
-    { immediate: false },
+    { immediate: false }
   )
 
   return null
@@ -377,7 +375,7 @@ function EmailDisplay() {
   // Safe to use outside Initialize - returns None before form mounts
   return Option.match(emailOption, {
     onNone: () => <span>Loading...</span>,
-    onSome: (email) => <span>Current email: {email}</span>,
+    onSome: (email) => <span>Current email: {email}</span>
   })
 }
 
@@ -428,7 +426,7 @@ function FormWithSideEffects({ onClose }: { onClose: () => void }) {
         onClose()
       }
     },
-    { immediate: false },
+    { immediate: false }
   )
 
   return <loginForm.Initialize defaultValues={{ email: "", password: "" }}>...</loginForm.Initialize>
@@ -445,7 +443,7 @@ const contactForm = FormReact.make(contactFormBuilder, {
   runtime,
   fields: { email: TextInput, message: TextInput },
   onSubmit: (args: { source: string }, { decoded, encoded, get }) =>
-    Effect.log(`Contact from ${args.source}: ${decoded.email}`),
+    Effect.log(`Contact from ${args.source}: ${decoded.email}`)
 })
 
 // Pass args when submitting
@@ -456,6 +454,7 @@ function SubmitButton({ source }: { source: string }) {
 ```
 
 The `onSubmit` callback receives:
+
 - `args` - Custom arguments passed to `submit(args)`
 - `decoded` - Schema-decoded values
 - `encoded` - Raw encoded values
@@ -471,14 +470,14 @@ Invalidate reactive queries (`AtomRpc`, `AtomHttpApi`, etc.) after successful fo
 import * as Atom from "@effect-atom/atom/Atom"
 
 const userListAtom = runtime.atom(fetchUsers).pipe(
-  Atom.withReactivity(["users"]),
+  Atom.withReactivity(["users"])
 )
 
 const createUserForm = FormReact.make(formBuilder, {
   runtime,
   fields: { name: TextInput, email: TextInput },
   reactivityKeys: ["users"],
-  onSubmit: (_, { decoded }) => createUser(decoded),
+  onSubmit: (_, { decoded }) => createUser(decoded)
 })
 ```
 
@@ -494,7 +493,7 @@ import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 // Define reusable field
 const EmailField = Field.makeField(
   "email",
-  Schema.String.pipe(Schema.pattern(/@/), Schema.nonEmptyString()),
+  Schema.String.pipe(Schema.pattern(/@/), Schema.nonEmptyString())
 )
 
 // Use in multiple forms
@@ -561,6 +560,7 @@ function Step1({ onNext }: { onNext: () => void }) {
 Without `KeepAlive`, navigating from Step1 to Step2 and back would lose all Step1 data. With `KeepAlive` at the wizard root, state persists across step changes.
 
 **When to use:**
+
 - Multi-step wizards where steps unmount
 - Conditional fields (toggles between optional inputs)
 - Tab-based forms where inactive tabs unmount
@@ -584,16 +584,16 @@ function Wizard() {
 All forms expose these atoms for fine-grained subscriptions:
 
 ```ts
-form.values                  // Atom<Option<EncodedValues>> - current form values
-form.isDirty                 // Atom<boolean> - values differ from initial
-form.hasChangedSinceSubmit   // Atom<boolean> - values differ from last submit
-form.lastSubmittedValues     // Atom<Option<SubmittedValues>> - last submitted values
-form.submitCount             // Atom<number> - number of submit attempts
-form.rootError               // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
-form.submit                  // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
-form.getFieldValue(fieldRef)      // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
-form.getFieldIsDirty(fieldRef)   // Atom<boolean> - subscribe to individual field dirty state
-form.mount                   // Atom<void> - root anchor for state persistence (use with useAtomMount)
+form.values // Atom<Option<EncodedValues>> - current form values
+form.isDirty // Atom<boolean> - values differ from initial
+form.hasChangedSinceSubmit // Atom<boolean> - values differ from last submit
+form.lastSubmittedValues // Atom<Option<SubmittedValues>> - last submitted values
+form.submitCount // Atom<number> - number of submit attempts
+form.rootError // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
+form.submit // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
+form.getFieldValue(fieldRef) // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
+form.getFieldIsDirty(fieldRef) // Atom<boolean> - subscribe to individual field dirty state
+form.mount // Atom<void> - root anchor for state persistence (use with useAtomMount)
 ```
 
 > **Why `Option` for `values`?** Returns `None` before the form is initialized, `Some(values)` after. This allows parent components to safely subscribe and wait for initialization without throwing.
@@ -603,17 +603,17 @@ form.mount                   // Atom<void> - root anchor for state persistence (
 Operations are AtomResultFns - use `useAtomSet` to invoke:
 
 ```ts
-form.reset                         // AtomResultFn<void> - reset to initial values
-form.revertToLastSubmit            // AtomResultFn<void> - revert to last submit
-form.setValues                     // AtomResultFn<Values> - set all values
-form.setValue(field)               // (FieldRef) => AtomResultFn<T | (T => T)> - set single field
-form.submit                        // AtomResultFn<void, A, E> - trigger submit (handler defined at build)
+form.reset // AtomResultFn<void> - reset to initial values
+form.revertToLastSubmit // AtomResultFn<void> - revert to last submit
+form.setValues // AtomResultFn<Values> - set all values
+form.setValue(field) // (FieldRef) => AtomResultFn<T | (T => T)> - set single field
+form.submit // AtomResultFn<void, A, E> - trigger submit (handler defined at build)
 ```
 
 ## Field Component Props Reference
 
 ```ts
-interface FieldState<E> {
+interface FieldState<E,> {
   value: E // Current field value (encoded type)
   onChange: (value: E) => void
   onBlur: () => void
@@ -623,18 +623,19 @@ interface FieldState<E> {
   isDirty: boolean // Value differs from initial
 }
 
-interface FieldComponentProps<E, P = {}> {
+interface FieldComponentProps<E, P = {},> {
   field: FieldState<E> // Form-controlled state
   props: P // Custom props passed at render time
 }
 
 // Helper type for defining field components
-type FieldComponent<T, P = {}> = React.FC<FieldComponentProps<FieldValue<T>, P>>
+type FieldComponent<T, P = {},> = React.FC<FieldComponentProps<FieldValue<T>, P>>
 ```
 
 ### Defining Field Components
 
 Use `FieldComponent<T>` to define reusable field components. You can pass either:
+
 - A value type directly: `FieldComponent<string>`
 - A Schema type: `FieldComponent<typeof Schema.String>` (extracts the encoded type)
 
@@ -674,15 +675,18 @@ Components typed with value types can be reused across schemas with the same enc
 
 ```tsx
 const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
-  <input value={field.value} onChange={(e) => field.onChange(e.target.value)} />
+  <input
+    value={field.value}
+    onChange={(e) => field.onChange(e.target.value)}
+  />
 )
 
 const form = FormReact.make(formBuilder, {
   fields: {
     name: TextInput,
-    age: TextInput,
+    age: TextInput
   },
-  onSubmit,
+  onSubmit
 })
 ```
 
