@@ -1496,7 +1496,7 @@ describe("FormAtoms", () => {
     it("returns Option.none() in initial state", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onSubmit" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
       const registry = Registry.make()
 
       registry.set(
@@ -1518,7 +1518,7 @@ describe("FormAtoms", () => {
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onSubmit" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
@@ -1543,7 +1543,7 @@ describe("FormAtoms", () => {
     it("returns stored error when no live error exists", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onSubmit" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
@@ -1562,7 +1562,7 @@ describe("FormAtoms", () => {
     it("hides stored field-source error when validation passes", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onSubmit" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
@@ -1587,7 +1587,7 @@ describe("FormAtoms", () => {
     it("keeps stored refinement error even when validation passes", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onSubmit" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
@@ -1621,7 +1621,7 @@ describe("FormAtoms", () => {
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onSubmit" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
       const registry = Registry.make()
 
       const state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
@@ -1648,7 +1648,7 @@ describe("FormAtoms", () => {
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onBlur" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onBlur" } })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
@@ -1678,7 +1678,7 @@ describe("FormAtoms", () => {
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onChange" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onChange" } })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
@@ -1708,7 +1708,7 @@ describe("FormAtoms", () => {
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onChange" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onChange" } })
       const registry = Registry.make()
 
       const state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
@@ -1732,7 +1732,7 @@ describe("FormAtoms", () => {
     it("triggers validation on value change in onChange mode", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onChange" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onChange" } })
       const registry = Registry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
@@ -1768,7 +1768,7 @@ describe("FormAtoms", () => {
         runtime,
         formBuilder: form,
         onSubmit: () => {},
-        mode: { onChange: { debounce: "300 millis" } }
+        mode: { validation: "onChange", debounce: "300 millis" }
       })
       const registry = Registry.make()
 
@@ -1806,7 +1806,7 @@ describe("FormAtoms", () => {
     it("triggers validation on blur in onBlur mode", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onBlur" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onBlur" } })
       const registry = Registry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
@@ -1837,7 +1837,7 @@ describe("FormAtoms", () => {
     it("triggers validation on value change in onSubmit mode when submitCount > 0", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onSubmit" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
       const registry = Registry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
@@ -1868,7 +1868,7 @@ describe("FormAtoms", () => {
     it("does NOT trigger validation on value change in onSubmit mode when submitCount === 0", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: "onSubmit" })
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
       const registry = Registry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
@@ -1912,7 +1912,7 @@ describe("FormAtoms", () => {
         runtime,
         formBuilder: form,
         onSubmit,
-        mode: { onChange: { debounce: "300 millis", autoSubmit: true } }
+        mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true }
       })
       const registry = Registry.make()
 
@@ -1938,7 +1938,7 @@ describe("FormAtoms", () => {
         runtime,
         formBuilder: form,
         onSubmit,
-        mode: { onChange: { debounce: "300 millis", autoSubmit: true } }
+        mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true }
       })
       const registry = Registry.make()
 
@@ -1963,7 +1963,7 @@ describe("FormAtoms", () => {
         runtime,
         formBuilder: form,
         onSubmit,
-        mode: "onChange"
+        mode: { validation: "onChange" }
       })
       const registry = Registry.make()
 
@@ -1991,7 +1991,7 @@ describe("FormAtoms", () => {
         runtime,
         formBuilder: form,
         onSubmit,
-        mode: { onBlur: { autoSubmit: true } }
+        mode: { validation: "onBlur", autoSubmit: true }
       })
       const registry = Registry.make()
 
@@ -2025,7 +2025,7 @@ describe("FormAtoms", () => {
         runtime,
         formBuilder: form,
         onSubmit,
-        mode: { onBlur: { autoSubmit: true } }
+        mode: { validation: "onBlur", autoSubmit: true }
       })
       const registry = Registry.make()
 
@@ -2058,7 +2058,7 @@ describe("FormAtoms", () => {
         runtime,
         formBuilder: form,
         onSubmit,
-        mode: "onBlur"
+        mode: { validation: "onBlur" }
       })
       const registry = Registry.make()
 

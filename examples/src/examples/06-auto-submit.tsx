@@ -43,7 +43,7 @@ const BioInput: FormReact.FieldComponent<string> = ({ field }) => (
 )
 
 const autoSubmitOnChangeForm = FormReact.make(settingsFormBuilder, {
-  mode: { onChange: { debounce: "500 millis", autoSubmit: true } },
+  mode: { validation: "onChange", debounce: "500 millis", autoSubmit: true },
   fields: {
     displayName: DisplayNameInput,
     bio: BioInput
@@ -57,7 +57,7 @@ const autoSubmitOnChangeForm = FormReact.make(settingsFormBuilder, {
 })
 
 const autoSubmitOnBlurForm = FormReact.make(settingsFormBuilder, {
-  mode: { onBlur: { autoSubmit: true } },
+  mode: { validation: "onBlur", autoSubmit: true },
   fields: {
     displayName: DisplayNameInput,
     bio: BioInput

@@ -49,7 +49,7 @@ const LastNameInput: FormReact.FieldComponent<string> = ({ field }) => (
 )
 
 const step1Form = FormReact.make(step1Builder, {
-  mode: "onBlur",
+  mode: { validation: "onBlur" },
   fields: {
     firstName: FirstNameInput,
     lastName: LastNameInput
@@ -117,7 +117,7 @@ const ZipInput: FormReact.FieldComponent<string> = ({ field }) => (
 )
 
 const step2Form = FormReact.make(step2Builder, {
-  mode: "onBlur",
+  mode: { validation: "onBlur" },
   fields: {
     street: StreetInput,
     city: CityInput,

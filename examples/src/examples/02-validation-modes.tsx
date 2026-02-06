@@ -28,25 +28,25 @@ const UsernameInput: FormReact.FieldComponent<string> = ({ field }) => (
 )
 
 const onSubmitForm = FormReact.make(formBuilder, {
-  mode: "onSubmit",
+  mode: { validation: "onSubmit" },
   fields: { username: UsernameInput },
   onSubmit: () => Effect.log("Submitted (onSubmit mode)")
 })
 
 const onBlurForm = FormReact.make(formBuilder, {
-  mode: "onBlur",
+  mode: { validation: "onBlur" },
   fields: { username: UsernameInput },
   onSubmit: () => Effect.log("Submitted (onBlur mode)")
 })
 
 const onChangeForm = FormReact.make(formBuilder, {
-  mode: "onChange",
+  mode: { validation: "onChange" },
   fields: { username: UsernameInput },
   onSubmit: () => Effect.log("Submitted (onChange mode)")
 })
 
 const debouncedForm = FormReact.make(formBuilder, {
-  mode: { onChange: { debounce: "300 millis" } },
+  mode: { validation: "onChange", debounce: "300 millis" },
   fields: { username: UsernameInput },
   onSubmit: () => Effect.log("Submitted (debounced mode)")
 })

@@ -128,9 +128,9 @@ function OrderPage() {
 ## 3. Validation Modes
 
 ```tsx
-FormReact.make(formBuilder, { fields, mode: "onSubmit", onSubmit })
-FormReact.make(formBuilder, { fields, mode: "onBlur", onSubmit })
-FormReact.make(formBuilder, { fields, mode: "onChange", onSubmit })
+FormReact.make(formBuilder, { fields, mode: { validation: "onSubmit" }, onSubmit })
+FormReact.make(formBuilder, { fields, mode: { validation: "onBlur" }, onSubmit })
+FormReact.make(formBuilder, { fields, mode: { validation: "onChange" }, onSubmit })
 ```
 
 ## 4. Cross-Field Validation (Sync Refinements)
@@ -240,13 +240,13 @@ function FormControls() {
 ```tsx
 FormReact.make(formBuilder, {
   fields,
-  mode: { onChange: { debounce: "300 millis", autoSubmit: true } },
+  mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true },
   onSubmit
 })
 
 FormReact.make(formBuilder, {
   fields,
-  mode: { onBlur: { autoSubmit: true } },
+  mode: { validation: "onBlur", autoSubmit: true },
   onSubmit
 })
 ```
@@ -256,7 +256,7 @@ FormReact.make(formBuilder, {
 ```tsx
 FormReact.make(formBuilder, {
   fields,
-  mode: { onChange: { debounce: "300 millis" } },
+  mode: { validation: "onChange", debounce: "300 millis" },
   onSubmit
 })
 ```

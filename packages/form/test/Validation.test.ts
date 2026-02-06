@@ -490,13 +490,14 @@ describe("Validation", () => {
         { age: "x" },
         new ParseResult.Type(Schema.Number.ast, "x", "Field error")
       )
+      const refinementAst = refinementSchema.ast as ParseResult.Refinement["ast"]
       const refinementInner = new ParseResult.Pointer(
         ["age"],
         { age: "x" },
-        new ParseResult.Type(refinementSchema.ast, { age: "x" }, "Refinement error")
+        new ParseResult.Type(refinementAst, { age: "x" }, "Refinement error")
       )
       const refinementIssue = new ParseResult.Refinement(
-        refinementSchema.ast,
+        refinementAst,
         { age: "x" },
         "Predicate",
         refinementInner

@@ -94,7 +94,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
-        mode: "onBlur",
+        mode: { validation: "onBlur" },
         onSubmit
       })
 
@@ -637,7 +637,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { asyncField: ValidatingInput },
-        mode: "onBlur",
+        mode: { validation: "onBlur" },
         onSubmit
       })
 
@@ -1141,7 +1141,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit
       })
 
@@ -1172,7 +1172,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
-        mode: "onChange",
+        mode: { validation: "onChange" },
         onSubmit: () => {}
       })
 
@@ -1206,7 +1206,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { password: TextInput },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1244,7 +1244,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { password: TextInput },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1305,7 +1305,7 @@ describe("FormReact.make", () => {
             </div>
           )
         },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1374,7 +1374,7 @@ describe("FormReact.make", () => {
             </div>
           )
         },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1438,7 +1438,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { password: TextInput },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1496,7 +1496,7 @@ describe("FormReact.make", () => {
             </div>
           )
         },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
