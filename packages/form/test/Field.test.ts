@@ -35,8 +35,8 @@ describe("Field", () => {
     })
 
     it("returns undefined for empty enums and unions", () => {
-      const emptyEnums = Schema.Enums({})
-      const emptyUnion = Schema.Union()
+      const emptyEnums = Schema.Enums({}) as unknown as Schema.Schema.Any
+      const emptyUnion = Schema.Union() as unknown as Schema.Schema.Any
 
       expect(Field.getDefaultFromSchema(emptyEnums)).toBeUndefined()
       expect(Field.getDefaultFromSchema(emptyUnion)).toBeUndefined()
