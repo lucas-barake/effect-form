@@ -11,7 +11,7 @@ import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import * as React from "react"
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, expectTypeOf, it, vi } from "vitest"
 
 const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div>
@@ -2205,6 +2205,32 @@ describe("FormReact.make", () => {
       })
 
       expect(screen.getByTestId("rebuild-count")).toHaveTextContent("0")
+    })
+  })
+
+  describe("runtime optionality", () => {
+    it("does not require runtime when R is only AtomRegistry", () => {
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(
+          Schema.filterEffect(() =>
+            Effect.gen(function*() {
+              yield* Registry.AtomRegistry
+              return true as const
+            })
+          )
+        )
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      expectTypeOf(form).not.toBeAny()
+      expectTypeOf(form.submit).not.toBeAny()
+      expectTypeOf(form.Initialize).not.toBeAny()
     })
   })
 })

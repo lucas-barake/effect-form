@@ -1,5 +1,6 @@
 import { RegistryContext, useAtom, useAtomMount, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
 import * as Atom from "@effect-atom/atom/Atom"
+import type * as Registry from "@effect-atom/atom/Registry"
 import { Field, FormAtoms } from "@lucas-barake/effect-form"
 import type { FieldState as FieldStateModule, Mode } from "@lucas-barake/effect-form"
 import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
@@ -335,14 +336,15 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord, CM extends Fiel
 export const make: {
   <
     TFields extends Field.FieldsRecord,
+    R extends Registry.AtomRegistry,
     A,
     E,
     SubmitArgs = void,
     CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
   >(
-    self: FormBuilder.FormBuilder<TFields, never>,
+    self: FormBuilder.FormBuilder<TFields, R>,
     options: {
-      readonly runtime?: Atom.AtomRuntime<never, never>
+      readonly runtime?: Atom.AtomRuntime<any, any>
       readonly fields: CM
       readonly mode?: SubmitArgs extends void ? Mode.FormMode : Mode.FormModeWithoutAutoSubmit
       readonly reactivityKeys?: ReadonlyArray<unknown> | Readonly<Record<string, ReadonlyArray<unknown>>> | undefined
@@ -353,9 +355,9 @@ export const make: {
           readonly encoded: Field.EncodedFromFields<TFields>
           readonly get: Atom.FnContext
         }
-      ) => A | Effect.Effect<A, E, never>
+      ) => A | Effect.Effect<A, E, R>
     }
-  ): BuiltForm<TFields, never, A, E, SubmitArgs, CM>
+  ): BuiltForm<TFields, R, A, E, SubmitArgs, CM>
 
   <
     TFields extends Field.FieldsRecord,
