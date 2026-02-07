@@ -243,13 +243,17 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
   const validationAtomsRegistry = createWeakRegistry<Atom.AtomResultFn<unknown, void, ParseResult.ParseError>>()
   const fieldAtomsRegistry = createWeakRegistry<FieldAtoms>()
   const publicFieldValueRegistry = createWeakRegistry<Atom.Atom<Option.Option<unknown>>>()
+  const validationSchemaRegistry = new Map<string, Schema.Schema.Any>()
+  const fieldSchemaRegistry = new Map<string, Schema.Schema.Any>()
+  const isDirtyAtomsRegistry = createWeakRegistry<Atom.Atom<boolean>>()
 
   const getOrCreateValidationAtom = (
     fieldPath: string,
     schema: Schema.Schema.Any
   ): Atom.AtomResultFn<unknown, void, ParseResult.ParseError> => {
     const existing = validationAtomsRegistry.get(fieldPath)
-    if (existing) return existing
+    const existingSchema = validationSchemaRegistry.get(fieldPath)
+    if (existing && existingSchema === schema) return existing
 
     const validationAtom = runtime
       .fn<unknown>()((value: unknown) =>
@@ -258,12 +262,14 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       .pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<unknown, void, ParseResult.ParseError>
 
     validationAtomsRegistry.set(fieldPath, validationAtom)
+    validationSchemaRegistry.set(fieldPath, schema)
     return validationAtom
   }
 
   const getOrCreateFieldAtoms = (fieldPath: string, schema: Schema.Schema.Any): FieldAtoms => {
     const existing = fieldAtomsRegistry.get(fieldPath)
-    if (existing) return existing
+    const existingSchema = fieldSchemaRegistry.get(fieldPath)
+    if (existing && existingSchema === schema) return existing
 
     const valueAtom = Atom.writable(
       (get) => getNestedValue(Option.getOrThrow(get(stateAtom)).values, fieldPath),
@@ -297,7 +303,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       return entry ? Option.some(entry) : Option.none<Validation.ErrorEntry>()
     }).pipe(Atom.setIdleTTL(0))
 
-    const isDirtyAtom = Atom.readable((get) =>
+    const existingIsDirtyAtom = isDirtyAtomsRegistry.get(fieldPath)
+    const isDirtyAtom = existingIsDirtyAtom ?? Atom.readable((get) =>
       isPathOrParentDirty(
         Option.match(get(stateAtom), {
           onNone: () => new Set<string>(),
@@ -306,6 +313,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
         fieldPath
       )
     ).pipe(Atom.setIdleTTL(0))
+    if (!existingIsDirtyAtom) {
+      isDirtyAtomsRegistry.set(fieldPath, isDirtyAtom)
+    }
 
     const validationAtom = getOrCreateValidationAtom(fieldPath, schema)
 
@@ -404,6 +414,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       triggerValidationAtom
     }
     fieldAtomsRegistry.set(fieldPath, atoms)
+    fieldSchemaRegistry.set(fieldPath, schema)
     return atoms
   }
 
@@ -413,6 +424,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     }
     validationAtomsRegistry.clear()
     fieldAtomsRegistry.clear()
+    validationSchemaRegistry.clear()
+    fieldSchemaRegistry.clear()
+    isDirtyAtomsRegistry.clear()
   }
 
   const submitAtom = runtime
@@ -659,8 +673,6 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     publicFieldValueRegistry.set(field.key, safeAtom)
     return safeAtom
   }
-
-  const isDirtyAtomsRegistry = createWeakRegistry<Atom.Atom<boolean>>()
 
   const getFieldIsDirty = (field: FormBuilder.FieldRef<any>): Atom.Atom<boolean> => {
     const cached = fieldAtomsRegistry.get(field.key)

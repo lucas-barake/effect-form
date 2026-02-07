@@ -33,6 +33,14 @@ describe("Field", () => {
       expect(Field.getDefaultFromSchema(enums)).toBe("red")
       expect(Field.getDefaultFromSchema(union)).toBe("a")
     })
+
+    it("returns undefined for empty enums and unions", () => {
+      const emptyEnums = Schema.Enums({})
+      const emptyUnion = Schema.Union()
+
+      expect(Field.getDefaultFromSchema(emptyEnums)).toBeUndefined()
+      expect(Field.getDefaultFromSchema(emptyUnion)).toBeUndefined()
+    })
   })
 
   describe("getDefaultEncodedValues", () => {
@@ -74,6 +82,39 @@ describe("Field", () => {
       expect(defs).toHaveLength(2)
       expect(defs![0]!.key).toBe("name")
       expect(defs![1]!.key).toBe("age")
+    })
+
+    it("unwraps refinements, transformations, and suspends", () => {
+      const base = Schema.Struct({ name: Schema.String, age: Schema.Number })
+      const refined = base.pipe(Schema.filter(() => true))
+      const transformed = Schema.transform(
+        base,
+        base,
+        {
+          decode: (value) => value,
+          encode: (value) => value
+        }
+      )
+      const suspended = Schema.suspend(() => base)
+
+      const refinedDefs = Field.extractStructFieldDefs(refined)
+      const transformedDefs = Field.extractStructFieldDefs(transformed)
+      const suspendedDefs = Field.extractStructFieldDefs(suspended)
+
+      expect(refinedDefs).toBeDefined()
+      expect(refinedDefs).toHaveLength(2)
+      expect(refinedDefs![0]!.key).toBe("name")
+      expect(refinedDefs![1]!.key).toBe("age")
+
+      expect(transformedDefs).toBeDefined()
+      expect(transformedDefs).toHaveLength(2)
+      expect(transformedDefs![0]!.key).toBe("name")
+      expect(transformedDefs![1]!.key).toBe("age")
+
+      expect(suspendedDefs).toBeDefined()
+      expect(suspendedDefs).toHaveLength(2)
+      expect(suspendedDefs![0]!.key).toBe("name")
+      expect(suspendedDefs![1]!.key).toBe("age")
     })
 
     it("returns undefined for non-struct schema", () => {

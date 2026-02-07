@@ -616,6 +616,42 @@ describe("FormAtoms", () => {
       expect(fieldAtoms.touchedAtom).toBeDefined()
       expect(fieldAtoms.errorAtom).toBeDefined()
     })
+
+    it("reuses existing isDirty atom created via getFieldIsDirty", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      registry.set(
+        atoms.stateAtom,
+        Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" }))
+      )
+
+      const isDirty = atoms.getFieldIsDirty(atoms.fieldRefs.name)
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+
+      expect(fieldAtoms.isDirtyAtom).toBe(isDirty)
+    })
+
+    it("recreates field atoms when schema changes for the same path", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      registry.set(
+        atoms.stateAtom,
+        Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" }))
+      )
+
+      const fieldAtomsA = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      const fieldAtomsB = atoms.getOrCreateFieldAtoms("name", Schema.Number)
+
+      expect(fieldAtomsA).not.toBe(fieldAtomsB)
+      expect(fieldAtomsA.validationAtom).not.toBe(fieldAtomsB.validationAtom)
+      expect(atoms.validationAtomsRegistry.get("name")).toBe(fieldAtomsB.validationAtom)
+    })
   })
 
   describe("resetValidationAtoms", () => {
@@ -640,6 +676,27 @@ describe("FormAtoms", () => {
 
       expect(atoms.fieldAtomsRegistry.get("name")).toBeUndefined()
       expect(atoms.validationAtomsRegistry.get("name")).toBeUndefined()
+    })
+
+    it("clears cached isDirty atoms", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com"
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      const isDirtyBefore = atoms.getFieldIsDirty(atoms.fieldRefs.name)
+
+      atoms.resetValidationAtoms(registry)
+
+      const isDirtyAfter = atoms.getFieldIsDirty(atoms.fieldRefs.name)
+
+      expect(isDirtyBefore).not.toBe(isDirtyAfter)
     })
   })
 
