@@ -55,7 +55,7 @@ describe("Debounce and Auto-Submit", () => {
       const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
-        mode: { onChange: { debounce: "300 millis" } },
+        mode: { validation: "onChange", debounce: "300 millis" },
         onSubmit
       })
 
@@ -85,6 +85,29 @@ describe("Debounce and Auto-Submit", () => {
   })
 
   describe("Auto-Submit Happy Path", () => {
+    it("should NOT auto-submit on initial mount without changes", async () => {
+      const submitHandler = vi.fn()
+
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        runtime: createRuntime(),
+        fields: { name: TextInput },
+        mode: { validation: "onChange", debounce: "50 millis", autoSubmit: true },
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded)
+      })
+
+      render(
+        <form.Initialize defaultValues={{ name: "Initial" }}>
+          <form.name />
+        </form.Initialize>
+      )
+
+      await delay(120)
+
+      expect(submitHandler).not.toHaveBeenCalled()
+    })
+
     it("should auto-submit valid form data after debounce", async () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
@@ -94,7 +117,7 @@ describe("Debounce and Auto-Submit", () => {
       const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
-        mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
+        mode: { validation: "onChange", debounce: "100 millis", autoSubmit: true },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded)
       })
 
@@ -127,7 +150,7 @@ describe("Debounce and Auto-Submit", () => {
       const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
-        mode: { onChange: { debounce: "50 millis", autoSubmit: true } },
+        mode: { validation: "onChange", debounce: "50 millis", autoSubmit: true },
         onSubmit: async (_: void, { decoded }) => {
           // Async submit to ensure stateAtom update happens after debounce window
           await delay(50)
@@ -173,7 +196,7 @@ describe("Debounce and Auto-Submit", () => {
       const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: NameInput, age: AgeInput },
-        mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
+        mode: { validation: "onChange", debounce: "100 millis", autoSubmit: true },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded)
       })
 
@@ -213,7 +236,7 @@ describe("Debounce and Auto-Submit", () => {
       const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
-        mode: { onChange: { debounce: "50 millis", autoSubmit: true } },
+        mode: { validation: "onChange", debounce: "50 millis", autoSubmit: true },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded)
       })
 
@@ -253,7 +276,7 @@ describe("Debounce and Auto-Submit", () => {
       const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
-        mode: { onChange: { debounce: "100 millis", autoSubmit: true } },
+        mode: { validation: "onChange", debounce: "100 millis", autoSubmit: true },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded)
       })
 
@@ -285,7 +308,7 @@ describe("Debounce and Auto-Submit", () => {
       const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
-        mode: { onBlur: { autoSubmit: true } },
+        mode: { validation: "onBlur", autoSubmit: true },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded)
       })
 
@@ -320,7 +343,7 @@ describe("Debounce and Auto-Submit", () => {
       const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
-        mode: { onBlur: { autoSubmit: true } },
+        mode: { validation: "onBlur", autoSubmit: true },
         onSubmit: (_: void, { decoded }) => submitHandler(decoded)
       })
 
@@ -362,7 +385,7 @@ describe("Debounce and Auto-Submit", () => {
       const form = FormReact.make(formBuilder, {
         runtime: createRuntime(),
         fields: { name: TextInput },
-        mode: "onChange",
+        mode: { validation: "onChange" },
         onSubmit
       })
 

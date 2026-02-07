@@ -1,13 +1,15 @@
 import * as Atom from "@effect-atom/atom/Atom"
+import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
 import * as Option from "effect/Option"
-import type * as ParseResult from "effect/ParseResult"
+import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
 import * as Field from "./Field.ts"
 import * as FormBuilder from "./FormBuilder.ts"
 import { recalculateDirtyFieldsForArray, recalculateDirtySubtree } from "./internal/dirty.ts"
 import { createWeakRegistry, type WeakRegistry } from "./internal/weak-registry.ts"
+import * as Mode from "./Mode.ts"
 import { getNestedValue, isPathOrParentDirty, setNestedValue } from "./Path.ts"
 import * as Validation from "./Validation.ts"
 
@@ -17,11 +19,26 @@ export interface FieldAtoms {
   readonly touchedAtom: Atom.Writable<boolean, boolean>
   readonly errorAtom: Atom.Atom<Option.Option<Validation.ErrorEntry>>
   readonly isDirtyAtom: Atom.Atom<boolean>
+  readonly validationAtom: Atom.AtomResultFn<unknown, void, ParseResult.ParseError>
+  readonly displayErrorAtom: Atom.Atom<Option.Option<string>>
+  readonly shouldValidateAtom: Atom.Atom<boolean>
+  readonly triggerValidationAtom: Atom.Atom<void>
+}
+
+export interface PublicFieldAtoms<E,> {
+  readonly value: Atom.Atom<Option.Option<E>>
+  readonly error: Atom.Atom<Option.Option<string>>
+  readonly isDirty: Atom.Atom<boolean>
+  readonly isTouched: Atom.Atom<boolean>
+  readonly isValidating: Atom.Atom<boolean>
+  readonly setValue: Atom.Writable<void, E | ((prev: E) => E)>
+  readonly setTouched: Atom.Writable<void, boolean>
 }
 
 export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void,> {
   readonly runtime: Atom.AtomRuntime<R, any>
   readonly formBuilder: FormBuilder.FormBuilder<TFields, R>
+  readonly mode?: Mode.FormMode
   readonly reactivityKeys?: ReadonlyArray<unknown> | Readonly<Record<string, ReadonlyArray<unknown>>> | undefined
   readonly onSubmit: (
     args: SubmitArgs,
@@ -70,7 +87,7 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
     schema: Schema.Schema.Any
   ) => Atom.AtomResultFn<unknown, void, ParseResult.ParseError>
 
-  readonly getOrCreateFieldAtoms: (fieldPath: string) => FieldAtoms
+  readonly getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Schema.Any) => FieldAtoms
 
   readonly resetValidationAtoms: (ctx: { set: <R, W,>(atom: Atom.Writable<R, W>, value: W) => void }) => void
 
@@ -79,10 +96,8 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly resetAtom: Atom.Writable<void, void>
   readonly revertToLastSubmitAtom: Atom.Writable<void, void>
   readonly setValuesAtom: Atom.Writable<void, Field.EncodedFromFields<TFields>>
-  readonly setValue: <S,>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
 
-  readonly getFieldValue: <S,>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>
-  readonly getFieldIsDirty: (field: FormBuilder.FieldRef<any>) => Atom.Atom<boolean>
+  readonly getFieldAtoms: <S,>(field: FormBuilder.FieldRef<S>) => PublicFieldAtoms<S>
 
   /**
    * Root anchor atom for the form's dependency graph.
@@ -102,6 +117,9 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
    * }
    * ```
    */
+  readonly autoSubmitAtom: Atom.Atom<void>
+  readonly onBlurSubmitAtom: Atom.Writable<void, void>
+
   readonly mountAtom: Atom.Atom<void>
 
   readonly keepAliveActiveAtom: Atom.Writable<boolean, boolean>
@@ -166,6 +184,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 ): FormAtoms<TFields, R, A, E, SubmitArgs> => {
   const { formBuilder, runtime } = config
   const { fields } = formBuilder
+  const parsedMode = Mode.parse(config.mode)
 
   const combinedSchema = FormBuilder.buildSchema(formBuilder)
 
@@ -231,14 +250,27 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 
   const validationAtomsRegistry = createWeakRegistry<Atom.AtomResultFn<unknown, void, ParseResult.ParseError>>()
   const fieldAtomsRegistry = createWeakRegistry<FieldAtoms>()
-  const publicFieldValueRegistry = createWeakRegistry<Atom.Atom<Option.Option<unknown>>>()
+  const publicFieldAtomsRegistry = createWeakRegistry<PublicFieldAtoms<unknown>>()
+  const validationSchemaRegistry = new Map<string, Schema.Schema.Any>()
+  const fieldSchemaRegistry = new Map<string, Schema.Schema.Any>()
+  const isDirtyAtomsRegistry = createWeakRegistry<Atom.Atom<boolean>>()
+
+  const fieldSchemasByKey = new Map<string, Schema.Schema.Any>()
+  for (const [key, def] of Object.entries(fields)) {
+    if (Field.isArrayFieldDef(def)) {
+      fieldSchemasByKey.set(key, Schema.Array(def.itemSchema))
+    } else if (Field.isFieldDef(def)) {
+      fieldSchemasByKey.set(key, def.schema)
+    }
+  }
 
   const getOrCreateValidationAtom = (
     fieldPath: string,
     schema: Schema.Schema.Any
   ): Atom.AtomResultFn<unknown, void, ParseResult.ParseError> => {
     const existing = validationAtomsRegistry.get(fieldPath)
-    if (existing) return existing
+    const existingSchema = validationSchemaRegistry.get(fieldPath)
+    if (existing && existingSchema === schema) return existing
 
     const validationAtom = runtime
       .fn<unknown>()((value: unknown) =>
@@ -247,12 +279,14 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       .pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<unknown, void, ParseResult.ParseError>
 
     validationAtomsRegistry.set(fieldPath, validationAtom)
+    validationSchemaRegistry.set(fieldPath, schema)
     return validationAtom
   }
 
-  const getOrCreateFieldAtoms = (fieldPath: string): FieldAtoms => {
+  const getOrCreateFieldAtoms = (fieldPath: string, schema: Schema.Schema.Any): FieldAtoms => {
     const existing = fieldAtomsRegistry.get(fieldPath)
-    if (existing) return existing
+    const existingSchema = fieldSchemaRegistry.get(fieldPath)
+    if (existing && existingSchema === schema) return existing
 
     const valueAtom = Atom.writable(
       (get) => getNestedValue(Option.getOrThrow(get(stateAtom)).values, fieldPath),
@@ -286,7 +320,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       return entry ? Option.some(entry) : Option.none<Validation.ErrorEntry>()
     }).pipe(Atom.setIdleTTL(0))
 
-    const isDirtyAtom = Atom.readable((get) =>
+    const existingIsDirtyAtom = isDirtyAtomsRegistry.get(fieldPath)
+    const isDirtyAtom = existingIsDirtyAtom ?? Atom.readable((get) =>
       isPathOrParentDirty(
         Option.match(get(stateAtom), {
           onNone: () => new Set<string>(),
@@ -295,9 +330,108 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
         fieldPath
       )
     ).pipe(Atom.setIdleTTL(0))
+    if (!existingIsDirtyAtom) {
+      isDirtyAtomsRegistry.set(fieldPath, isDirtyAtom)
+    }
 
-    const atoms: FieldAtoms = { valueAtom, initialValueAtom, touchedAtom, errorAtom, isDirtyAtom }
+    const validationAtom = getOrCreateValidationAtom(fieldPath, schema)
+
+    const shouldValidateAtom = Atom.readable((get) => {
+      if (parsedMode.validation === "onChange") return true
+      if (parsedMode.validation === "onBlur") return get(touchedAtom)
+      return get(submitCountAtom) > 0
+    }).pipe(Atom.setIdleTTL(0))
+
+    const displayErrorAtom = Atom.readable((get) => {
+      const validationResult = get(validationAtom)
+      const storedError = get(errorAtom)
+      const isDirty = get(isDirtyAtom)
+      const isTouched = get(touchedAtom)
+      const submitCount = get(submitCountAtom)
+
+      let livePerFieldError: Option.Option<string> = Option.none()
+      if (validationResult._tag === "Failure") {
+        const parseError = Cause.failureOption(validationResult.cause)
+        if (Option.isSome(parseError) && ParseResult.isParseError(parseError.value)) {
+          livePerFieldError = Validation.extractFirstError(parseError.value)
+        }
+      }
+
+      let validationError: Option.Option<string> = Option.none()
+      if (Option.isSome(livePerFieldError)) {
+        validationError = livePerFieldError
+      } else if (Option.isSome(storedError)) {
+        const isValidating = validationResult.waiting
+        const shouldHideStoredError = storedError.value.source === "field" &&
+          (validationResult._tag === "Success" || isValidating)
+        if (!shouldHideStoredError) {
+          validationError = Option.some(storedError.value.message)
+        }
+      }
+
+      const shouldShowError = parsedMode.validation === "onChange"
+        ? isDirty || submitCount > 0
+        : parsedMode.validation === "onBlur"
+        ? isTouched || submitCount > 0
+        : submitCount > 0
+
+      return shouldShowError ? validationError : Option.none()
+    }).pipe(Atom.setIdleTTL(0))
+
+    const triggerValidationAtom = Atom.readable((get) => {
+      let lastValue = get.once(valueAtom)
+      let timeout: ReturnType<typeof setTimeout> | undefined
+
+      const shouldDebounce = parsedMode.validation === "onChange" &&
+        parsedMode.debounce !== null && !parsedMode.autoSubmit
+      const debounceMs = shouldDebounce ? parsedMode.debounce : null
+
+      const trigger = (value: unknown) => {
+        if (!get.once(shouldValidateAtom)) return
+        if (debounceMs !== null && debounceMs > 0) {
+          if (timeout !== undefined) clearTimeout(timeout)
+          timeout = setTimeout(() => {
+            timeout = undefined
+            get.set(validationAtom, value)
+          }, debounceMs)
+        } else {
+          get.set(validationAtom, value)
+        }
+      }
+
+      get.addFinalizer(() => {
+        if (timeout !== undefined) clearTimeout(timeout)
+      })
+
+      get.subscribe(valueAtom, (newValue) => {
+        if (newValue === lastValue) return
+        lastValue = newValue
+        trigger(newValue)
+      })
+
+      if (parsedMode.validation === "onBlur") {
+        get.subscribe(touchedAtom, (isTouched) => {
+          if (isTouched) {
+            const currentValue = get.once(valueAtom)
+            get.set(validationAtom, currentValue)
+          }
+        })
+      }
+    }).pipe(Atom.setIdleTTL(0))
+
+    const atoms: FieldAtoms = {
+      valueAtom,
+      initialValueAtom,
+      touchedAtom,
+      errorAtom,
+      isDirtyAtom,
+      validationAtom,
+      displayErrorAtom,
+      shouldValidateAtom,
+      triggerValidationAtom
+    }
     fieldAtomsRegistry.set(fieldPath, atoms)
+    fieldSchemaRegistry.set(fieldPath, schema)
     return atoms
   }
 
@@ -307,6 +441,10 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     }
     validationAtomsRegistry.clear()
     fieldAtomsRegistry.clear()
+    publicFieldAtomsRegistry.clear()
+    validationSchemaRegistry.clear()
+    fieldSchemaRegistry.clear()
+    isDirtyAtomsRegistry.clear()
   }
 
   const submitAtom = runtime
@@ -542,20 +680,81 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     return atom
   }
 
-  const getFieldValue = <S,>(field: FormBuilder.FieldRef<S>): Atom.Atom<Option.Option<S>> => {
-    const existing = publicFieldValueRegistry.get(field.key)
-    if (existing) return existing as Atom.Atom<Option.Option<S>>
+  const getFieldIsDirty = (field: FormBuilder.FieldRef<any>): Atom.Atom<boolean> => {
+    const cached = fieldAtomsRegistry.get(field.key)
+    if (cached) return cached.isDirtyAtom
 
-    const safeAtom = Atom.readable((get) =>
+    const existing = isDirtyAtomsRegistry.get(field.key)
+    if (existing) return existing
+
+    const atom = Atom.readable((get) =>
+      isPathOrParentDirty(
+        Option.match(get(stateAtom), {
+          onNone: () => new Set<string>(),
+          onSome: (state) => state.dirtyFields
+        }),
+        field.key
+      )
+    ).pipe(Atom.setIdleTTL(0))
+
+    isDirtyAtomsRegistry.set(field.key, atom)
+    return atom
+  }
+
+  const getFieldAtoms = <S,>(field: FormBuilder.FieldRef<S>): PublicFieldAtoms<S> => {
+    const cached = publicFieldAtomsRegistry.get(field.key)
+    if (cached) return cached as PublicFieldAtoms<S>
+
+    const schema = fieldSchemasByKey.get(field.key)
+    if (!schema) throw new Error(`No schema found for field "${field.key}"`)
+
+    const internal = getOrCreateFieldAtoms(field.key, schema)
+
+    const value = Atom.readable((get) =>
       Option.map(get(stateAtom), (state) => getNestedValue(state.values, field.key) as S)
     ).pipe(Atom.setIdleTTL(0))
 
-    publicFieldValueRegistry.set(field.key, safeAtom)
-    return safeAtom
-  }
+    const error = Atom.readable((get) =>
+      Option.match(get(stateAtom), {
+        onNone: () => Option.none<string>(),
+        onSome: () => get(internal.displayErrorAtom)
+      })
+    ).pipe(Atom.setIdleTTL(0))
 
-  const getFieldIsDirty = (field: FormBuilder.FieldRef<any>): Atom.Atom<boolean> =>
-    getOrCreateFieldAtoms(field.key).isDirtyAtom
+    const isDirty = getFieldIsDirty(field)
+
+    const isTouched = Atom.readable((get) =>
+      Option.match(get(stateAtom), {
+        onNone: () => false,
+        onSome: (state) => (getNestedValue(state.touched, field.key) ?? false) as boolean
+      })
+    ).pipe(Atom.setIdleTTL(0))
+
+    const isValidating = Atom.readable((get) => get(internal.validationAtom).waiting).pipe(Atom.setIdleTTL(0))
+
+    const setValueAtom = setValue(field)
+
+    const setTouchedAtom = Atom.fnSync<boolean>()(
+      (touched, get) => {
+        const state = get(stateAtom)
+        if (Option.isNone(state)) return
+        get.set(stateAtom, Option.some(operations.setFieldTouched(state.value, field.key, touched)))
+      },
+      { initialValue: undefined as void }
+    ).pipe(Atom.setIdleTTL(0))
+
+    const bundle: PublicFieldAtoms<S> = {
+      value,
+      error,
+      isDirty,
+      isTouched,
+      isValidating,
+      setValue: setValueAtom,
+      setTouched: setTouchedAtom
+    }
+    publicFieldAtomsRegistry.set(field.key, bundle as PublicFieldAtoms<unknown>)
+    return bundle
+  }
 
   const mountAtom = Atom.readable((get) => {
     get(stateAtom)
@@ -564,6 +763,83 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
   }).pipe(Atom.setIdleTTL(0))
 
   const keepAliveActiveAtom = Atom.make(false).pipe(Atom.setIdleTTL(0))
+
+  const autoSubmitAtom: Atom.Atom<void> = parsedMode.autoSubmit && parsedMode.validation === "onChange"
+    ? Atom.readable((get) => {
+      const initialState = get.once(stateAtom)
+      let lastValues: unknown = Option.isSome(initialState)
+        ? initialState.value.values
+        : null
+      let pendingChanges = false
+      let wasSubmitting = false
+      let timeout: ReturnType<typeof setTimeout> | undefined
+
+      const debounceMs = parsedMode.debounce
+
+      const triggerSubmit = () => {
+        if (get.once(submitAtom).waiting) {
+          pendingChanges = true
+          return
+        }
+        get.set(submitAtom as Atom.Writable<any, any>, undefined)
+      }
+
+      const debouncedSubmit = () => {
+        if (debounceMs !== null && debounceMs > 0) {
+          if (timeout !== undefined) clearTimeout(timeout)
+          timeout = setTimeout(() => {
+            timeout = undefined
+            triggerSubmit()
+          }, debounceMs)
+        } else {
+          triggerSubmit()
+        }
+      }
+
+      get.addFinalizer(() => {
+        if (timeout !== undefined) clearTimeout(timeout)
+      })
+
+      get.subscribe(stateAtom, () => {
+        const state = get.once(stateAtom)
+        if (Option.isNone(state)) return
+        const currentValues = state.value.values
+        if (currentValues === lastValues) return
+        lastValues = currentValues
+
+        const submitResult = get.once(submitAtom)
+        if (submitResult.waiting) {
+          pendingChanges = true
+        } else {
+          debouncedSubmit()
+        }
+      })
+
+      get.subscribe(submitAtom, () => {
+        const result = get.once(submitAtom)
+        const isSubmitting = result.waiting
+        if (wasSubmitting && !isSubmitting) {
+          if (pendingChanges) {
+            pendingChanges = false
+            debouncedSubmit()
+          }
+        }
+        wasSubmitting = isSubmitting
+      })
+    }).pipe(Atom.setIdleTTL(0))
+    : Atom.readable(() => {}).pipe(Atom.setIdleTTL(0))
+
+  const onBlurSubmitAtom: Atom.Writable<void, void> = parsedMode.autoSubmit && parsedMode.validation === "onBlur"
+    ? Atom.fnSync<void>()((_: void, get) => {
+      if (get(submitAtom).waiting) return
+      const stateOption = get(stateAtom)
+      if (Option.isNone(stateOption)) return
+      const { lastSubmittedValues, values } = stateOption.value
+      if (Option.isSome(lastSubmittedValues) && values === lastSubmittedValues.value.encoded) return
+      get.set(submitAtom as Atom.Writable<any, any>, undefined)
+    }, { initialValue: undefined as void }).pipe(Atom.setIdleTTL(0))
+    : Atom.fnSync<void>()((_: void) => {}, { initialValue: undefined as void })
+      .pipe(Atom.setIdleTTL(0))
 
   return {
     stateAtom,
@@ -588,9 +864,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     resetAtom,
     revertToLastSubmitAtom,
     setValuesAtom,
-    setValue,
-    getFieldValue,
-    getFieldIsDirty,
+    getFieldAtoms,
+    autoSubmitAtom,
+    onBlurSubmitAtom,
     mountAtom,
     keepAliveActiveAtom
   } as FormAtoms<TFields, R, A, E, SubmitArgs>

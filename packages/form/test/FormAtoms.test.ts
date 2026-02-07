@@ -1,12 +1,15 @@
 import * as Atom from "@effect-atom/atom/Atom"
 import * as Registry from "@effect-atom/atom/Registry"
+import * as Context from "effect/Context"
+import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as Field from "../src/Field.js"
 import * as FormAtoms from "../src/FormAtoms.js"
 import * as FormBuilder from "../src/FormBuilder.js"
+import { isPathOrParentDirty } from "../src/Path.js"
 
 const makeTestForm = () => {
   const NameField = Field.makeField("name", Schema.String)
@@ -403,6 +406,28 @@ describe("FormAtoms", () => {
       expect(newState.values.items).toHaveLength(1)
       expect(newState.values.items[0]).toEqual({ name: "A" })
     })
+
+    it("marks parent paths dirty after swap and clears after swapping back", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeArrayTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+
+      const initialState = atoms.operations.createInitialState({
+        title: "My List",
+        items: [{ name: "A" }, { name: "B" }]
+      })
+
+      const swapped = atoms.operations.swapArrayItems(initialState, "items", 0, 1)
+
+      expect(isPathOrParentDirty(swapped.dirtyFields, "items[0].name")).toBe(true)
+      expect(isPathOrParentDirty(swapped.dirtyFields, "items[1].name")).toBe(true)
+
+      const swappedBack = atoms.operations.swapArrayItems(swapped, "items", 0, 1)
+
+      expect(isPathOrParentDirty(swappedBack.dirtyFields, "items[0].name")).toBe(false)
+      expect(isPathOrParentDirty(swappedBack.dirtyFields, "items[1].name")).toBe(false)
+      expect(swappedBack.dirtyFields.size).toBe(0)
+    })
   })
 
   describe("operations.moveArrayItem", () => {
@@ -456,6 +481,23 @@ describe("FormAtoms", () => {
       expect(newState).toBe(initialState)
       expect(newState.values.items).toHaveLength(1)
       expect(newState.values.items[0]).toEqual({ name: "A" })
+    })
+
+    it("allows moving an item to the end index", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeArrayTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+
+      const initialState = atoms.operations.createInitialState({
+        title: "My List",
+        items: [{ name: "A" }, { name: "B" }, { name: "C" }]
+      })
+
+      const newState = atoms.operations.moveArrayItem(initialState, "items", 0, 3)
+
+      expect(newState.values.items[0]).toEqual({ name: "B" })
+      expect(newState.values.items[1]).toEqual({ name: "C" })
+      expect(newState.values.items[2]).toEqual({ name: "A" })
     })
   })
 
@@ -569,12 +611,48 @@ describe("FormAtoms", () => {
         Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" }))
       )
 
-      const fieldAtoms = atoms.getOrCreateFieldAtoms("name")
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
 
       expect(fieldAtoms.valueAtom).toBeDefined()
       expect(fieldAtoms.initialValueAtom).toBeDefined()
       expect(fieldAtoms.touchedAtom).toBeDefined()
       expect(fieldAtoms.errorAtom).toBeDefined()
+    })
+
+    it("reuses existing isDirty atom created via getFieldAtoms", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      registry.set(
+        atoms.stateAtom,
+        Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" }))
+      )
+
+      const publicAtoms = atoms.getFieldAtoms(atoms.fieldRefs.name)
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+
+      expect(registry.get(fieldAtoms.isDirtyAtom)).toBe(registry.get(publicAtoms.isDirty))
+    })
+
+    it("recreates field atoms when schema changes for the same path", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      registry.set(
+        atoms.stateAtom,
+        Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" }))
+      )
+
+      const fieldAtomsA = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      const fieldAtomsB = atoms.getOrCreateFieldAtoms("name", Schema.Number)
+
+      expect(fieldAtomsA).not.toBe(fieldAtomsB)
+      expect(fieldAtomsA.validationAtom).not.toBe(fieldAtomsB.validationAtom)
+      expect(atoms.validationAtomsRegistry.get("name")).toBe(fieldAtomsB.validationAtom)
     })
   })
 
@@ -590,7 +668,7 @@ describe("FormAtoms", () => {
         Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" }))
       )
 
-      atoms.getOrCreateFieldAtoms("name")
+      atoms.getOrCreateFieldAtoms("name", Schema.String)
       atoms.getOrCreateValidationAtom("name", Schema.String)
 
       expect(atoms.fieldAtomsRegistry.get("name")).toBeDefined()
@@ -600,6 +678,27 @@ describe("FormAtoms", () => {
 
       expect(atoms.fieldAtomsRegistry.get("name")).toBeUndefined()
       expect(atoms.validationAtomsRegistry.get("name")).toBeUndefined()
+    })
+
+    it("clears cached public field atoms", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com"
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+
+      const before = atoms.getFieldAtoms(atoms.fieldRefs.name)
+
+      atoms.resetValidationAtoms(registry)
+
+      const after = atoms.getFieldAtoms(atoms.fieldRefs.name)
+
+      expect(before).not.toBe(after)
     })
   })
 
@@ -1007,265 +1106,337 @@ describe("FormAtoms", () => {
     })
   })
 
-  describe("setValue", () => {
-    it("sets a single field value", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+  describe("getFieldAtoms", () => {
+    describe("setValue", () => {
+      it("sets a single field value", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      const initialState = atoms.operations.createInitialState({
-        name: "John",
-        email: "john@test.com"
+        const initialState = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(initialState))
+
+        const setNameAtom = atoms.getFieldAtoms(atoms.fieldRefs.name).setValue
+
+        registry.mount(setNameAtom)
+        registry.set(setNameAtom, "Alice")
+
+        const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+        expect(newState.values.name).toBe("Alice")
+        expect(newState.values.email).toBe("john@test.com")
+        expect(newState.dirtyFields.has("name")).toBe(true)
+        expect(newState.dirtyFields.has("email")).toBe(false)
       })
-      registry.set(atoms.stateAtom, Option.some(initialState))
 
-      const setNameAtom = atoms.setValue(atoms.fieldRefs.name)
+      it("supports functional updates", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      registry.mount(setNameAtom)
-      registry.set(setNameAtom, "Alice")
+        const initialState = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(initialState))
 
-      const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
-      expect(newState.values.name).toBe("Alice")
-      expect(newState.values.email).toBe("john@test.com")
-      expect(newState.dirtyFields.has("name")).toBe(true)
-      expect(newState.dirtyFields.has("email")).toBe(false)
-    })
+        const setNameAtom = atoms.getFieldAtoms(atoms.fieldRefs.name).setValue
 
-    it("supports functional updates", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+        registry.mount(setNameAtom)
+        registry.set(setNameAtom, (prev: string) => prev.toUpperCase())
 
-      const initialState = atoms.operations.createInitialState({
-        name: "John",
-        email: "john@test.com"
+        const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+        expect(newState.values.name).toBe("JOHN")
       })
-      registry.set(atoms.stateAtom, Option.some(initialState))
 
-      const setNameAtom = atoms.setValue(atoms.fieldRefs.name)
+      it("does not clear stored errors (display logic handles clearing)", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeArrayTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      registry.mount(setNameAtom)
-      registry.set(setNameAtom, (prev: string) => prev.toUpperCase())
+        const initialState = atoms.operations.createInitialState({
+          title: "My List",
+          items: [{ name: "Item 1" }]
+        })
+        registry.set(atoms.stateAtom, Option.some(initialState))
 
-      const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
-      expect(newState.values.name).toBe("JOHN")
-    })
+        registry.set(
+          atoms.errorsAtom,
+          new Map([
+            ["items", { message: "Array error", source: "field" as const }],
+            ["items[0]", { message: "Item error", source: "field" as const }],
+            ["items[0].name", { message: "Name error", source: "field" as const }],
+            ["title", { message: "Title error", source: "field" as const }]
+          ])
+        )
 
-    it("does not clear stored errors (display logic handles clearing)", () => {
-      // Note: errors are intentionally NOT cleared in setValue to avoid race conditions.
-      // The display logic in React components handles "clearing" via useMemo based on:
-      // 1. Live validation passing
-      // 2. Error source (field vs refinement)
-      // Actual error clearing happens on the next submit.
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeArrayTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+        const setItemsAtom = atoms.getFieldAtoms(atoms.fieldRefs.items).setValue
 
-      const initialState = atoms.operations.createInitialState({
-        title: "My List",
-        items: [{ name: "Item 1" }]
+        registry.mount(setItemsAtom)
+        registry.set(setItemsAtom, [{ name: "Updated Item" }])
+
+        const errors = registry.get(atoms.errorsAtom)
+        expect(errors.has("items")).toBe(true)
+        expect(errors.has("items[0]")).toBe(true)
+        expect(errors.has("items[0].name")).toBe(true)
+        expect(errors.has("title")).toBe(true)
       })
-      registry.set(atoms.stateAtom, Option.some(initialState))
-
-      registry.set(
-        atoms.errorsAtom,
-        new Map([
-          ["items", { message: "Array error", source: "field" as const }],
-          ["items[0]", { message: "Item error", source: "field" as const }],
-          ["items[0].name", { message: "Name error", source: "field" as const }],
-          ["title", { message: "Title error", source: "field" as const }]
-        ])
-      )
-
-      const setItemsAtom = atoms.setValue(atoms.fieldRefs.items)
-
-      registry.mount(setItemsAtom)
-      registry.set(setItemsAtom, [{ name: "Updated Item" }])
-
-      const errors = registry.get(atoms.errorsAtom)
-      expect(errors.has("items")).toBe(true)
-      expect(errors.has("items[0]")).toBe(true)
-      expect(errors.has("items[0].name")).toBe(true)
-      expect(errors.has("title")).toBe(true)
     })
-  })
 
-  describe("getFieldValue", () => {
-    it("returns Option.some(value) when initialized", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+    describe("value", () => {
+      it("returns Option.some(value) when initialized", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      const initialState = atoms.operations.createInitialState({
-        name: "John",
-        email: "john@test.com"
+        const initialState = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(initialState))
+
+        const nameValue = atoms.getFieldAtoms(atoms.fieldRefs.name).value
+
+        expect(registry.get(nameValue)).toEqual(Option.some("John"))
       })
-      registry.set(atoms.stateAtom, Option.some(initialState))
 
-      const nameAtom = atoms.getFieldValue(atoms.fieldRefs.name)
+      it("updates when field value changes", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      expect(registry.get(nameAtom)).toEqual(Option.some("John"))
-    })
+        let state = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(state))
 
-    it("updates when field value changes", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+        const nameValue = atoms.getFieldAtoms(atoms.fieldRefs.name).value
+        expect(registry.get(nameValue)).toEqual(Option.some("John"))
 
-      let state = atoms.operations.createInitialState({
-        name: "John",
-        email: "john@test.com"
+        state = atoms.operations.setFieldValue(state, "name", "Jane")
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        expect(registry.get(nameValue)).toEqual(Option.some("Jane"))
       })
-      registry.set(atoms.stateAtom, Option.some(state))
 
-      const nameAtom = atoms.getFieldValue(atoms.fieldRefs.name)
-      expect(registry.get(nameAtom)).toEqual(Option.some("John"))
+      it("returns Option.none() when form is not initialized", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      state = atoms.operations.setFieldValue(state, "name", "Jane")
-      registry.set(atoms.stateAtom, Option.some(state))
+        const nameValue = atoms.getFieldAtoms(atoms.fieldRefs.name).value
 
-      expect(registry.get(nameAtom)).toEqual(Option.some("Jane"))
-    })
-
-    it("returns same atom instance for same field", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
-
-      registry.set(
-        atoms.stateAtom,
-        Option.some(atoms.operations.createInitialState({ name: "John", email: "john@test.com" }))
-      )
-
-      const nameAtom1 = atoms.getFieldValue(atoms.fieldRefs.name)
-      const nameAtom2 = atoms.getFieldValue(atoms.fieldRefs.name)
-
-      expect(nameAtom1).toBe(nameAtom2)
-    })
-
-    it("returns Option.none() when form is not initialized", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
-
-      const nameAtom = atoms.getFieldValue(atoms.fieldRefs.name)
-
-      expect(registry.get(nameAtom)).toEqual(Option.none())
-    })
-
-    it("updates from None to Some when form initializes", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
-
-      const nameAtom = atoms.getFieldValue(atoms.fieldRefs.name)
-      expect(registry.get(nameAtom)).toEqual(Option.none())
-
-      const initialState = atoms.operations.createInitialState({
-        name: "John",
-        email: "john@test.com"
+        expect(registry.get(nameValue)).toEqual(Option.none())
       })
-      registry.set(atoms.stateAtom, Option.some(initialState))
 
-      expect(registry.get(nameAtom)).toEqual(Option.some("John"))
-    })
-  })
+      it("updates from None to Some when form initializes", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-  describe("getFieldIsDirty", () => {
-    it("returns false before initialization", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+        const nameValue = atoms.getFieldAtoms(atoms.fieldRefs.name).value
+        expect(registry.get(nameValue)).toEqual(Option.none())
 
-      const isDirty = atoms.getFieldIsDirty(atoms.fieldRefs.name)
+        const initialState = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(initialState))
 
-      expect(registry.get(isDirty)).toBe(false)
-    })
-
-    it("returns false for clean field after init", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
-
-      const initialState = atoms.operations.createInitialState({
-        name: "John",
-        email: "john@test.com"
+        expect(registry.get(nameValue)).toEqual(Option.some("John"))
       })
-      registry.set(atoms.stateAtom, Option.some(initialState))
-
-      const isDirty = atoms.getFieldIsDirty(atoms.fieldRefs.name)
-
-      expect(registry.get(isDirty)).toBe(false)
     })
 
-    it("returns true after setting field value", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+    describe("isDirty", () => {
+      it("returns false before initialization", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      let state = atoms.operations.createInitialState({
-        name: "John",
-        email: "john@test.com"
+        const isDirty = atoms.getFieldAtoms(atoms.fieldRefs.name).isDirty
+
+        expect(registry.get(isDirty)).toBe(false)
       })
-      registry.set(atoms.stateAtom, Option.some(state))
 
-      state = atoms.operations.setFieldValue(state, "name", "Jane")
-      registry.set(atoms.stateAtom, Option.some(state))
+      it("returns false for clean field after init", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      const isDirty = atoms.getFieldIsDirty(atoms.fieldRefs.name)
+        const initialState = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(initialState))
 
-      expect(registry.get(isDirty)).toBe(true)
-    })
+        const isDirty = atoms.getFieldAtoms(atoms.fieldRefs.name).isDirty
 
-    it("returns false after reverting field value to initial", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
-
-      let state = atoms.operations.createInitialState({
-        name: "John",
-        email: "john@test.com"
+        expect(registry.get(isDirty)).toBe(false)
       })
-      registry.set(atoms.stateAtom, Option.some(state))
 
-      state = atoms.operations.setFieldValue(state, "name", "Jane")
-      registry.set(atoms.stateAtom, Option.some(state))
+      it("returns true after setting field value", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      state = atoms.operations.setFieldValue(state, "name", "John")
-      registry.set(atoms.stateAtom, Option.some(state))
+        let state = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(state))
 
-      const isDirty = atoms.getFieldIsDirty(atoms.fieldRefs.name)
+        state = atoms.operations.setFieldValue(state, "name", "Jane")
+        registry.set(atoms.stateAtom, Option.some(state))
 
-      expect(registry.get(isDirty)).toBe(false)
+        const isDirty = atoms.getFieldAtoms(atoms.fieldRefs.name).isDirty
+
+        expect(registry.get(isDirty)).toBe(true)
+      })
+
+      it("returns false after reverting field value to initial", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
+
+        let state = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        state = atoms.operations.setFieldValue(state, "name", "Jane")
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        state = atoms.operations.setFieldValue(state, "name", "John")
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        const isDirty = atoms.getFieldAtoms(atoms.fieldRefs.name).isDirty
+
+        expect(registry.get(isDirty)).toBe(false)
+      })
+
+      it("returns same bundle for same field", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
+
+        registry.set(
+          atoms.stateAtom,
+          Option.some(atoms.operations.createInitialState({ name: "John", email: "john@test.com" }))
+        )
+
+        const bundle1 = atoms.getFieldAtoms(atoms.fieldRefs.name)
+        const bundle2 = atoms.getFieldAtoms(atoms.fieldRefs.name)
+
+        expect(bundle1).toBe(bundle2)
+      })
     })
 
-    it("returns same atom instance for same field", () => {
-      const runtime = Atom.runtime(Layer.empty)
-      const form = makeTestForm()
-      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+    describe("isTouched", () => {
+      it("returns false before initialization", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
 
-      registry.set(
-        atoms.stateAtom,
-        Option.some(atoms.operations.createInitialState({ name: "John", email: "john@test.com" }))
-      )
+        const isTouched = atoms.getFieldAtoms(atoms.fieldRefs.name).isTouched
 
-      const isDirty1 = atoms.getFieldIsDirty(atoms.fieldRefs.name)
-      const isDirty2 = atoms.getFieldIsDirty(atoms.fieldRefs.name)
+        expect(registry.get(isTouched)).toBe(false)
+      })
 
-      expect(isDirty1).toBe(isDirty2)
+      it("returns false for untouched field after init", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
+
+        const initialState = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(initialState))
+
+        const isTouched = atoms.getFieldAtoms(atoms.fieldRefs.name).isTouched
+
+        expect(registry.get(isTouched)).toBe(false)
+      })
+
+      it("returns true after setTouched(true)", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
+
+        const initialState = atoms.operations.createInitialState({
+          name: "John",
+          email: "john@test.com"
+        })
+        registry.set(atoms.stateAtom, Option.some(initialState))
+
+        const { isTouched, setTouched } = atoms.getFieldAtoms(atoms.fieldRefs.name)
+
+        registry.mount(setTouched)
+        registry.set(setTouched, true)
+
+        expect(registry.get(isTouched)).toBe(true)
+      })
+    })
+
+    describe("setTouched", () => {
+      it("no-ops when form is not initialized", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
+
+        const { setTouched } = atoms.getFieldAtoms(atoms.fieldRefs.name)
+
+        registry.mount(setTouched)
+        registry.set(setTouched, true)
+
+        expect(Option.isNone(registry.get(atoms.stateAtom))).toBe(true)
+      })
+    })
+
+    describe("isValidating", () => {
+      it("returns false before initialization", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
+
+        const isValidating = atoms.getFieldAtoms(atoms.fieldRefs.name).isValidating
+
+        expect(registry.get(isValidating)).toBe(false)
+      })
+    })
+
+    describe("error", () => {
+      it("returns Option.none() before initialization", () => {
+        const runtime = Atom.runtime(Layer.empty)
+        const form = makeTestForm()
+        const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+        const registry = Registry.make()
+
+        const error = atoms.getFieldAtoms(atoms.fieldRefs.name).error
+
+        expect(registry.get(error)).toEqual(Option.none())
+      })
     })
   })
 
@@ -1449,6 +1620,706 @@ describe("FormAtoms", () => {
 
       const formError = registry.get(atoms.rootErrorAtom)
       expect(Option.isNone(formError)).toBe(true)
+    })
+  })
+
+  describe("displayErrorAtom", () => {
+    it("returns Option.none() in initial state", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      registry.set(
+        atoms.stateAtom,
+        Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" }))
+      )
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      registry.mount(fieldAtoms.displayErrorAtom)
+
+      expect(registry.get(fieldAtoms.displayErrorAtom)).toEqual(Option.none())
+    })
+
+    it("returns live per-field error when validation fails", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+      )
+      const EmailField = Field.makeField("email", Schema.String)
+      const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const error = registry.get(fieldAtoms.displayErrorAtom)
+          expect(Option.isSome(error)).toBe(true)
+          expect(Option.getOrThrow(error)).toBe("Name is required")
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("returns stored error when no live error exists", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.set(atoms.errorsAtom, new Map([["name", { message: "Server error", source: "refinement" as const }]]))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      registry.mount(fieldAtoms.displayErrorAtom)
+
+      const error = registry.get(fieldAtoms.displayErrorAtom)
+      expect(Option.isSome(error)).toBe(true)
+      expect(Option.getOrThrow(error)).toBe("Server error")
+    })
+
+    it("surfaces filterEffect errors from field schemas", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.filterEffect(() => Effect.succeed("Name is invalid")))
+      )
+      const form = FormBuilder.empty.addField(NameField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "bad" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "bad")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const error = registry.get(fieldAtoms.displayErrorAtom)
+          expect(Option.isSome(error)).toBe(true)
+          expect(Option.getOrThrow(error)).toBe("Name is invalid")
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("uses runtime services in field-level filterEffect", () => {
+      class NameValidator extends Context.Tag("NameValidator")<
+        NameValidator,
+        { readonly isInvalid: (name: string) => Effect.Effect<boolean> }
+      >() {}
+
+      const NameValidatorLive = Layer.succeed(NameValidator, {
+        isInvalid: (name) => Effect.succeed(name === "taken")
+      })
+
+      const runtime = Atom.runtime(NameValidatorLive)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(
+          Schema.filterEffect((value) =>
+            Effect.gen(function*() {
+              const validator = yield* NameValidator
+              const isInvalid = yield* validator.isInvalid(value)
+              return isInvalid ? "Name is already taken" : true
+            })
+          )
+        )
+      )
+      const form = FormBuilder.empty.addField(NameField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "taken" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "taken")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const error = registry.get(fieldAtoms.displayErrorAtom)
+          expect(Option.isSome(error)).toBe(true)
+          expect(Option.getOrThrow(error)).toBe("Name is already taken")
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("hides stored field-source error when validation passes", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.set(atoms.errorsAtom, new Map([["name", { message: "Name error", source: "field" as const }]]))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "John")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const error = registry.get(fieldAtoms.displayErrorAtom)
+          expect(Option.isNone(error)).toBe(true)
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("keeps stored refinement error even when validation passes", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.set(
+        atoms.errorsAtom,
+        new Map([["name", { message: "Must match confirm", source: "refinement" as const }]])
+      )
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "John")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const error = registry.get(fieldAtoms.displayErrorAtom)
+          expect(Option.isSome(error)).toBe(true)
+          expect(Option.getOrThrow(error)).toBe("Must match confirm")
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("only shows error after submitCount > 0 in onSubmit mode", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+      )
+      const EmailField = Field.makeField("email", Schema.String)
+      const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          expect(Option.isNone(registry.get(fieldAtoms.displayErrorAtom))).toBe(true)
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("shows error when isTouched in onBlur mode", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+      )
+      const EmailField = Field.makeField("email", Schema.String)
+      const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onBlur" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
+      state = atoms.operations.setFieldTouched(state, "name", true)
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const error = registry.get(fieldAtoms.displayErrorAtom)
+          expect(Option.isSome(error)).toBe(true)
+          expect(Option.getOrThrow(error)).toBe("Name is required")
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("shows error when isDirty in onChange mode", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+      )
+      const EmailField = Field.makeField("email", Schema.String)
+      const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onChange" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      state = atoms.operations.setFieldValue(state, "name", "")
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const error = registry.get(fieldAtoms.displayErrorAtom)
+          expect(Option.isSome(error)).toBe(true)
+          expect(Option.getOrThrow(error)).toBe("Name is required")
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("does not show error when not dirty and submitCount is 0 in onChange mode", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+      )
+      const EmailField = Field.makeField("email", Schema.String)
+      const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onChange" } })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          expect(Option.isNone(registry.get(fieldAtoms.displayErrorAtom))).toBe(true)
+          resolve()
+        }, 50)
+      )
+    })
+  })
+
+  describe("triggerValidationAtom", () => {
+    it("triggers validation on value change in onChange mode", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onChange" } })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      registry.mount(fieldAtoms.valueAtom)
+      registry.mount(fieldAtoms.triggerValidationAtom)
+      registry.mount(fieldAtoms.validationAtom)
+
+      const validationResults: Array<unknown> = []
+      registry.subscribe(fieldAtoms.validationAtom, (result) => {
+        validationResults.push(result)
+      })
+
+      const newState = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(newState))
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          expect(validationResults.length).toBeGreaterThan(0)
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("debounces validation in onChange mode with debounce", () => {
+      vi.useFakeTimers()
+
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit: () => {},
+        mode: { validation: "onChange", debounce: "300 millis" }
+      })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      registry.mount(fieldAtoms.valueAtom)
+      registry.mount(fieldAtoms.triggerValidationAtom)
+      registry.mount(fieldAtoms.validationAtom)
+
+      const validationResults: Array<unknown> = []
+      registry.subscribe(fieldAtoms.validationAtom, (result) => {
+        validationResults.push(result)
+      })
+
+      const state2 = atoms.operations.setFieldValue(state, "name", "Ja")
+      registry.set(atoms.stateAtom, Option.some(state2))
+
+      const state3 = atoms.operations.setFieldValue(state2, "name", "Jan")
+      registry.set(atoms.stateAtom, Option.some(state3))
+
+      const state4 = atoms.operations.setFieldValue(state3, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state4))
+
+      const countBefore = validationResults.length
+
+      vi.advanceTimersByTime(300)
+
+      expect(validationResults.length).toBeGreaterThan(countBefore)
+
+      vi.useRealTimers()
+    })
+
+    it("triggers validation on blur in onBlur mode", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onBlur" } })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      registry.mount(fieldAtoms.touchedAtom)
+      registry.mount(fieldAtoms.valueAtom)
+      registry.mount(fieldAtoms.triggerValidationAtom)
+      registry.mount(fieldAtoms.validationAtom)
+
+      const validationResults: Array<unknown> = []
+      registry.subscribe(fieldAtoms.validationAtom, (result) => {
+        validationResults.push(result)
+      })
+
+      const touched = atoms.operations.setFieldTouched(state, "name", true)
+      registry.set(atoms.stateAtom, Option.some(touched))
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          expect(validationResults.length).toBeGreaterThan(0)
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("triggers validation on value change in onSubmit mode when submitCount > 0", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      registry.mount(fieldAtoms.valueAtom)
+      registry.mount(fieldAtoms.triggerValidationAtom)
+      registry.mount(fieldAtoms.validationAtom)
+
+      const validationResults: Array<unknown> = []
+      registry.subscribe(fieldAtoms.validationAtom, (result) => {
+        validationResults.push(result)
+      })
+
+      const newState = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(newState))
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          expect(validationResults.length).toBeGreaterThan(0)
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("does NOT trigger validation on value change in onSubmit mode when submitCount === 0", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      registry.mount(fieldAtoms.valueAtom)
+      registry.mount(fieldAtoms.triggerValidationAtom)
+      registry.mount(fieldAtoms.validationAtom)
+
+      const initialResult = registry.get(fieldAtoms.validationAtom)
+      expect(initialResult._tag).toBe("Initial")
+
+      const newState = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(newState))
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const result = registry.get(fieldAtoms.validationAtom)
+          expect(result._tag).toBe("Initial")
+          resolve()
+        }, 50)
+      )
+    })
+  })
+
+  describe("autoSubmitAtom", () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it("triggers submit when values change in onChange auto-submit mode", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true }
+      })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      const newState = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(newState))
+
+      await vi.advanceTimersByTimeAsync(350)
+
+      expect(onSubmit).toHaveBeenCalled()
+    })
+
+    it("does not interrupt an in-flight submit when debounce fires", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const completions = vi.fn()
+      let resolveSubmit: (() => void) | undefined
+
+      const onSubmit = vi.fn(() =>
+        Effect.async<void, never>((cb) => {
+          resolveSubmit = () => cb(Effect.void)
+        }).pipe(Effect.tap(() => Effect.sync(() => completions())))
+      )
+
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onChange", debounce: "50 millis", autoSubmit: true }
+      })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      const state2 = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state2))
+
+      registry.set(atoms.submitAtom, undefined)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(60)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+
+      resolveSubmit!()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(completions).toHaveBeenCalledTimes(1)
+    })
+
+    it("does not trigger submit when values have not changed", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true }
+      })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      await vi.advanceTimersByTimeAsync(350)
+
+      expect(onSubmit).not.toHaveBeenCalled()
+    })
+
+    it("is a no-op when auto-submit is disabled", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onChange" }
+      })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      const newState = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(newState))
+
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(onSubmit).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("onBlurSubmitAtom", () => {
+    it("triggers submit when values differ from last submitted", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onBlur", autoSubmit: true }
+      })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values
+        })
+      }
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.onBlurSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      registry.set(atoms.onBlurSubmitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(onSubmit).toHaveBeenCalled()
+    })
+
+    it("does not trigger submit when values match last submitted", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onBlur", autoSubmit: true }
+      })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      state = atoms.operations.createSubmitState(state)
+      state = {
+        ...state,
+        lastSubmittedValues: Option.some({
+          encoded: state.values,
+          decoded: state.values
+        })
+      }
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.onBlurSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      registry.set(atoms.onBlurSubmitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(onSubmit).not.toHaveBeenCalled()
+    })
+
+    it("is a no-op when auto-submit is disabled", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onBlur" }
+      })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      state = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.onBlurSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      registry.set(atoms.onBlurSubmitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(onSubmit).not.toHaveBeenCalled()
     })
   })
 })

@@ -11,7 +11,7 @@ import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import * as React from "react"
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, expectTypeOf, it, vi } from "vitest"
 
 const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   <div>
@@ -94,7 +94,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
-        mode: "onBlur",
+        mode: { validation: "onBlur" },
         onSubmit
       })
 
@@ -340,6 +340,53 @@ describe("FormReact.make", () => {
       await waitFor(() => {
         expect(screen.getAllByTestId("item-name")).toHaveLength(2)
       })
+    })
+
+    it("renders array item subfields when item schema uses filterEffect", async () => {
+      const user = userEvent.setup()
+
+      const ItemSchema = Schema.Struct({ name: Schema.String }).pipe(
+        Schema.filterEffect(() => Effect.succeed(true))
+      )
+      const ItemsArrayField = Field.makeArrayField("items", ItemSchema)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
+        <input
+          type="text"
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
+          data-testid="item-name"
+        />
+      )
+
+      const form = FormReact.make(formBuilder, {
+        fields: { items: { name: ItemNameInput } },
+        onSubmit: () => {}
+      })
+
+      render(
+        <form.Initialize defaultValues={{ items: [{ name: "First" }] }}>
+          <form.items>
+            {({ items }) => (
+              <>
+                {items.map((_, i) => (
+                  <form.items.Item key={i} index={i}>
+                    <form.items.name />
+                  </form.items.Item>
+                ))}
+              </>
+            )}
+          </form.items>
+        </form.Initialize>
+      )
+
+      expect((screen.getByTestId("item-name") as HTMLInputElement).value).toBe("First")
+
+      await user.type(screen.getByTestId("item-name"), "A")
+
+      expect((screen.getByTestId("item-name") as HTMLInputElement).value).toBe("FirstA")
     })
 
     it("remove() removes item at specified index", async () => {
@@ -637,7 +684,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { asyncField: ValidatingInput },
-        mode: "onBlur",
+        mode: { validation: "onBlur" },
         onSubmit
       })
 
@@ -1141,7 +1188,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit
       })
 
@@ -1172,7 +1219,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { name: TextInput },
-        mode: "onChange",
+        mode: { validation: "onChange" },
         onSubmit: () => {}
       })
 
@@ -1206,7 +1253,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { password: TextInput },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1244,7 +1291,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { password: TextInput },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1305,7 +1352,7 @@ describe("FormReact.make", () => {
             </div>
           )
         },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1374,7 +1421,7 @@ describe("FormReact.make", () => {
             </div>
           )
         },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1438,7 +1485,7 @@ describe("FormReact.make", () => {
 
       const form = FormReact.make(formBuilder, {
         fields: { password: TextInput },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -1496,7 +1543,7 @@ describe("FormReact.make", () => {
             </div>
           )
         },
-        mode: "onSubmit",
+        mode: { validation: "onSubmit" },
         onSubmit: () => {}
       })
 
@@ -2158,6 +2205,32 @@ describe("FormReact.make", () => {
       })
 
       expect(screen.getByTestId("rebuild-count")).toHaveTextContent("0")
+    })
+  })
+
+  describe("runtime optionality", () => {
+    it("does not require runtime when R is only AtomRegistry", () => {
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(
+          Schema.filterEffect(() =>
+            Effect.gen(function*() {
+              yield* Registry.AtomRegistry
+              return true as const
+            })
+          )
+        )
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      expectTypeOf(form).not.toBeAny()
+      expectTypeOf(form.submit).not.toBeAny()
+      expectTypeOf(form.Initialize).not.toBeAny()
     })
   })
 })

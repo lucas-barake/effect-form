@@ -1,4 +1,5 @@
 import * as Schema from "effect/Schema"
+import * as AST from "effect/SchemaAST"
 
 export const TypeId: unique symbol = Symbol.for("@lucas-barake/effect-form/Field")
 
@@ -65,6 +66,12 @@ export const getDefaultFromSchema = (schema: Schema.Schema.Any): unknown => {
       return 0
     case "BooleanKeyword":
       return false
+    case "Literal":
+      return ast.literal
+    case "Enums": {
+      const first = ast.enums[0]
+      return first ? first[1] : undefined
+    }
     case "TypeLiteral": {
       const result: Record<string, unknown> = {}
       for (const prop of ast.propertySignatures) {
@@ -72,6 +79,12 @@ export const getDefaultFromSchema = (schema: Schema.Schema.Any): unknown => {
       }
       return result
     }
+    case "Union": {
+      const first = ast.types[0]
+      return first ? getDefaultFromSchema(Schema.make(first)) : undefined
+    }
+    case "NeverKeyword":
+      return undefined
     case "Transformation":
       return getDefaultFromSchema(Schema.make(ast.from))
     case "Refinement":
@@ -101,4 +114,23 @@ export const createTouchedRecord = (fields: FieldsRecord, value: boolean): Recor
     result[key] = value
   }
   return result
+}
+
+export const extractStructFieldDefs = (
+  schema: Schema.Schema.Any
+): ReadonlyArray<FieldDef<string, Schema.Schema.Any>> | undefined => {
+  const unwrapTypeLiteral = (ast: AST.AST): AST.TypeLiteral | undefined => {
+    if (AST.isTypeLiteral(ast)) return ast
+    if (AST.isRefinement(ast)) return unwrapTypeLiteral(ast.from)
+    if (AST.isTransformation(ast)) return unwrapTypeLiteral(ast.from)
+    if (AST.isSuspend(ast)) return unwrapTypeLiteral(ast.f())
+    return undefined
+  }
+
+  const typeLiteral = unwrapTypeLiteral(schema.ast)
+  if (!typeLiteral) return undefined
+
+  return typeLiteral.propertySignatures.map((prop) =>
+    makeField(prop.name as string, { ast: prop.type } as Schema.Schema.Any)
+  )
 }

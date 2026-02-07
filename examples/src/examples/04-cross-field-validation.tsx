@@ -55,7 +55,7 @@ const ConfirmPasswordInput: FormReact.FieldComponent<string> = ({
 )
 
 const signupForm = FormReact.make(signupFormBuilder, {
-  mode: "onBlur",
+  mode: { validation: "onBlur" },
   fields: {
     password: PasswordInput,
     confirmPassword: ConfirmPasswordInput

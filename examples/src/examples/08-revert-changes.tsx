@@ -47,7 +47,7 @@ const EmailInput: FormReact.FieldComponent<string> = ({ field }) => (
 )
 
 const profileForm = FormReact.make(profileFormBuilder, {
-  mode: "onBlur",
+  mode: { validation: "onBlur" },
   fields: {
     name: NameInput,
     email: EmailInput

@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect"
+import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
 import { describe, expect, it } from "vitest"
 import { extractFirstError, routeErrors, routeErrorsWithSource } from "../src/Validation.js"
@@ -476,6 +477,43 @@ describe("Validation", () => {
       expect(entry).toBeDefined()
       expect(entry?.source).toBe("field")
       expect(entry?.message).toBe("Address validation failed")
+    })
+
+    it("prefers refinement errors when field and refinement target the same path", () => {
+      const struct = Schema.Struct({ age: Schema.Number })
+      const refinementSchema = struct.pipe(
+        Schema.filter(() => ({ path: ["age"], message: "Refinement error" }))
+      )
+
+      const fieldIssue = new ParseResult.Pointer(
+        ["age"],
+        { age: "x" },
+        new ParseResult.Type(Schema.Number.ast, "x", "Field error")
+      )
+      const refinementAst = refinementSchema.ast as ParseResult.Refinement["ast"]
+      const refinementInner = new ParseResult.Pointer(
+        ["age"],
+        { age: "x" },
+        new ParseResult.Type(refinementAst, { age: "x" }, "Refinement error")
+      )
+      const refinementIssue = new ParseResult.Refinement(
+        refinementAst,
+        { age: "x" },
+        "Predicate",
+        refinementInner
+      )
+      const composite = new ParseResult.Composite(struct.ast, { age: "x" }, [
+        fieldIssue,
+        refinementIssue
+      ])
+      const error = ParseResult.parseError(composite)
+
+      const errors = routeErrorsWithSource(error)
+      const entry = errors.get("age")
+
+      expect(entry).toBeDefined()
+      expect(entry?.source).toBe("refinement")
+      expect(entry?.message).toBe("Refinement error")
     })
   })
 })

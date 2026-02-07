@@ -9,6 +9,7 @@ build/
 dist/
 .cache/
 .direnv/
+.env
 .idea/
 packages/*/docs
 *.log

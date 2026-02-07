@@ -61,7 +61,7 @@ const UsernameInput: FormReact.FieldComponent<string> = ({ field }) => (
 
 const usernameForm = FormReact.make(usernameFormBuilder, {
   runtime,
-  mode: { onChange: { debounce: "300 millis" } },
+  mode: { validation: "onChange", debounce: "300 millis" },
   fields: { username: UsernameInput },
   onSubmit: (_, { decoded }) =>
     Effect.gen(function*() {
