@@ -1,5 +1,6 @@
 import * as Atom from "@effect-atom/atom/Atom"
 import * as Registry from "@effect-atom/atom/Registry"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
@@ -1641,6 +1642,52 @@ describe("FormAtoms", () => {
           const error = registry.get(fieldAtoms.displayErrorAtom)
           expect(Option.isSome(error)).toBe(true)
           expect(Option.getOrThrow(error)).toBe("Name is invalid")
+          resolve()
+        }, 50)
+      )
+    })
+
+    it("uses runtime services in field-level filterEffect", () => {
+      class NameValidator extends Context.Tag("NameValidator")<
+        NameValidator,
+        { readonly isInvalid: (name: string) => Effect.Effect<boolean> }
+      >() {}
+
+      const NameValidatorLive = Layer.succeed(NameValidator, {
+        isInvalid: (name) => Effect.succeed(name === "taken")
+      })
+
+      const runtime = Atom.runtime(NameValidatorLive)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(
+          Schema.filterEffect((value) =>
+            Effect.gen(function*() {
+              const validator = yield* NameValidator
+              const isInvalid = yield* validator.isInvalid(value)
+              return isInvalid ? "Name is already taken" : true
+            })
+          )
+        )
+      )
+      const form = FormBuilder.empty.addField(NameField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "taken" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "taken")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const error = registry.get(fieldAtoms.displayErrorAtom)
+          expect(Option.isSome(error)).toBe(true)
+          expect(Option.getOrThrow(error)).toBe("Name is already taken")
           resolve()
         }, 50)
       )
