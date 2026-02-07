@@ -74,9 +74,7 @@ export type BuiltForm<
   readonly reset: Atom.Writable<void, void>
   readonly revertToLastSubmit: Atom.Writable<void, void>
   readonly setValues: Atom.Writable<void, Field.EncodedFromFields<TFields>>
-  readonly setValue: <S,>(field: FormBuilder.FieldRef<S>) => Atom.Writable<void, S | ((prev: S) => S)>
-  readonly getFieldValue: <S,>(field: FormBuilder.FieldRef<S>) => Atom.Atom<Option.Option<S>>
-  readonly getFieldIsDirty: (field: FormBuilder.FieldRef<any>) => Atom.Atom<boolean>
+  readonly getFieldAtoms: <S,>(field: FormBuilder.FieldRef<S>) => FormAtoms.PublicFieldAtoms<S>
 
   readonly mount: Atom.Atom<void>
   readonly KeepAlive: React.FC
@@ -91,8 +89,7 @@ type FieldComponents<TFields extends Field.FieldsRecord, CM extends FieldCompone
 
 type ExtractArrayItemExtraProps<CM, S extends Schema.Schema.Any,> = StructFieldsFromSchema<S> extends
   Schema.Struct.Fields ? {
-    readonly [K in keyof StructFieldsFromSchema<S>]: CM extends { readonly [P in K]: infer C }
-      ? ExtractExtraProps<C>
+    readonly [K in keyof StructFieldsFromSchema<S>]: CM extends { readonly [P in K]: infer C } ? ExtractExtraProps<C>
       : never
   }
   : CM extends React.FC<FieldComponentProps<any, infer P>> ? P
@@ -402,8 +399,7 @@ export const make: {
     autoSubmitAtom,
     combinedSchema,
     fieldRefs,
-    getFieldIsDirty,
-    getFieldValue,
+    getFieldAtoms,
     getOrCreateFieldAtoms,
     hasChangedSinceSubmitAtom,
     isDirtyAtom,
@@ -415,7 +411,6 @@ export const make: {
     resetAtom,
     revertToLastSubmitAtom,
     rootErrorAtom,
-    setValue,
     setValuesAtom,
     stateAtom,
     submitAtom,
@@ -483,9 +478,7 @@ export const make: {
     reset: resetAtom,
     revertToLastSubmit: revertToLastSubmitAtom,
     setValues: setValuesAtom,
-    setValue,
-    getFieldValue,
-    getFieldIsDirty,
+    getFieldAtoms,
     mount: mountAtom,
     KeepAlive,
     ...fieldComponents

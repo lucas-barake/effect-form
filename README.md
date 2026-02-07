@@ -207,14 +207,17 @@ const signupForm = FormReact.make(signupFormBuilder, {
 })
 ```
 
-## 7. setValue and setValues
+## 7. getFieldAtoms and setValues
 
-Operations are AtomResultFns - use `useAtomSet` to call them:
+`getFieldAtoms` returns a bundle of safe per-field atoms. Use `useAtomSet` to call operations:
 
 ```tsx
 function FormControls() {
-  const setEmail = useAtomSet(loginForm.setValue(loginForm.fields.email))
-  const setPassword = useAtomSet(loginForm.setValue(loginForm.fields.password))
+  const emailAtoms = loginForm.getFieldAtoms(loginForm.fields.email)
+  const passwordAtoms = loginForm.getFieldAtoms(loginForm.fields.password)
+
+  const setEmail = useAtomSet(emailAtoms.setValue)
+  const setPassword = useAtomSet(passwordAtoms.setValue)
   const setAllValues = useAtomSet(loginForm.setValues)
 
   return (
@@ -361,33 +364,46 @@ function FormSideEffects() {
 }
 ```
 
-## 13. Subscribing to Individual Field Values
+## 13. Subscribing to Individual Field State
 
-Use `getFieldValue` to subscribe to a specific field's value without re-rendering when other fields change.
-The atom returns `Option<T>` - `None` before initialization, `Some(value)` after:
+Use `getFieldAtoms` to subscribe to a specific field's value, error, dirty state, touched state, or validation status without re-rendering when other fields change.
+The `value` atom returns `Option<T>` - `None` before initialization, `Some(value)` after:
 
 ```tsx
 function EmailDisplay() {
-  // Only re-renders when email changes, not when password changes
-  const emailAtom = loginForm.getFieldValue(loginForm.fields.email)
-  const emailOption = useAtomValue(emailAtom)
+  const emailAtoms = loginForm.getFieldAtoms(loginForm.fields.email)
+  const emailOption = useAtomValue(emailAtoms.value)
 
-  // Safe to use outside Initialize - returns None before form mounts
   return Option.match(emailOption, {
     onNone: () => <span>Loading...</span>,
     onSome: (email) => <span>Current email: {email}</span>
   })
 }
 
-// Inside Initialize where state is guaranteed
 function PasswordStrength() {
-  const passwordAtom = loginForm.getFieldValue(loginForm.fields.password)
-  const passwordOption = useAtomValue(passwordAtom)
+  const passwordAtoms = loginForm.getFieldAtoms(loginForm.fields.password)
+  const passwordOption = useAtomValue(passwordAtoms.value)
 
-  // Can safely getOrThrow inside Initialize
   const password = Option.getOrThrow(passwordOption)
   const strength = password.length < 8 ? "weak" : password.length < 12 ? "medium" : "strong"
   return <span>Password strength: {strength}</span>
+}
+
+function FieldStatus() {
+  const nameAtoms = loginForm.getFieldAtoms(loginForm.fields.username)
+  const isDirty = useAtomValue(nameAtoms.isDirty)
+  const isTouched = useAtomValue(nameAtoms.isTouched)
+  const isValidating = useAtomValue(nameAtoms.isValidating)
+  const error = useAtomValue(nameAtoms.error)
+
+  return (
+    <div>
+      {isDirty && <span>Modified</span>}
+      {isTouched && <span>Touched</span>}
+      {isValidating && <span>Validating...</span>}
+      {Option.isSome(error) && <span>{error.value}</span>}
+    </div>
+  )
 }
 ```
 
@@ -591,9 +607,15 @@ form.lastSubmittedValues // Atom<Option<SubmittedValues>> - last submitted value
 form.submitCount // Atom<number> - number of submit attempts
 form.rootError // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
 form.submit // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
-form.getFieldValue(fieldRef) // Atom<Option<FieldValue>> - subscribe to individual field values (None before init)
-form.getFieldIsDirty(fieldRef) // Atom<boolean> - subscribe to individual field dirty state
 form.mount // Atom<void> - root anchor for state persistence (use with useAtomMount)
+
+form.getFieldAtoms(fieldRef).value // Atom<Option<FieldValue>> - field value (None before init)
+form.getFieldAtoms(fieldRef).error // Atom<Option<string>> - display error
+form.getFieldAtoms(fieldRef).isDirty // Atom<boolean> - field dirty state
+form.getFieldAtoms(fieldRef).isTouched // Atom<boolean> - field touched state
+form.getFieldAtoms(fieldRef).isValidating // Atom<boolean> - field validation in progress
+form.getFieldAtoms(fieldRef).setValue // Writable<void, T | (T => T)> - set field value
+form.getFieldAtoms(fieldRef).setTouched // Writable<void, boolean> - set field touched
 ```
 
 > **Why `Option` for `values`?** Returns `None` before the form is initialized, `Some(values)` after. This allows parent components to safely subscribe and wait for initialization without throwing.
@@ -606,7 +628,6 @@ Operations are AtomResultFns - use `useAtomSet` to invoke:
 form.reset // AtomResultFn<void> - reset to initial values
 form.revertToLastSubmit // AtomResultFn<void> - revert to last submit
 form.setValues // AtomResultFn<Values> - set all values
-form.setValue(field) // (FieldRef) => AtomResultFn<T | (T => T)> - set single field
 form.submit // AtomResultFn<void, A, E> - trigger submit (handler defined at build)
 ```
 
