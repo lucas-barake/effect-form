@@ -2136,6 +2136,46 @@ describe("FormAtoms", () => {
       expect(onSubmit).toHaveBeenCalled()
     })
 
+    it("does not interrupt an in-flight submit when debounce fires", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const completions = vi.fn()
+      let resolveSubmit: (() => void) | undefined
+
+      const onSubmit = vi.fn(() =>
+        Effect.async<void, never>((cb) => {
+          resolveSubmit = () => cb(Effect.void)
+        }).pipe(Effect.tap(() => Effect.sync(() => completions())))
+      )
+
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onChange", debounce: "50 millis", autoSubmit: true }
+      })
+      const registry = Registry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      const state2 = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state2))
+
+      registry.set(atoms.submitAtom, undefined)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(60)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+
+      resolveSubmit!()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(completions).toHaveBeenCalledTimes(1)
+    })
+
     it("does not trigger submit when values have not changed", async () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()

@@ -777,6 +777,10 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       const debounceMs = parsedMode.debounce
 
       const triggerSubmit = () => {
+        if (get.once(submitAtom).waiting) {
+          pendingChanges = true
+          return
+        }
         get.set(submitAtom as Atom.Writable<any, any>, undefined)
       }
 
@@ -827,6 +831,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 
   const onBlurSubmitAtom: Atom.Writable<void, void> = parsedMode.autoSubmit && parsedMode.validation === "onBlur"
     ? Atom.fnSync<void>()((_: void, get) => {
+      if (get(submitAtom).waiting) return
       const stateOption = get(stateAtom)
       if (Option.isNone(stateOption)) return
       const { lastSubmittedValues, values } = stateOption.value
