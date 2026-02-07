@@ -27,9 +27,14 @@ export type FieldComponent<T, P = Record<string, never>,> = React.FC<FieldCompon
 
 export type ExtractExtraProps<C,> = C extends React.FC<FieldComponentProps<any, infer P>> ? P : Record<string, never>
 
-export type ArrayItemComponentMap<S extends Schema.Schema.Any,> = S extends Schema.Struct<infer Fields> ? {
-    readonly [K in keyof Fields]: Fields[K] extends Schema.Schema.Any
-      ? React.FC<FieldComponentProps<Schema.Schema.Encoded<Fields[K]>, any>>
+type StructFieldsFromSchema<S,> = S extends Schema.Struct<infer Fields> ? Fields
+  : S extends { readonly from: infer From } ? StructFieldsFromSchema<From>
+  : never
+
+export type ArrayItemComponentMap<S extends Schema.Schema.Any,> = StructFieldsFromSchema<S> extends
+  Schema.Struct.Fields ? {
+    readonly [K in keyof StructFieldsFromSchema<S>]: StructFieldsFromSchema<S>[K] extends Schema.Schema.Any
+      ? React.FC<FieldComponentProps<Schema.Schema.Encoded<StructFieldsFromSchema<S>[K]>, any>>
       : never
   }
   : React.FC<FieldComponentProps<Schema.Schema.Encoded<S>, any>>
@@ -84,8 +89,12 @@ type FieldComponents<TFields extends Field.FieldsRecord, CM extends FieldCompone
     : never
 }
 
-type ExtractArrayItemExtraProps<CM, S extends Schema.Schema.Any,> = S extends Schema.Struct<infer Fields>
-  ? { readonly [K in keyof Fields]: CM extends { readonly [P in K]: infer C } ? ExtractExtraProps<C> : never }
+type ExtractArrayItemExtraProps<CM, S extends Schema.Schema.Any,> = StructFieldsFromSchema<S> extends
+  Schema.Struct.Fields ? {
+    readonly [K in keyof StructFieldsFromSchema<S>]: CM extends { readonly [P in K]: infer C }
+      ? ExtractExtraProps<C>
+      : never
+  }
   : CM extends React.FC<FieldComponentProps<any, infer P>> ? P
   : never
 
@@ -99,8 +108,8 @@ type ArrayFieldComponent<S extends Schema.Schema.Any, ExtraPropsMap,> =
       readonly children: React.ReactNode | ((props: { readonly remove: () => void }) => React.ReactNode)
     }>
   }
-  & (S extends Schema.Struct<infer Fields> ? {
-      readonly [K in keyof Fields]: React.FC<
+  & (StructFieldsFromSchema<S> extends Schema.Struct.Fields ? {
+      readonly [K in keyof StructFieldsFromSchema<S>]: React.FC<
         ExtraPropsMap extends { readonly [P in K]: infer EP } ? EP : Record<string, never>
       >
     }

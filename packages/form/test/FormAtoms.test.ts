@@ -1,5 +1,6 @@
 import * as Atom from "@effect-atom/atom/Atom"
 import * as Registry from "@effect-atom/atom/Registry"
+import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
@@ -1614,6 +1615,35 @@ describe("FormAtoms", () => {
       const error = registry.get(fieldAtoms.displayErrorAtom)
       expect(Option.isSome(error)).toBe(true)
       expect(Option.getOrThrow(error)).toBe("Server error")
+    })
+
+    it("surfaces filterEffect errors from field schemas", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.filterEffect(() => Effect.succeed("Name is invalid")))
+      )
+      const form = FormBuilder.empty.addField(NameField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = Registry.make()
+
+      let state = atoms.operations.createInitialState({ name: "bad" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+      registry.set(fieldAtoms.validationAtom, "bad")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          const error = registry.get(fieldAtoms.displayErrorAtom)
+          expect(Option.isSome(error)).toBe(true)
+          expect(Option.getOrThrow(error)).toBe("Name is invalid")
+          resolve()
+        }, 50)
+      )
     })
 
     it("hides stored field-source error when validation passes", () => {

@@ -342,6 +342,53 @@ describe("FormReact.make", () => {
       })
     })
 
+    it("renders array item subfields when item schema uses filterEffect", async () => {
+      const user = userEvent.setup()
+
+      const ItemSchema = Schema.Struct({ name: Schema.String }).pipe(
+        Schema.filterEffect(() => Effect.succeed(true))
+      )
+      const ItemsArrayField = Field.makeArrayField("items", ItemSchema)
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
+        <input
+          type="text"
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
+          data-testid="item-name"
+        />
+      )
+
+      const form = FormReact.make(formBuilder, {
+        fields: { items: { name: ItemNameInput } },
+        onSubmit: () => {}
+      })
+
+      render(
+        <form.Initialize defaultValues={{ items: [{ name: "First" }] }}>
+          <form.items>
+            {({ items }) => (
+              <>
+                {items.map((_, i) => (
+                  <form.items.Item key={i} index={i}>
+                    <form.items.name />
+                  </form.items.Item>
+                ))}
+              </>
+            )}
+          </form.items>
+        </form.Initialize>
+      )
+
+      expect((screen.getByTestId("item-name") as HTMLInputElement).value).toBe("First")
+
+      await user.type(screen.getByTestId("item-name"), "A")
+
+      expect((screen.getByTestId("item-name") as HTMLInputElement).value).toBe("FirstA")
+    })
+
     it("remove() removes item at specified index", async () => {
       const user = userEvent.setup()
 
