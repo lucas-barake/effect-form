@@ -1104,6 +1104,30 @@ describe("FormAtoms", () => {
       expect(newState.dirtyFields.has("email")).toBe(true)
       expect(registry.get(atoms.errorsAtom).size).toBe(0)
     })
+
+    it("accepts an updater function that receives current values", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = Registry.make()
+
+      const initialState = atoms.operations.createInitialState({
+        name: "John",
+        email: "john@test.com"
+      })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+      registry.set(atoms.errorsAtom, new Map([["email", { message: "Invalid email", source: "field" }]]))
+
+      registry.mount(atoms.setValuesAtom)
+      registry.set(atoms.setValuesAtom, (prev) => ({ ...prev, name: "Alice" }))
+
+      const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(newState.values.name).toBe("Alice")
+      expect(newState.values.email).toBe("john@test.com")
+      expect(newState.dirtyFields.has("name")).toBe(true)
+      expect(newState.dirtyFields.has("email")).toBe(false)
+      expect(registry.get(atoms.errorsAtom).size).toBe(0)
+    })
   })
 
   describe("getFieldAtoms", () => {

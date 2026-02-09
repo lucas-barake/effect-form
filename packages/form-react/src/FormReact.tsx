@@ -74,7 +74,7 @@ export type BuiltForm<
   readonly submit: Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
   readonly reset: Atom.Writable<void, void>
   readonly revertToLastSubmit: Atom.Writable<void, void>
-  readonly setValues: Atom.Writable<void, Field.EncodedFromFields<TFields>>
+  readonly setValues: Atom.Writable<void, FormAtoms.SetValuesArg<TFields>>
   readonly getFieldAtoms: <S,>(field: FormBuilder.FieldRef<S>) => FormAtoms.PublicFieldAtoms<S>
 
   readonly mount: Atom.Atom<void>
