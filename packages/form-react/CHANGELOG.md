@@ -1,5 +1,16 @@
 # @lucas-barake/effect-form-react
 
+## 0.22.0
+
+### Minor Changes
+
+- [#65](https://github.com/lucas-barake/effect-form/pull/65) [`da3db87`](https://github.com/lucas-barake/effect-form/commit/da3db87a3b3092b2a0b5a648addbbf0a2b9b2d32) Thanks [@lucas-barake](https://github.com/lucas-barake)! - support updater function for `setValues`
+
+### Patch Changes
+
+- Updated dependencies [[`da3db87`](https://github.com/lucas-barake/effect-form/commit/da3db87a3b3092b2a0b5a648addbbf0a2b9b2d32)]:
+  - @lucas-barake/effect-form@0.21.0
+
 ## 0.21.0
 
 ### Minor Changes
