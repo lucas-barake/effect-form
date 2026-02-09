@@ -233,6 +233,10 @@ function FormControls() {
       <button onClick={() => setAllValues({ email: "reset@email.com", password: "" })}>
         Reset to Defaults
       </button>
+
+      <button onClick={() => setAllValues((prev) => ({ ...prev, email: "updated@email.com" }))}>
+        Update Email Only
+      </button>
     </>
   )
 }
@@ -627,7 +631,7 @@ Operations are AtomResultFns - use `useAtomSet` to invoke:
 ```ts
 form.reset // AtomResultFn<void> - reset to initial values
 form.revertToLastSubmit // AtomResultFn<void> - revert to last submit
-form.setValues // AtomResultFn<Values> - set all values
+form.setValues // AtomResultFn<Values | (prev => Values)> - set all values
 form.submit // AtomResultFn<void, A, E> - trigger submit (handler defined at build)
 ```
 
