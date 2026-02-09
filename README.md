@@ -233,14 +233,12 @@ function FormControls() {
       <button onClick={() => setAllValues({ email: "reset@email.com", password: "" })}>
         Reset to Defaults
       </button>
-
-      <button onClick={() => setAllValues((prev) => ({ ...prev, email: "updated@email.com" }))}>
-        Update Email Only
-      </button>
     </>
   )
 }
 ```
+
+> `setValues` is an `Atom.Writable` — you can also use `registry.update` from Atom's context for type-safe updater callbacks: `registry.update(form.setValues, (prev) => ({ ...prev, email: "new" }))`.
 
 ## 8. Auto-Submit Mode
 
@@ -631,7 +629,7 @@ Operations are AtomResultFns - use `useAtomSet` to invoke:
 ```ts
 form.reset // AtomResultFn<void> - reset to initial values
 form.revertToLastSubmit // AtomResultFn<void> - revert to last submit
-form.setValues // AtomResultFn<Values | (prev => Values)> - set all values
+form.setValues // Writable<Values> - set all values (supports updater via registry.update)
 form.submit // AtomResultFn<void, A, E> - trigger submit (handler defined at build)
 ```
 
