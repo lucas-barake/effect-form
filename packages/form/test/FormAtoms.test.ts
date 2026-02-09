@@ -1119,7 +1119,7 @@ describe("FormAtoms", () => {
       registry.set(atoms.errorsAtom, new Map([["email", { message: "Invalid email", source: "field" }]]))
 
       registry.mount(atoms.setValuesAtom)
-      registry.set(atoms.setValuesAtom, (prev) => ({ ...prev, name: "Alice" }))
+      registry.update(atoms.setValuesAtom, (prev) => ({ ...prev, name: "Alice" }))
 
       const newState = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(newState.values.name).toBe("Alice")

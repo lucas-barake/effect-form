@@ -35,10 +35,6 @@ export interface PublicFieldAtoms<E,> {
   readonly setTouched: Atom.Writable<void, boolean>
 }
 
-export type SetValuesArg<TFields extends Field.FieldsRecord,> =
-  | Field.EncodedFromFields<TFields>
-  | ((prev: Field.EncodedFromFields<TFields>) => Field.EncodedFromFields<TFields>)
-
 export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void,> {
   readonly runtime: Atom.AtomRuntime<R, any>
   readonly formBuilder: FormBuilder.FormBuilder<TFields, R>
@@ -99,7 +95,7 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
 
   readonly resetAtom: Atom.Writable<void, void>
   readonly revertToLastSubmitAtom: Atom.Writable<void, void>
-  readonly setValuesAtom: Atom.Writable<void, SetValuesArg<TFields>>
+  readonly setValuesAtom: Atom.Writable<Field.EncodedFromFields<TFields>>
 
   readonly getFieldAtoms: <S,>(field: FormBuilder.FieldRef<S>) => PublicFieldAtoms<S>
 
@@ -650,17 +646,19 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     { initialValue: undefined as void }
   ).pipe(Atom.setIdleTTL(0))
 
-  const setValuesAtom = Atom.fnSync<SetValuesArg<TFields>>()(
-    (update, get) => {
-      const state = get(stateAtom)
+  const setValuesAtom = Atom.writable(
+    (get): Field.EncodedFromFields<TFields> =>
+      pipe(
+        get(stateAtom),
+        Option.map((s) => s.values),
+        Option.getOrElse(() => undefined as never)
+      ),
+    (ctx, values: Field.EncodedFromFields<TFields>) => {
+      const state = ctx.get(stateAtom)
       if (Option.isNone(state)) return
-      const values = typeof update === "function"
-        ? (update as (prev: Field.EncodedFromFields<TFields>) => Field.EncodedFromFields<TFields>)(state.value.values)
-        : update
-      get.set(stateAtom, Option.some(operations.setFormValues(state.value, values)))
-      get.set(errorsAtom, new Map())
-    },
-    { initialValue: undefined as void }
+      ctx.set(stateAtom, Option.some(operations.setFormValues(state.value, values)))
+      ctx.set(errorsAtom, new Map())
+    }
   ).pipe(Atom.setIdleTTL(0))
 
   const setValueAtomsRegistry = createWeakRegistry<Atom.Writable<void, any>>()
