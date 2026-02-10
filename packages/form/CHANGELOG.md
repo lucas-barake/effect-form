@@ -1,5 +1,11 @@
 # @lucas-barake/effect-form
 
+## 0.22.0
+
+### Minor Changes
+
+- [#67](https://github.com/lucas-barake/effect-form/pull/67) [`eca7665`](https://github.com/lucas-barake/effect-form/commit/eca7665e3fac4a690143419c1ba7d1c6f274efc0) Thanks [@lucas-barake](https://github.com/lucas-barake)! - use `Atom.Writable` for `setValues` instead of manual updater function handling — updater callbacks are supported out of the box via `registry.update`
+
 ## 0.21.0
 
 ### Minor Changes
