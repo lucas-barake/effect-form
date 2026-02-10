@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@lucas-barake/effect-form-react": path.resolve(__dirname, "../packages/form-react/src"),
-      "@lucas-barake/effect-form": path.resolve(__dirname, "../packages/form/src")
+      "@lucas-barake/effect-form-react": path.resolve(__dirname, "../../packages/form-react/src"),
+      "@lucas-barake/effect-form": path.resolve(__dirname, "../../packages/form/src")
     }
   }
 })

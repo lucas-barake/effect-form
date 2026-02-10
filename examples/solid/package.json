@@ -1,0 +1,24 @@
+{
+  "name": "@lucas-barake/effect-form-examples-solid",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:app": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@lucas-barake/effect-form": "workspace:^",
+    "@lucas-barake/effect-form-solid": "workspace:^",
+    "@effect-atom/atom": "^0.5.0",
+    "@effectify/solid-effect-atom": "^0.2.3",
+    "effect": "^3.19.15",
+    "solid-js": "^1.9.11"
+  },
+  "devDependencies": {
+    "vite-plugin-solid": "^2.11.10",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0"
+  }
+}

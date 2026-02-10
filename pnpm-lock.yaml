@@ -84,7 +84,7 @@ importers:
         specifier: ^4.0.16
         version: 4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)
 
-  examples:
+  examples/react:
     dependencies:
       '@effect-atom/atom':
         specifier: ^0.5.0
@@ -94,10 +94,10 @@ importers:
         version: 0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.2(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.2(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)(react@19.2.3)(scheduler@0.27.0)
       '@lucas-barake/effect-form':
         specifier: workspace:^
-        version: link:../packages/form
+        version: link:../../packages/form
       '@lucas-barake/effect-form-react':
         specifier: workspace:^
-        version: link:../packages/form-react
+        version: link:../../packages/form-react
       effect:
         specifier: ^3.19.15
         version: 3.19.15
@@ -123,6 +123,37 @@ importers:
       vite:
         specifier: ^6.0.0
         version: 6.4.1(@types/node@24.10.4)(tsx@4.21.0)
+
+  examples/solid:
+    dependencies:
+      '@effect-atom/atom':
+        specifier: ^0.5.0
+        version: 0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.2(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.2(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)
+      '@effectify/solid-effect-atom':
+        specifier: ^0.2.3
+        version: 0.2.3(@effect-atom/atom@0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.2(effect@3.19.15))(effect@3.19.15))(@effect/platform@0.94.2(effect@3.19.15))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.19.15))(effect@3.19.15))(effect@3.19.15))(effect@3.19.15)(solid-js@1.9.11)
+      '@lucas-barake/effect-form':
+        specifier: workspace:^
+        version: link:../../packages/form
+      '@lucas-barake/effect-form-solid':
+        specifier: workspace:^
+        version: link:../../packages/form-solid
+      effect:
+        specifier: ^3.19.15
+        version: 3.19.15
+      solid-js:
+        specifier: ^1.9.11
+        version: 1.9.11
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.1(@types/node@24.10.4)(tsx@4.21.0)
+      vite-plugin-solid:
+        specifier: ^2.11.10
+        version: 2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@6.4.1(@types/node@24.10.4)(tsx@4.21.0))
 
   packages/form:
     dependencies:
@@ -5184,6 +5215,21 @@ snapshots:
 
   uuid@11.1.0: {}
 
+  vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@6.4.1(@types/node@24.10.4)(tsx@4.21.0)):
+    dependencies:
+      '@babel/core': 7.28.5
+      '@types/babel__core': 7.20.5
+      babel-preset-solid: 1.9.10(@babel/core@7.28.5)(solid-js@1.9.11)
+      merge-anything: 5.1.7
+      solid-js: 1.9.11
+      solid-refresh: 0.6.3(solid-js@1.9.11)
+      vite: 6.4.1(@types/node@24.10.4)(tsx@4.21.0)
+      vitefu: 1.1.1(vite@6.4.1(@types/node@24.10.4)(tsx@4.21.0))
+    optionalDependencies:
+      '@testing-library/jest-dom': 6.9.1
+    transitivePeerDependencies:
+      - supports-color
+
   vite-plugin-solid@2.11.10(@testing-library/jest-dom@6.9.1)(solid-js@1.9.11)(vite@7.3.0(@types/node@24.10.4)(tsx@4.21.0)):
     dependencies:
       '@babel/core': 7.28.5
@@ -5224,6 +5270,10 @@ snapshots:
       '@types/node': 24.10.4
       fsevents: 2.3.3
       tsx: 4.21.0
+
+  vitefu@1.1.1(vite@6.4.1(@types/node@24.10.4)(tsx@4.21.0)):
+    optionalDependencies:
+      vite: 6.4.1(@types/node@24.10.4)(tsx@4.21.0)
 
   vitefu@1.1.1(vite@7.3.0(@types/node@24.10.4)(tsx@4.21.0)):
     optionalDependencies:
