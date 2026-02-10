@@ -3,10 +3,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": ".",
-    "jsx": "react-jsx",
-    "types": ["node", "vitest/globals", "@testing-library/react", "@testing-library/jest-dom"],
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["node", "vitest/globals", "@testing-library/jest-dom"],
     "paths": {
-      "@lucas-barake/effect-form-react": ["./src/index.ts"]
+      "@lucas-barake/effect-form-solid": ["./src/index.ts"]
     }
   },
   "include": ["src", "test"],

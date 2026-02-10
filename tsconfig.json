@@ -17,7 +17,9 @@
       "@lucas-barake/effect-form": ["./packages/form/src/index.ts"],
       "@lucas-barake/effect-form/*": ["./packages/form/src/*.ts"],
       "@lucas-barake/effect-form-react": ["./packages/form-react/src/index.ts"],
-      "@lucas-barake/effect-form-react/*": ["./packages/form-react/src/*.ts"]
+      "@lucas-barake/effect-form-react/*": ["./packages/form-react/src/*.ts"],
+      "@lucas-barake/effect-form-solid": ["./packages/form-solid/src/index.ts"],
+      "@lucas-barake/effect-form-solid/*": ["./packages/form-solid/src/*.ts"] 
     },
     "plugins": [{ "name": "@effect/language-service" }]
   }
