@@ -69,11 +69,13 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly dirtyFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly isDirtyAtom: Atom.Atom<boolean>
   readonly submitCountAtom: Atom.Atom<number>
+  readonly validationCountAtom: Atom.Atom<number>
   readonly lastSubmittedValuesAtom: Atom.Atom<Option.Option<FormBuilder.SubmittedValues<TFields>>>
   readonly changedSinceSubmitFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly hasChangedSinceSubmitAtom: Atom.Atom<boolean>
 
   readonly submitAtom: Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
+  readonly validateAtom: Atom.AtomResultFn<void, void, never>
 
   readonly combinedSchema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
 
@@ -222,6 +224,13 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     })
   ).pipe(Atom.setIdleTTL(0))
 
+  const validationCountAtom = Atom.readable((get) =>
+    Option.match(get(stateAtom), {
+      onNone: () => 0,
+      onSome: (state) => state.validationCount
+    })
+  ).pipe(Atom.setIdleTTL(0))
+
   const lastSubmittedValuesAtom = Atom.readable((get) =>
     Option.flatMap(get(stateAtom), (state) => state.lastSubmittedValues)
   ).pipe(Atom.setIdleTTL(0))
@@ -339,7 +348,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     const shouldValidateAtom = Atom.readable((get) => {
       if (parsedMode.validation === "onChange") return true
       if (parsedMode.validation === "onBlur") return get(touchedAtom)
-      return get(submitCountAtom) > 0
+      return get(submitCountAtom) > 0 || get(validationCountAtom) > 0
     }).pipe(Atom.setIdleTTL(0))
 
     const displayErrorAtom = Atom.readable((get) => {
@@ -369,11 +378,13 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
         }
       }
 
+      const validationCount = get(validationCountAtom)
+      const hasAttemptedValidation = submitCount > 0 || validationCount > 0
       const shouldShowError = parsedMode.validation === "onChange"
-        ? isDirty || submitCount > 0
+        ? isDirty || hasAttemptedValidation
         : parsedMode.validation === "onBlur"
-        ? isTouched || submitCount > 0
-        : submitCount > 0
+        ? isTouched || hasAttemptedValidation
+        : hasAttemptedValidation
 
       return shouldShowError ? validationError : Option.none()
     }).pipe(Atom.setIdleTTL(0))
@@ -487,6 +498,40 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     )
     .pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
 
+  const validateAtom = runtime
+    .fn<void>()(
+      (_: void, get) =>
+        Effect.gen(function*() {
+          const state = get(stateAtom)
+          if (Option.isNone(state)) return
+          const values = state.value.values
+          get.set(errorsAtom, new Map())
+          yield* pipe(
+            Schema.decodeUnknown(combinedSchema, { errors: "all" })(values) as Effect.Effect<
+              Field.DecodedFromFields<TFields>,
+              ParseResult.ParseError,
+              R
+            >,
+            Effect.catchTag("ParseError", (parseError) =>
+              Effect.sync(() => {
+                const routedErrors = Validation.routeErrorsWithSource(parseError)
+                get.set(errorsAtom, routedErrors)
+              }))
+          )
+          const currentState = get(stateAtom)
+          if (Option.isSome(currentState)) {
+            get.set(
+              stateAtom,
+              Option.some({
+                ...currentState.value,
+                validationCount: currentState.value.validationCount + 1
+              })
+            )
+          }
+        })
+    )
+    .pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<void, void, never>
+
   const fieldRefs = Object.fromEntries(
     Object.keys(fields).map((key) => [key, FormBuilder.makeFieldRef(key)])
   ) as FieldRefs<TFields>
@@ -498,6 +543,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       lastSubmittedValues: Option.none(),
       touched: Field.createTouchedRecord(fields, false) as { readonly [K in keyof TFields]: boolean },
       submitCount: 0,
+      validationCount: 0,
       dirtyFields: new Set()
     }),
 
@@ -507,6 +553,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       lastSubmittedValues: Option.none(),
       touched: Field.createTouchedRecord(fields, false) as { readonly [K in keyof TFields]: boolean },
       submitCount: 0,
+      validationCount: 0,
       dirtyFields: new Set()
     }),
 
@@ -632,6 +679,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       get.set(errorsAtom, new Map())
       resetValidationAtoms(get)
       get.set(submitAtom, Atom.Reset)
+      get.set(validateAtom, Atom.Reset)
     },
     { initialValue: undefined as void }
   ).pipe(Atom.setIdleTTL(0))
@@ -854,10 +902,12 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     dirtyFieldsAtom,
     isDirtyAtom,
     submitCountAtom,
+    validationCountAtom,
     lastSubmittedValuesAtom,
     changedSinceSubmitFieldsAtom,
     hasChangedSinceSubmitAtom,
     submitAtom,
+    validateAtom,
     combinedSchema,
     fieldRefs,
     validationAtomsRegistry,

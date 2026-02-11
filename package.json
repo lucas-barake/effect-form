@@ -13,15 +13,18 @@
     "check:types": "tsc -b tsconfig.json",
     "check:tsgo": "tsgo -b tsconfig.json",
     "check:all": "pnpm check:tsgo && pnpm lint && pnpm test",
-    "lint": "oxlint && dprint check",
-    "lint-fix": "oxlint --fix && dprint fmt",
+    "lint": "oxlint --fix && dprint fmt",
+    "prepare": "simple-git-hooks",
     "test": "vitest",
     "coverage": "vitest --coverage",
     "changeset-version": "changeset version",
     "changeset-publish": "pnpm build && changeset publish"
   },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint"
+  },
   "pnpm": {
-    "onlyBuiltDependencies": ["dprint"]
+    "onlyBuiltDependencies": ["dprint", "simple-git-hooks"]
   },
   "devDependencies": {
     "@babel/cli": "^7.28.3",
@@ -46,6 +49,7 @@
     "jsdom": "^27.3.0",
     "madge": "^8.0.0",
     "oxlint": "^1.42.0",
+    "simple-git-hooks": "^2.12.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16"
   }
