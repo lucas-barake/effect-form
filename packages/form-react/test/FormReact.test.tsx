@@ -2612,4 +2612,541 @@ describe("FormReact.make", () => {
       })
     })
   })
+
+  describe("validate", () => {
+    it("shows field errors immediately with validateOnInit + invalid defaults", async () => {
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      const SubmitCountDisplay = () => {
+        const submitCount = useAtomValue(form.submitCount)
+        return <span data-testid="submit-count">{submitCount}</span>
+      }
+
+      render(
+        <form.Initialize defaultValues={{ name: "ab" }} validateOnInit>
+          <form.name />
+          <SubmitCountDisplay />
+        </form.Initialize>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      expect(screen.getByTestId("submit-count")).toHaveTextContent("0")
+    })
+
+    it("shows no errors with validateOnInit + valid defaults", async () => {
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      render(
+        <form.Initialize defaultValues={{ name: "Valid Name" }} validateOnInit>
+          <form.name />
+        </form.Initialize>
+      )
+
+      await new Promise((r) => setTimeout(r, 100))
+      expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+    })
+
+    it("shows refinement errors with validateOnInit", async () => {
+      const PasswordInput: FormReact.FieldComponent<string> = ({ field }) => (
+        <div>
+          <input
+            type="password"
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
+            data-testid="password"
+          />
+          {Option.isSome(field.error) && <span data-testid="password-error">{field.error.value}</span>}
+        </div>
+      )
+
+      const ConfirmInput: FormReact.FieldComponent<string> = ({ field }) => (
+        <div>
+          <input
+            type="password"
+            value={field.value}
+            onChange={(e) => field.onChange(e.target.value)}
+            onBlur={field.onBlur}
+            data-testid="confirm"
+          />
+          {Option.isSome(field.error) && <span data-testid="confirm-error">{field.error.value}</span>}
+        </div>
+      )
+
+      const PasswordField = Field.makeField("password", Schema.String)
+      const ConfirmField = Field.makeField("confirm", Schema.String)
+      const formBuilder = FormBuilder.empty
+        .addField(PasswordField)
+        .addField(ConfirmField)
+        .refine((values) => {
+          if (values.password !== values.confirm) {
+            return { path: ["confirm"], message: "Passwords must match" }
+          }
+        })
+
+      const form = FormReact.make(formBuilder, {
+        fields: { password: PasswordInput, confirm: ConfirmInput },
+        onSubmit: () => {}
+      })
+
+      render(
+        <form.Initialize defaultValues={{ password: "secret", confirm: "different" }} validateOnInit>
+          <form.password />
+          <form.confirm />
+        </form.Initialize>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByTestId("confirm-error")).toHaveTextContent("Passwords must match")
+      })
+    })
+
+    it("errors clear when user fixes the field in onChange mode", async () => {
+      const user = userEvent.setup()
+
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        mode: { validation: "onChange" },
+        onSubmit: () => {}
+      })
+
+      render(
+        <form.Initialize defaultValues={{ name: "ab" }} validateOnInit>
+          <form.name />
+        </form.Initialize>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      await user.clear(screen.getByTestId("text-input"))
+      await user.type(screen.getByTestId("text-input"), "Valid Value")
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+    })
+
+    it("reset clears validate errors and validationCount", async () => {
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      const Controls = () => {
+        const reset = useAtomSet(form.reset)
+        const validationCount = useAtomValue(form.validationCount)
+        return (
+          <>
+            <button data-testid="reset" onClick={() => reset()}>Reset</button>
+            <span data-testid="validation-count">{validationCount}</span>
+          </>
+        )
+      }
+
+      render(
+        <form.Initialize defaultValues={{ name: "ab" }} validateOnInit>
+          <form.name />
+          <Controls />
+        </form.Initialize>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      expect(screen.getByTestId("validation-count")).toHaveTextContent("1")
+
+      await userEvent.click(screen.getByTestId("reset"))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+        expect(screen.getByTestId("validation-count")).toHaveTextContent("0")
+      })
+    })
+
+    it("does not re-validate when KeepAlive preserves state", async () => {
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      const ValidationCountDisplay = () => {
+        const validationCount = useAtomValue(form.validationCount)
+        return <span data-testid="validation-count">{validationCount}</span>
+      }
+
+      const ToggleableForm = () => {
+        const [mounted, setMounted] = React.useState(true)
+        return (
+          <>
+            <form.KeepAlive />
+            <ValidationCountDisplay />
+            {mounted && (
+              <form.Initialize defaultValues={{ name: "ab" }} validateOnInit>
+                <form.name />
+              </form.Initialize>
+            )}
+            <button data-testid="toggle" onClick={() => setMounted((v) => !v)}>Toggle</button>
+          </>
+        )
+      }
+
+      render(<ToggleableForm />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+        expect(screen.getByTestId("validation-count")).toHaveTextContent("1")
+      })
+
+      await userEvent.click(screen.getByTestId("toggle"))
+
+      expect(screen.queryByTestId("text-input")).not.toBeInTheDocument()
+
+      await userEvent.click(screen.getByTestId("toggle"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      expect(screen.getByTestId("validation-count")).toHaveTextContent("1")
+    })
+
+    it("works with onSubmit mode", async () => {
+      const user = userEvent.setup()
+
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        mode: { validation: "onSubmit" },
+        onSubmit: () => {}
+      })
+
+      render(
+        <form.Initialize defaultValues={{ name: "ab" }} validateOnInit>
+          <form.name />
+        </form.Initialize>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      await user.clear(screen.getByTestId("text-input"))
+      await user.type(screen.getByTestId("text-input"), "Valid Value")
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+    })
+
+    it("imperative validate shows errors after programmatic setValues", async () => {
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      const Controls = () => {
+        const setValues = useAtomSet(form.setValues)
+        const triggerValidate = useAtomSet(form.validate)
+        return (
+          <>
+            <button
+              data-testid="set-invalid"
+              onClick={() => {
+                setValues({ name: "ab" })
+                triggerValidate()
+              }}
+            >
+              Set Invalid
+            </button>
+          </>
+        )
+      }
+
+      render(
+        <form.Initialize defaultValues={{ name: "Valid Name" }}>
+          <form.name />
+          <Controls />
+        </form.Initialize>
+      )
+
+      expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+
+      await userEvent.click(screen.getByTestId("set-invalid"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+    })
+
+    it("imperative validate clears previous errors when values are now valid", async () => {
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      const Controls = () => {
+        const setValues = useAtomSet(form.setValues)
+        const triggerValidate = useAtomSet(form.validate)
+        return (
+          <>
+            <button
+              data-testid="set-valid"
+              onClick={() => {
+                setValues({ name: "Valid Name" })
+                triggerValidate()
+              }}
+            >
+              Set Valid
+            </button>
+          </>
+        )
+      }
+
+      render(
+        <form.Initialize defaultValues={{ name: "ab" }} validateOnInit>
+          <form.name />
+          <Controls />
+        </form.Initialize>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      await userEvent.click(screen.getByTestId("set-valid"))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+    })
+
+    it("calling validate multiple times reflects latest state each time", async () => {
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      const Controls = () => {
+        const setValues = useAtomSet(form.setValues)
+        const triggerValidate = useAtomSet(form.validate)
+        return (
+          <>
+            <button
+              data-testid="set-invalid"
+              onClick={() => {
+                setValues({ name: "ab" })
+                triggerValidate()
+              }}
+            >
+              Set Invalid
+            </button>
+            <button
+              data-testid="set-valid"
+              onClick={() => {
+                setValues({ name: "Valid Name" })
+                triggerValidate()
+              }}
+            >
+              Set Valid
+            </button>
+            <button
+              data-testid="set-invalid2"
+              onClick={() => {
+                setValues({ name: "xy" })
+                triggerValidate()
+              }}
+            >
+              Set Invalid Again
+            </button>
+          </>
+        )
+      }
+
+      render(
+        <form.Initialize defaultValues={{ name: "Valid Name" }}>
+          <form.name />
+          <Controls />
+        </form.Initialize>
+      )
+
+      expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+
+      await userEvent.click(screen.getByTestId("set-invalid"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      await userEvent.click(screen.getByTestId("set-valid"))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+
+      await userEvent.click(screen.getByTestId("set-invalid2"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+    })
+
+    it("validate does not interfere with submitCount", async () => {
+      const user = userEvent.setup()
+
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+      )
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      const Controls = () => {
+        const submitCount = useAtomValue(form.submitCount)
+        const validationCount = useAtomValue(form.validationCount)
+        const reset = useAtomSet(form.reset)
+        return (
+          <>
+            <span data-testid="submit-count">{submitCount}</span>
+            <span data-testid="validation-count">{validationCount}</span>
+            <button data-testid="reset" onClick={() => reset()}>Reset</button>
+          </>
+        )
+      }
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ name: "ab" }} validateOnInit>
+          <form.name />
+          <Controls />
+          <SubmitButton />
+        </form.Initialize>
+      )
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      expect(screen.getByTestId("submit-count")).toHaveTextContent("0")
+      expect(screen.getByTestId("validation-count")).toHaveTextContent("1")
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("submit-count")).toHaveTextContent("1")
+      })
+
+      expect(screen.getByTestId("validation-count")).toHaveTextContent("1")
+
+      await user.click(screen.getByTestId("reset"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("submit-count")).toHaveTextContent("0")
+        expect(screen.getByTestId("validation-count")).toHaveTextContent("0")
+      })
+    })
+
+    it("validate does not overwrite user typing during async validation", async () => {
+      const user = userEvent.setup()
+
+      const NameField = Field.makeField("name", Schema.String)
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        mode: { validation: "onChange" },
+        onSubmit: () => {}
+      })
+
+      const Controls = () => {
+        const triggerValidate = useAtomSet(form.validate)
+        return <button data-testid="validate" onClick={() => triggerValidate()}>Validate</button>
+      }
+
+      render(
+        <form.Initialize defaultValues={{ name: "initial" }}>
+          <form.name />
+          <Controls />
+        </form.Initialize>
+      )
+
+      await userEvent.click(screen.getByTestId("validate"))
+
+      await user.clear(screen.getByTestId("text-input"))
+      await user.type(screen.getByTestId("text-input"), "typed")
+
+      await new Promise((r) => setTimeout(r, 100))
+
+      expect(screen.getByTestId("text-input")).toHaveValue("typed")
+    })
+  })
 })

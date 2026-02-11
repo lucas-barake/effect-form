@@ -45,6 +45,7 @@ export interface FormState<TFields extends FieldsRecord,> {
   readonly lastSubmittedValues: Option.Option<SubmittedValues<TFields>>
   readonly touched: { readonly [K in keyof TFields]: boolean }
   readonly submitCount: number
+  readonly validationCount: number
   readonly dirtyFields: ReadonlySet<string>
 }
 

@@ -62,16 +62,19 @@ export type BuiltForm<
   readonly hasChangedSinceSubmit: Atom.Atom<boolean>
   readonly lastSubmittedValues: Atom.Atom<Option.Option<FormBuilder.SubmittedValues<TFields>>>
   readonly submitCount: Atom.Atom<number>
+  readonly validationCount: Atom.Atom<number>
 
   readonly schema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
   readonly fields: FieldRefs<TFields>
 
   readonly Initialize: React.FC<{
     readonly defaultValues: Field.EncodedFromFields<TFields>
+    readonly validateOnInit?: boolean
     readonly children: React.ReactNode
   }>
 
   readonly submit: Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
+  readonly validate: Atom.AtomResultFn<void, void, never>
   readonly reset: Atom.Writable<void, void>
   readonly revertToLastSubmit: Atom.Writable<void, void>
   readonly setValues: Atom.Writable<Field.EncodedFromFields<TFields>>
@@ -417,22 +420,29 @@ export const make: {
     stateAtom,
     submitAtom,
     submitCountAtom,
+    validateAtom,
+    validationCountAtom,
     valuesAtom
   } = formAtoms
 
   const InitializeComponent: React.FC<{
     readonly defaultValues: any
+    readonly validateOnInit?: boolean
     readonly children: React.ReactNode
-  }> = ({ children, defaultValues }) => {
+  }> = ({ children, defaultValues, validateOnInit }) => {
     const registry = React.useContext(RegistryContext)
     const state = useAtomValue(stateAtom)
     const setFormState = useAtomSet(stateAtom)
+    const triggerValidate = useAtomSet(validateAtom)
     const [isInitialized, setIsInitialized] = React.useState(false)
 
     React.useEffect(() => {
-      const isKeptAlive = registry.get(keepAliveActiveAtom)
-      if (!isKeptAlive || Option.isNone(registry.get(stateAtom))) {
+      const shouldInit = !registry.get(keepAliveActiveAtom) || Option.isNone(registry.get(stateAtom))
+      if (shouldInit) {
         setFormState(Option.some(operations.createInitialState(defaultValues)))
+        if (validateOnInit) {
+          triggerValidate()
+        }
       }
       setIsInitialized(true)
     }, [registry])
@@ -472,11 +482,13 @@ export const make: {
     hasChangedSinceSubmit: hasChangedSinceSubmitAtom,
     lastSubmittedValues: lastSubmittedValuesAtom,
     submitCount: submitCountAtom,
+    validationCount: validationCountAtom,
     rootError: rootErrorAtom,
     schema: combinedSchema,
     fields: fieldRefs,
     Initialize: InitializeComponent,
     submit: submitAtom,
+    validate: validateAtom,
     reset: resetAtom,
     revertToLastSubmit: revertToLastSubmitAtom,
     setValues: setValuesAtom,

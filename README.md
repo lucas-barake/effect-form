@@ -597,6 +597,25 @@ function Wizard() {
 }
 ```
 
+## 19. Validate on Initialize
+
+Validate persisted or pre-filled default values on mount. Useful when restoring form state from local storage:
+
+```tsx
+<form.Initialize defaultValues={savedValues} validateOnInit>
+  {children}
+</form.Initialize>
+```
+
+You can also trigger validation imperatively at any point:
+
+```tsx
+const triggerValidate = useAtomSet(form.validate)
+triggerValidate()
+```
+
+Unlike `submit`, `validate` only runs schema validation and shows errors. It does not call `onSubmit`, bump `submitCount`, or store `lastSubmittedValues`.
+
 ## Available Atoms
 
 All forms expose these atoms for fine-grained subscriptions:
@@ -609,6 +628,8 @@ form.lastSubmittedValues // Atom<Option<SubmittedValues>> - last submitted value
 form.submitCount // Atom<number> - number of submit attempts
 form.rootError // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
 form.submit // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
+form.validate // AtomResultFn<void, void> - trigger schema validation without submitting
+form.validationCount // Atom<number> - number of validate() calls
 form.mount // Atom<void> - root anchor for state persistence (use with useAtomMount)
 
 form.getFieldAtoms(fieldRef).value // Atom<Option<FieldValue>> - field value (None before init)
@@ -631,6 +652,7 @@ form.reset // AtomResultFn<void> - reset to initial values
 form.revertToLastSubmit // AtomResultFn<void> - revert to last submit
 form.setValues // Writable<Values> - set all values (supports updater via registry.update)
 form.submit // AtomResultFn<void, A, E> - trigger submit (handler defined at build)
+form.validate // AtomResultFn<void> - trigger full schema validation without submitting
 ```
 
 ## Field Component Props Reference
