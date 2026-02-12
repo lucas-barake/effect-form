@@ -1,5 +1,16 @@
 # @lucas-barake/effect-form-react
 
+## 0.24.0
+
+### Minor Changes
+
+- [#71](https://github.com/lucas-barake/effect-form/pull/71) [`e13e3c7`](https://github.com/lucas-barake/effect-form/commit/e13e3c7699747313123d59df495c5bc6cd3a07eb) Thanks [@lucas-barake](https://github.com/lucas-barake)! - add `validate` atom and `validateOnInit` prop for triggering schema validation without submitting
+
+### Patch Changes
+
+- Updated dependencies [[`e13e3c7`](https://github.com/lucas-barake/effect-form/commit/e13e3c7699747313123d59df495c5bc6cd3a07eb)]:
+  - @lucas-barake/effect-form@0.23.0
+
 ## 0.23.0
 
 ### Minor Changes
