@@ -657,7 +657,7 @@ describe("FormAtoms", () => {
   })
 
   describe("resetValidationAtoms", () => {
-    it("clears both registries", () => {
+    it("keeps atom instances stable across resets", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
@@ -676,11 +676,11 @@ describe("FormAtoms", () => {
 
       atoms.resetValidationAtoms(registry)
 
-      expect(atoms.fieldAtomsRegistry.get("name")).toBeUndefined()
-      expect(atoms.validationAtomsRegistry.get("name")).toBeUndefined()
+      expect(atoms.fieldAtomsRegistry.get("name")).toBeDefined()
+      expect(atoms.validationAtomsRegistry.get("name")).toBeDefined()
     })
 
-    it("clears cached public field atoms", () => {
+    it("returns same public field atoms after reset", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
@@ -698,7 +698,7 @@ describe("FormAtoms", () => {
 
       const after = atoms.getFieldAtoms(atoms.fieldRefs.name)
 
-      expect(before).not.toBe(after)
+      expect(before).toBe(after)
     })
   })
 
