@@ -3341,6 +3341,53 @@ describe("FormReact.make", () => {
       })
     })
 
+    it("per-field validate works after reset", async () => {
+      const NameField = Field.makeField("name", Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" })))
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      const Controls = () => {
+        const nameAtoms = form.getFieldAtoms(form.fields.name)
+        const triggerValidate = useAtomSet(nameAtoms.validate)
+        const reset = useAtomSet(form.reset)
+        return (
+          <>
+            <button data-testid="validate-name" onClick={() => triggerValidate()}>Validate</button>
+            <button data-testid="reset" onClick={() => reset()}>Reset</button>
+          </>
+        )
+      }
+
+      render(
+        <form.Initialize defaultValues={{ name: "ab" }}>
+          <form.name />
+          <Controls />
+        </form.Initialize>
+      )
+
+      await userEvent.click(screen.getByTestId("validate-name"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+
+      await userEvent.click(screen.getByTestId("reset"))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("error")).not.toBeInTheDocument()
+      })
+
+      await userEvent.click(screen.getByTestId("validate-name"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("error")).toHaveTextContent("Too short")
+      })
+    })
+
     it("does not affect form-level validationCount or submitCount", async () => {
       const NameField = Field.makeField("name", Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" })))
       const formBuilder = FormBuilder.empty.addField(NameField)

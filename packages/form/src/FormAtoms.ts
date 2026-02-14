@@ -459,12 +459,6 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     for (const fieldAtoms of fieldAtomsRegistry.values()) {
       ctx.set(fieldAtoms.fieldValidationCountAtom, 0)
     }
-    validationAtomsRegistry.clear()
-    fieldAtomsRegistry.clear()
-    publicFieldAtomsRegistry.clear()
-    validationSchemaRegistry.clear()
-    fieldSchemaRegistry.clear()
-    isDirtyAtomsRegistry.clear()
   }
 
   const submitAtom = runtime
