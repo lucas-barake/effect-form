@@ -21,6 +21,7 @@ export interface FieldAtoms {
   readonly isDirtyAtom: Atom.Atom<boolean>
   readonly validationAtom: Atom.AtomResultFn<unknown, void, ParseResult.ParseError>
   readonly displayErrorAtom: Atom.Atom<Option.Option<string>>
+  readonly fieldValidationCountAtom: Atom.Writable<number, number>
   readonly shouldValidateAtom: Atom.Atom<boolean>
   readonly triggerValidationAtom: Atom.Atom<void>
 }
@@ -33,6 +34,7 @@ export interface PublicFieldAtoms<E,> {
   readonly isValidating: Atom.Atom<boolean>
   readonly setValue: Atom.Writable<void, E | ((prev: E) => E)>
   readonly setTouched: Atom.Writable<void, boolean>
+  readonly validate: Atom.Writable<void, void>
 }
 
 export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void,> {
@@ -345,10 +347,12 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 
     const validationAtom = getOrCreateValidationAtom(fieldPath, schema)
 
+    const fieldValidationCountAtom = Atom.make(0).pipe(Atom.setIdleTTL(0))
+
     const shouldValidateAtom = Atom.readable((get) => {
       if (parsedMode.validation === "onChange") return true
-      if (parsedMode.validation === "onBlur") return get(touchedAtom)
-      return get(submitCountAtom) > 0 || get(validationCountAtom) > 0
+      if (parsedMode.validation === "onBlur") return get(touchedAtom) || get(fieldValidationCountAtom) > 0
+      return get(submitCountAtom) > 0 || get(validationCountAtom) > 0 || get(fieldValidationCountAtom) > 0
     }).pipe(Atom.setIdleTTL(0))
 
     const displayErrorAtom = Atom.readable((get) => {
@@ -379,7 +383,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       }
 
       const validationCount = get(validationCountAtom)
-      const hasAttemptedValidation = submitCount > 0 || validationCount > 0
+      const fieldValidationCount = get(fieldValidationCountAtom)
+      const hasAttemptedValidation = submitCount > 0 || validationCount > 0 || fieldValidationCount > 0
       const shouldShowError = parsedMode.validation === "onChange"
         ? isDirty || hasAttemptedValidation
         : parsedMode.validation === "onBlur"
@@ -437,6 +442,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       errorAtom,
       isDirtyAtom,
       validationAtom,
+      fieldValidationCountAtom,
       displayErrorAtom,
       shouldValidateAtom,
       triggerValidationAtom
@@ -449,6 +455,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
   const resetValidationAtoms = (ctx: { set: <R, W,>(atom: Atom.Writable<R, W>, value: W) => void }) => {
     for (const validationAtom of validationAtomsRegistry.values()) {
       ctx.set(validationAtom, Atom.Reset)
+    }
+    for (const fieldAtoms of fieldAtomsRegistry.values()) {
+      ctx.set(fieldAtoms.fieldValidationCountAtom, 0)
     }
     validationAtomsRegistry.clear()
     fieldAtomsRegistry.clear()
@@ -796,6 +805,15 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       { initialValue: undefined as void }
     ).pipe(Atom.setIdleTTL(0))
 
+    const validateFieldAtom = Atom.fnSync<void>()(
+      (_: void, get) => {
+        const value = get(internal.valueAtom)
+        get.set(internal.validationAtom as Atom.Writable<any, any>, value)
+        get.set(internal.fieldValidationCountAtom, get(internal.fieldValidationCountAtom) + 1)
+      },
+      { initialValue: undefined as void }
+    ).pipe(Atom.setIdleTTL(0))
+
     const bundle: PublicFieldAtoms<S> = {
       value,
       error,
@@ -803,7 +821,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       isTouched,
       isValidating,
       setValue: setValueAtom,
-      setTouched: setTouchedAtom
+      setTouched: setTouchedAtom,
+      validate: validateFieldAtom
     }
     publicFieldAtomsRegistry.set(field.key, bundle as PublicFieldAtoms<unknown>)
     return bundle

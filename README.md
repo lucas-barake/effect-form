@@ -639,6 +639,7 @@ form.getFieldAtoms(fieldRef).isTouched // Atom<boolean> - field touched state
 form.getFieldAtoms(fieldRef).isValidating // Atom<boolean> - field validation in progress
 form.getFieldAtoms(fieldRef).setValue // Writable<void, T | (T => T)> - set field value
 form.getFieldAtoms(fieldRef).setTouched // Writable<void, boolean> - set field touched
+form.getFieldAtoms(fieldRef).validate // Writable<void, void> - trigger field validation and show error
 ```
 
 > **Why `Option` for `values`?** Returns `None` before the form is initialized, `Some(values)` after. This allows parent components to safely subscribe and wait for initialization without throwing.
