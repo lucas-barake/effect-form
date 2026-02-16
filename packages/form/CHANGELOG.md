@@ -1,5 +1,11 @@
 # @lucas-barake/effect-form
 
+## 0.24.0
+
+### Minor Changes
+
+- [#73](https://github.com/lucas-barake/effect-form/pull/73) [`80f9f29`](https://github.com/lucas-barake/effect-form/commit/80f9f29dd6449a718ab2f8021cc30f81faa3a987) Thanks [@lucas-barake](https://github.com/lucas-barake)! - add per-field validate to PublicFieldAtoms
+
 ## 0.23.0
 
 ### Minor Changes
