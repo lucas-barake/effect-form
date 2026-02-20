@@ -5,5 +5,7 @@
     "@lucas-barake/effect-form": "0.24.0",
     "@lucas-barake/effect-form-react": "0.25.0"
   },
-  "changesets": []
+  "changesets": [
+    "effect-v4-migration"
+  ]
 }
