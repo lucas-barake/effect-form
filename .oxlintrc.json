@@ -15,6 +15,7 @@
     "import/no-empty-named-blocks": "error",
     "typescript/no-unnecessary-type-assertion": "error",
     "typescript/no-unnecessary-type-constraint": "error",
+    "typescript/no-unnecessary-type-constituents": "error",
     "typescript/no-useless-empty-export": "error",
     "eslint/no-console": "error",
     "eslint/no-var": "error",

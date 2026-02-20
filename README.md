@@ -4,22 +4,24 @@ Type-safe forms powered by Effect Schema.
 
 ## Installation
 
+Requires Effect v4 beta, React 19, and `@effect/atom-react`.
+
 ```bash
-pnpm add @lucas-barake/effect-form-react
+pnpm add @lucas-barake/effect-form-react@beta effect@beta @effect/atom-react@beta
 ```
 
 ## 1. Basic Form Setup
 
 ```tsx
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 
 const loginFormBuilder = FormBuilder.empty
-  .addField("email", Schema.String.pipe(Schema.nonEmptyString()))
-  .addField("password", Schema.String.pipe(Schema.minLength(8)))
+  .addField("email", Schema.String.check(Schema.isNonEmpty()))
+  .addField("password", Schema.String.check(Schema.isMinLength(8)))
 
 const loginForm = FormReact.make(loginFormBuilder, {
   fields: {
@@ -335,7 +337,7 @@ function FormStatus() {
 Subscribe to fine-grained atoms anywhere in the tree:
 
 ```tsx
-import { useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
+import { useAtomSubscribe, useAtomValue } from "@effect/atom-react"
 
 // Read atoms directly
 function FormDebug() {
@@ -424,14 +426,14 @@ const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   </div>
 )
 
-import * as Result from "@effect-atom/atom/Result"
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
 
 function SubmitStatus() {
   const submitResult = useAtomValue(loginForm.submit)
 
   if (submitResult.waiting) return <span>Submitting...</span>
-  if (Result.isSuccess(submitResult)) return <span>Success!</span>
-  if (Result.isFailure(submitResult)) return <span>Failed</span>
+  if (AsyncResult.isSuccess(submitResult)) return <span>Success!</span>
+  if (AsyncResult.isFailure(submitResult)) return <span>Failed</span>
   return null
 }
 
@@ -440,7 +442,7 @@ function FormWithSideEffects({ onClose }: { onClose: () => void }) {
   useAtomSubscribe(
     loginForm.submit,
     (result) => {
-      if (Result.isSuccess(result)) {
+      if (AsyncResult.isSuccess(result)) {
         onClose()
       }
     },
@@ -485,7 +487,7 @@ The `onSubmit` callback receives:
 Invalidate reactive queries (`AtomRpc`, `AtomHttpApi`, etc.) after successful form submission using `reactivityKeys`:
 
 ```tsx
-import * as Atom from "@effect-atom/atom/Atom"
+import * as Atom from "effect/unstable/reactivity/Atom"
 
 const userListAtom = runtime.atom(fetchUsers).pipe(
   Atom.withReactivity(["users"])
@@ -511,7 +513,7 @@ import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 // Define reusable field
 const EmailField = Field.makeField(
   "email",
-  Schema.String.pipe(Schema.pattern(/@/), Schema.nonEmptyString())
+  Schema.String.check(Schema.isPattern(/@/), Schema.isNonEmpty())
 )
 
 // Use in multiple forms
@@ -588,7 +590,7 @@ Without `KeepAlive`, navigating from Step1 to Step2 and back would lose all Step
 For more control, use `useAtomMount` with the `mount` atom directly:
 
 ```tsx
-import { useAtomMount } from "@effect-atom/atom-react"
+import { useAtomMount } from "@effect/atom-react"
 
 function Wizard() {
   useAtomMount(step1Form.mount)
@@ -627,7 +629,7 @@ form.hasChangedSinceSubmit // Atom<boolean> - values differ from last submit
 form.lastSubmittedValues // Atom<Option<SubmittedValues>> - last submitted values
 form.submitCount // Atom<number> - number of submit attempts
 form.rootError // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
-form.submit // AtomResultFn<SubmitArgs, A, E | ParseError> - submit with .waiting, ._tag
+form.submit // AtomResultFn<SubmitArgs, A, E | SchemaError> - submit with .waiting, ._tag
 form.validate // AtomResultFn<void, void> - trigger schema validation without submitting
 form.validationCount // Atom<number> - number of validate() calls
 form.mount // Atom<void> - root anchor for state persistence (use with useAtomMount)
