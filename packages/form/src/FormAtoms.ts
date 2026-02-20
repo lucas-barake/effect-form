@@ -1,10 +1,9 @@
-import * as Atom from "@effect-atom/atom/Atom"
 import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
 import * as Option from "effect/Option"
-import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
+import * as Atom from "effect/unstable/reactivity/Atom"
 import * as Field from "./Field.ts"
 import * as FormBuilder from "./FormBuilder.ts"
 import { recalculateDirtyFieldsForArray, recalculateDirtySubtree } from "./internal/dirty.ts"
@@ -19,7 +18,7 @@ export interface FieldAtoms {
   readonly touchedAtom: Atom.Writable<boolean, boolean>
   readonly errorAtom: Atom.Atom<Option.Option<Validation.ErrorEntry>>
   readonly isDirtyAtom: Atom.Atom<boolean>
-  readonly validationAtom: Atom.AtomResultFn<unknown, void, ParseResult.ParseError>
+  readonly validationAtom: Atom.AtomResultFn<unknown, void, Schema.SchemaError>
   readonly displayErrorAtom: Atom.Atom<Option.Option<string>>
   readonly fieldValidationCountAtom: Atom.Writable<number, number>
   readonly shouldValidateAtom: Atom.Atom<boolean>
@@ -54,9 +53,9 @@ export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, Su
 
 export type FieldRefs<TFields extends Field.FieldsRecord,> = {
   readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S>
-    ? FormBuilder.FieldRef<Schema.Schema.Encoded<S>>
+    ? FormBuilder.FieldRef<Schema.Codec.Encoded<S>>
     : TFields[K] extends Field.ArrayFieldDef<any, infer S>
-      ? FormBuilder.FieldRef<ReadonlyArray<Schema.Schema.Encoded<S>>>
+      ? FormBuilder.FieldRef<ReadonlyArray<Schema.Codec.Encoded<S>>>
     : never
 }
 
@@ -76,22 +75,22 @@ export interface FormAtoms<TFields extends Field.FieldsRecord, R, A = void, E = 
   readonly changedSinceSubmitFieldsAtom: Atom.Atom<ReadonlySet<string>>
   readonly hasChangedSinceSubmitAtom: Atom.Atom<boolean>
 
-  readonly submitAtom: Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
+  readonly submitAtom: Atom.AtomResultFn<SubmitArgs, A, E | Schema.SchemaError>
   readonly validateAtom: Atom.AtomResultFn<void, void, never>
 
-  readonly combinedSchema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
+  readonly combinedSchema: Schema.Codec<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
 
   readonly fieldRefs: FieldRefs<TFields>
 
-  readonly validationAtomsRegistry: WeakRegistry<Atom.AtomResultFn<unknown, void, ParseResult.ParseError>>
+  readonly validationAtomsRegistry: WeakRegistry<Atom.AtomResultFn<unknown, void, Schema.SchemaError>>
   readonly fieldAtomsRegistry: WeakRegistry<FieldAtoms>
 
   readonly getOrCreateValidationAtom: (
     fieldPath: string,
-    schema: Schema.Schema.Any
-  ) => Atom.AtomResultFn<unknown, void, ParseResult.ParseError>
+    schema: Schema.Top
+  ) => Atom.AtomResultFn<unknown, void, Schema.SchemaError>
 
-  readonly getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Schema.Any) => FieldAtoms
+  readonly getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Top) => FieldAtoms
 
   readonly resetValidationAtoms: (ctx: { set: <R, W,>(atom: Atom.Writable<R, W>, value: W) => void }) => void
 
@@ -156,7 +155,7 @@ export interface FormOperations<TFields extends Field.FieldsRecord,> {
   readonly appendArrayItem: (
     state: FormBuilder.FormState<TFields>,
     arrayPath: string,
-    itemSchema: Schema.Schema.Any,
+    itemSchema: Schema.Top,
     value?: unknown
   ) => FormBuilder.FormState<TFields>
 
@@ -259,14 +258,14 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     })
   ).pipe(Atom.setIdleTTL(0))
 
-  const validationAtomsRegistry = createWeakRegistry<Atom.AtomResultFn<unknown, void, ParseResult.ParseError>>()
+  const validationAtomsRegistry = createWeakRegistry<Atom.AtomResultFn<unknown, void, Schema.SchemaError>>()
   const fieldAtomsRegistry = createWeakRegistry<FieldAtoms>()
   const publicFieldAtomsRegistry = createWeakRegistry<PublicFieldAtoms<unknown>>()
-  const validationSchemaRegistry = new Map<string, Schema.Schema.Any>()
-  const fieldSchemaRegistry = new Map<string, Schema.Schema.Any>()
+  const validationSchemaRegistry = new Map<string, Schema.Top>()
+  const fieldSchemaRegistry = new Map<string, Schema.Top>()
   const isDirtyAtomsRegistry = createWeakRegistry<Atom.Atom<boolean>>()
 
-  const fieldSchemasByKey = new Map<string, Schema.Schema.Any>()
+  const fieldSchemasByKey = new Map<string, Schema.Top>()
   for (const [key, def] of Object.entries(fields)) {
     if (Field.isArrayFieldDef(def)) {
       fieldSchemasByKey.set(key, Schema.Array(def.itemSchema))
@@ -277,24 +276,24 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 
   const getOrCreateValidationAtom = (
     fieldPath: string,
-    schema: Schema.Schema.Any
-  ): Atom.AtomResultFn<unknown, void, ParseResult.ParseError> => {
+    schema: Schema.Top
+  ): Atom.AtomResultFn<unknown, void, Schema.SchemaError> => {
     const existing = validationAtomsRegistry.get(fieldPath)
     const existingSchema = validationSchemaRegistry.get(fieldPath)
     if (existing && existingSchema === schema) return existing
 
     const validationAtom = runtime
       .fn<unknown>()((value: unknown) =>
-        pipe(Schema.decodeUnknown(schema)(value) as Effect.Effect<unknown, ParseResult.ParseError, R>, Effect.asVoid)
+        pipe(Schema.decodeUnknownEffect(schema)(value) as Effect.Effect<unknown, Schema.SchemaError, R>, Effect.asVoid)
       )
-      .pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<unknown, void, ParseResult.ParseError>
+      .pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<unknown, void, Schema.SchemaError>
 
     validationAtomsRegistry.set(fieldPath, validationAtom)
     validationSchemaRegistry.set(fieldPath, schema)
     return validationAtom
   }
 
-  const getOrCreateFieldAtoms = (fieldPath: string, schema: Schema.Schema.Any): FieldAtoms => {
+  const getOrCreateFieldAtoms = (fieldPath: string, schema: Schema.Top): FieldAtoms => {
     const existing = fieldAtomsRegistry.get(fieldPath)
     const existingSchema = fieldSchemaRegistry.get(fieldPath)
     if (existing && existingSchema === schema) return existing
@@ -364,8 +363,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 
       let livePerFieldError: Option.Option<string> = Option.none()
       if (validationResult._tag === "Failure") {
-        const parseError = Cause.failureOption(validationResult.cause)
-        if (Option.isSome(parseError) && ParseResult.isParseError(parseError.value)) {
+        const parseError = Cause.findErrorOption(validationResult.cause)
+        if (Option.isSome(parseError) && Schema.isSchemaError(parseError.value)) {
           livePerFieldError = Validation.extractFirstError(parseError.value)
         }
       }
@@ -470,9 +469,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
           const values = state.value.values
           get.set(errorsAtom, new Map())
           const decoded = yield* pipe(
-            Schema.decodeUnknown(combinedSchema, { errors: "all" })(values) as Effect.Effect<
+            Schema.decodeUnknownEffect(combinedSchema)(values, { errors: "all" }) as Effect.Effect<
               Field.DecodedFromFields<TFields>,
-              ParseResult.ParseError,
+              Schema.SchemaError,
               R
             >,
             Effect.tapError((parseError) =>
@@ -499,7 +498,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
         }),
       config.reactivityKeys ? { reactivityKeys: config.reactivityKeys } : undefined
     )
-    .pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
+    .pipe(Atom.setIdleTTL(0)) as Atom.AtomResultFn<SubmitArgs, A, E | Schema.SchemaError>
 
   const validateAtom = runtime
     .fn<void>()(
@@ -510,12 +509,12 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
           const values = state.value.values
           get.set(errorsAtom, new Map())
           yield* pipe(
-            Schema.decodeUnknown(combinedSchema, { errors: "all" })(values) as Effect.Effect<
+            Schema.decodeUnknownEffect(combinedSchema)(values, { errors: "all" }) as Effect.Effect<
               Field.DecodedFromFields<TFields>,
-              ParseResult.ParseError,
+              Schema.SchemaError,
               R
             >,
-            Effect.catchTag("ParseError", (parseError) =>
+            Effect.catchTag("SchemaError", (parseError) =>
               Effect.sync(() => {
                 const routedErrors = Validation.routeErrorsWithSource(parseError)
                 get.set(errorsAtom, routedErrors)

@@ -1,6 +1,4 @@
-import { RegistryContext, useAtom, useAtomMount, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
-import * as Atom from "@effect-atom/atom/Atom"
-import type * as Registry from "@effect-atom/atom/Registry"
+import { RegistryContext, useAtom, useAtomMount, useAtomSet, useAtomValue } from "@effect/atom-react"
 import { Field, FormAtoms } from "@lucas-barake/effect-form"
 import type { FieldState as FieldStateModule, Mode } from "@lucas-barake/effect-form"
 import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder"
@@ -8,8 +6,9 @@ import { getNestedValue } from "@lucas-barake/effect-form/Path"
 import type * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
-import type * as ParseResult from "effect/ParseResult"
 import type * as Schema from "effect/Schema"
+import * as Atom from "effect/unstable/reactivity/Atom"
+import type * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
 import * as React from "react"
 import { createContext, useContext } from "react"
 
@@ -32,17 +31,16 @@ type StructFieldsFromSchema<S,> = S extends Schema.Struct<infer Fields> ? Fields
   : S extends { readonly from: infer From } ? StructFieldsFromSchema<From>
   : never
 
-export type ArrayItemComponentMap<S extends Schema.Schema.Any,> = StructFieldsFromSchema<S> extends
-  Schema.Struct.Fields ? {
-    readonly [K in keyof StructFieldsFromSchema<S>]: StructFieldsFromSchema<S>[K] extends Schema.Schema.Any
-      ? React.FC<FieldComponentProps<Schema.Schema.Encoded<StructFieldsFromSchema<S>[K]>, any>>
+export type ArrayItemComponentMap<S extends Schema.Top,> = StructFieldsFromSchema<S> extends Schema.Struct.Fields ? {
+    readonly [K in keyof StructFieldsFromSchema<S>]: StructFieldsFromSchema<S>[K] extends Schema.Top
+      ? React.FC<FieldComponentProps<Schema.Codec.Encoded<StructFieldsFromSchema<S>[K]>, any>>
       : never
   }
-  : React.FC<FieldComponentProps<Schema.Schema.Encoded<S>, any>>
+  : React.FC<FieldComponentProps<Schema.Codec.Encoded<S>, any>>
 
 export type FieldComponentMap<TFields extends Field.FieldsRecord,> = {
   readonly [K in keyof TFields]: TFields[K] extends Field.FieldDef<any, infer S>
-    ? React.FC<FieldComponentProps<Schema.Schema.Encoded<S>, any>>
+    ? React.FC<FieldComponentProps<Schema.Codec.Encoded<S>, any>>
     : TFields[K] extends Field.ArrayFieldDef<any, infer S> ? ArrayItemComponentMap<S>
     : never
 }
@@ -64,7 +62,7 @@ export type BuiltForm<
   readonly submitCount: Atom.Atom<number>
   readonly validationCount: Atom.Atom<number>
 
-  readonly schema: Schema.Schema<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
+  readonly schema: Schema.Codec<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
   readonly fields: FieldRefs<TFields>
 
   readonly Initialize: React.FC<{
@@ -73,7 +71,7 @@ export type BuiltForm<
     readonly children: React.ReactNode
   }>
 
-  readonly submit: Atom.AtomResultFn<SubmitArgs, A, E | ParseResult.ParseError>
+  readonly submit: Atom.AtomResultFn<SubmitArgs, A, E | Schema.SchemaError>
   readonly validate: Atom.AtomResultFn<void, void, never>
   readonly reset: Atom.Writable<void, void>
   readonly revertToLastSubmit: Atom.Writable<void, void>
@@ -91,17 +89,16 @@ type FieldComponents<TFields extends Field.FieldsRecord, CM extends FieldCompone
     : never
 }
 
-type ExtractArrayItemExtraProps<CM, S extends Schema.Schema.Any,> = StructFieldsFromSchema<S> extends
-  Schema.Struct.Fields ? {
+type ExtractArrayItemExtraProps<CM, S extends Schema.Top,> = StructFieldsFromSchema<S> extends Schema.Struct.Fields ? {
     readonly [K in keyof StructFieldsFromSchema<S>]: CM extends { readonly [P in K]: infer C } ? ExtractExtraProps<C>
       : never
   }
   : CM extends React.FC<FieldComponentProps<any, infer P>> ? P
   : never
 
-type ArrayFieldComponent<S extends Schema.Schema.Any, ExtraPropsMap,> =
+type ArrayFieldComponent<S extends Schema.Top, ExtraPropsMap,> =
   & React.FC<{
-    readonly children: (ops: ArrayFieldOperations<Schema.Schema.Encoded<S>>) => React.ReactNode
+    readonly children: (ops: ArrayFieldOperations<Schema.Codec.Encoded<S>>) => React.ReactNode
   }>
   & {
     readonly Item: React.FC<{
@@ -123,11 +120,11 @@ interface ArrayItemContextValue {
 
 const ArrayItemContext = createContext<ArrayItemContextValue | null>(null)
 
-const makeFieldComponent = <S extends Schema.Schema.Any, P,>(
+const makeFieldComponent = <S extends Schema.Top, P,>(
   fieldKey: string,
   fieldDef: Field.FieldDef<string, S>,
-  getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Schema.Any) => FormAtoms.FieldAtoms,
-  Component: React.FC<FieldComponentProps<Schema.Schema.Encoded<S>, P>>,
+  getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Top) => FormAtoms.FieldAtoms,
+  Component: React.FC<FieldComponentProps<Schema.Codec.Encoded<S>, P>>,
   onBlurSubmitAtom: Atom.Writable<void, void>
 ): React.FC<P> => {
   const FieldComponent: React.FC<P> = (extraProps) => {
@@ -139,7 +136,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P,>(
       [fieldPath]
     )
 
-    const [value, setValue] = useAtom(fieldAtoms.valueAtom) as [Schema.Schema.Encoded<S>, (v: unknown) => void]
+    const [value, setValue] = useAtom(fieldAtoms.valueAtom) as [Schema.Codec.Encoded<S>, (v: unknown) => void]
     const [isTouched, setTouched] = useAtom(fieldAtoms.touchedAtom)
     const displayError = useAtomValue(fieldAtoms.displayErrorAtom)
     const isDirty = useAtomValue(fieldAtoms.isDirtyAtom)
@@ -149,7 +146,7 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P,>(
     useAtomMount(fieldAtoms.triggerValidationAtom)
 
     const onChange = React.useCallback(
-      (newValue: Schema.Schema.Encoded<S>) => setValue(newValue),
+      (newValue: Schema.Codec.Encoded<S>) => setValue(newValue),
       [setValue]
     )
 
@@ -176,17 +173,17 @@ const makeFieldComponent = <S extends Schema.Schema.Any, P,>(
   return React.memo(FieldComponent) as React.FC<P>
 }
 
-const makeArrayFieldComponent = <S extends Schema.Schema.Any,>(
+const makeArrayFieldComponent = <S extends Schema.Top,>(
   fieldKey: string,
   def: Field.ArrayFieldDef<string, S>,
   stateAtom: Atom.Writable<Option.Option<FormBuilder.FormState<any>>, Option.Option<FormBuilder.FormState<any>>>,
-  getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Schema.Any) => FormAtoms.FieldAtoms,
+  getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Top) => FormAtoms.FieldAtoms,
   operations: FormAtoms.FormOperations<any>,
   componentMap: ArrayItemComponentMap<S>,
   onBlurSubmitAtom: Atom.Writable<void, void>
 ): ArrayFieldComponent<S, any> => {
   const ArrayWrapper: React.FC<{
-    readonly children: (ops: ArrayFieldOperations<Schema.Schema.Encoded<S>>) => React.ReactNode
+    readonly children: (ops: ArrayFieldOperations<Schema.Codec.Encoded<S>>) => React.ReactNode
   }> = ({ children }) => {
     const arrayCtx = useContext(ArrayItemContext)
     const [formStateOption, setFormState] = useAtom(stateAtom)
@@ -194,12 +191,12 @@ const makeArrayFieldComponent = <S extends Schema.Schema.Any,>(
 
     const fieldPath = arrayCtx ? `${arrayCtx.parentPath}.${fieldKey}` : fieldKey
     const items = React.useMemo(
-      () => (getNestedValue(formState.values, fieldPath) ?? []) as ReadonlyArray<Schema.Schema.Encoded<S>>,
+      () => (getNestedValue(formState.values, fieldPath) ?? []) as ReadonlyArray<Schema.Codec.Encoded<S>>,
       [formState.values, fieldPath]
     )
 
     const append = React.useCallback(
-      (value?: Schema.Schema.Encoded<S>) => {
+      (value?: Schema.Codec.Encoded<S>) => {
         setFormState((prev) => {
           if (Option.isNone(prev)) return prev
           return Option.some(operations.appendArrayItem(prev.value, fieldPath, def.itemSchema, value))
@@ -302,7 +299,7 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord, CM extends Fiel
     Option.Option<FormBuilder.FormState<TFields>>,
     Option.Option<FormBuilder.FormState<TFields>>
   >,
-  getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Schema.Any) => FormAtoms.FieldAtoms,
+  getOrCreateFieldAtoms: (fieldPath: string, schema: Schema.Top) => FormAtoms.FieldAtoms,
   operations: FormAtoms.FormOperations<TFields>,
   componentMap: CM,
   onBlurSubmitAtom: Atom.Writable<void, void>
@@ -314,7 +311,7 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord, CM extends Fiel
       const arrayComponentMap = (componentMap as Record<string, any>)[key]
       components[key] = makeArrayFieldComponent(
         key,
-        def as Field.ArrayFieldDef<string, Schema.Schema.Any>,
+        def as Field.ArrayFieldDef<string, Schema.Top>,
         stateAtom,
         getOrCreateFieldAtoms,
         operations,
@@ -339,7 +336,7 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord, CM extends Fiel
 export const make: {
   <
     TFields extends Field.FieldsRecord,
-    R extends Registry.AtomRegistry,
+    R extends AtomRegistry.AtomRegistry,
     A,
     E,
     SubmitArgs = void,

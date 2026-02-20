@@ -1,7 +1,10 @@
 import { Field, FormBuilder } from "@lucas-barake/effect-form"
+import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
-import * as ParseResult from "effect/ParseResult"
+import * as Exit from "effect/Exit"
+import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as SchemaIssue from "effect/SchemaIssue"
 import { describe, expect, it } from "vitest"
 
 describe("Form", () => {
@@ -93,15 +96,18 @@ describe("Form", () => {
         })
 
       const schema = FormBuilder.buildSchema(builderA.merge(builderB))
+      const formatter = SchemaIssue.makeFormatterStandardSchemaV1()
 
-      const resultA = Schema.decodeUnknownEither(schema)({ a: "x", b: "b" })
-      if (resultA._tag === "Right") throw new Error("Expected Left")
-      const messagesA = ParseResult.ArrayFormatter.formatErrorSync(resultA.left).map((issue) => issue.message)
+      const exitA = Schema.decodeUnknownExit(schema)({ a: "x", b: "b" })
+      if (Exit.isSuccess(exitA)) throw new Error("Expected failure")
+      const schemaErrorA = Option.getOrThrow(Cause.findErrorOption(exitA.cause))
+      const messagesA = formatter(schemaErrorA.issue).issues.map((issue) => issue.message)
       expect(messagesA).toContain("A invalid")
 
-      const resultB = Schema.decodeUnknownEither(schema)({ a: "a", b: "x" })
-      if (resultB._tag === "Right") throw new Error("Expected Left")
-      const messagesB = ParseResult.ArrayFormatter.formatErrorSync(resultB.left).map((issue) => issue.message)
+      const exitB = Schema.decodeUnknownExit(schema)({ a: "a", b: "x" })
+      if (Exit.isSuccess(exitB)) throw new Error("Expected failure")
+      const schemaErrorB = Option.getOrThrow(Cause.findErrorOption(exitB.cause))
+      const messagesB = formatter(schemaErrorB.issue).issues.map((issue) => issue.message)
       expect(messagesB).toContain("B invalid")
     })
 
@@ -152,7 +158,7 @@ describe("Form", () => {
     })
 
     it("validates with schema constraints", () => {
-      const Email = Schema.String.pipe(Schema.pattern(/@/))
+      const Email = Schema.String.pipe(Schema.check(Schema.isPattern(/@/)))
       const EmailField = Field.makeField("email", Email)
 
       const builder = FormBuilder.empty.addField(EmailField)
@@ -204,11 +210,13 @@ describe("Form", () => {
       const schema = FormBuilder.buildSchema(builder)
 
       await expect(
-        Effect.runPromise(Schema.decodeUnknown(schema)({ username: "taken" }))
+        Effect.runPromise(
+          Schema.decodeUnknownEffect(schema)({ username: "taken" }) as Effect.Effect<any, Schema.SchemaError>
+        )
       ).rejects.toThrow()
 
       const result = await Effect.runPromise(
-        Schema.decodeUnknown(schema)({ username: "available" })
+        Schema.decodeUnknownEffect(schema)({ username: "available" }) as Effect.Effect<any, Schema.SchemaError>
       )
       expect(result).toEqual({ username: "available" })
     })

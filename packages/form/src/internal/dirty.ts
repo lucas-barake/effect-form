@@ -1,5 +1,4 @@
 import * as Equal from "effect/Equal"
-import * as Utils from "effect/Utils"
 import { getNestedValue, isPathUnderRoot } from "../Path.ts"
 
 export const recalculateDirtyFieldsForArray = (
@@ -26,8 +25,7 @@ export const recalculateDirtyFieldsForArray = (
 
     if (newItem === initialItem) continue
 
-    const isEqual = Utils.structuralRegion(() => Equal.equals(newItem, initialItem))
-    if (!isEqual) {
+    if (!Equal.equals(newItem, initialItem)) {
       nextDirty.add(itemPath)
     }
   }
@@ -97,8 +95,7 @@ export const recalculateDirtySubtree = (
         }
       }
     } else {
-      const isEqual = Utils.structuralRegion(() => Equal.equals(current, initial))
-      if (!isEqual && path) nextDirty.add(path)
+      if (!Equal.equals(current, initial) && path) nextDirty.add(path)
     }
   }
 

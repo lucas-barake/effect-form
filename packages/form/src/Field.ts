@@ -5,28 +5,27 @@ export const TypeId: unique symbol = Symbol.for("@lucas-barake/effect-form/Field
 
 export type TypeId = typeof TypeId
 
-export interface FieldDef<K extends string, S extends Schema.Schema.Any,> {
+export interface FieldDef<K extends string, S extends Schema.Top,> {
   readonly _tag: "field"
   readonly key: K
   readonly schema: S
 }
 
-export interface ArrayFieldDef<K extends string, S extends Schema.Schema.Any,> {
+export interface ArrayFieldDef<K extends string, S extends Schema.Top,> {
   readonly _tag: "array"
   readonly key: K
   readonly itemSchema: S
 }
 
-export type AnyFieldDef = FieldDef<string, Schema.Schema.Any> | ArrayFieldDef<string, Schema.Schema.Any>
+export type AnyFieldDef = FieldDef<string, Schema.Top> | ArrayFieldDef<string, Schema.Top>
 
 export type FieldsRecord = Record<string, AnyFieldDef>
 
-export const isArrayFieldDef = (def: AnyFieldDef): def is ArrayFieldDef<string, Schema.Schema.Any> =>
-  def._tag === "array"
+export const isArrayFieldDef = (def: AnyFieldDef): def is ArrayFieldDef<string, Schema.Top> => def._tag === "array"
 
-export const isFieldDef = (def: AnyFieldDef): def is FieldDef<string, Schema.Schema.Any> => def._tag === "field"
+export const isFieldDef = (def: AnyFieldDef): def is FieldDef<string, Schema.Top> => def._tag === "field"
 
-export const makeField = <K extends string, S extends Schema.Schema.Any,>(
+export const makeField = <K extends string, S extends Schema.Top,>(
   key: K,
   schema: S
 ): FieldDef<K, S> => ({
@@ -35,7 +34,7 @@ export const makeField = <K extends string, S extends Schema.Schema.Any,>(
   schema
 })
 
-export const makeArrayField = <K extends string, S extends Schema.Schema.Any,>(
+export const makeArrayField = <K extends string, S extends Schema.Top,>(
   key: K,
   itemSchema: S
 ): ArrayFieldDef<K, S> => ({
@@ -45,8 +44,8 @@ export const makeArrayField = <K extends string, S extends Schema.Schema.Any,>(
 })
 
 export type EncodedFromFields<T extends FieldsRecord,> = {
-  readonly [K in keyof T]: T[K] extends FieldDef<any, infer S> ? Schema.Schema.Encoded<S>
-    : T[K] extends ArrayFieldDef<any, infer S> ? ReadonlyArray<Schema.Schema.Encoded<S>>
+  readonly [K in keyof T]: T[K] extends FieldDef<any, infer S> ? Schema.Codec.Encoded<S>
+    : T[K] extends ArrayFieldDef<any, infer S> ? ReadonlyArray<Schema.Codec.Encoded<S>>
     : never
 }
 
@@ -56,23 +55,23 @@ export type DecodedFromFields<T extends FieldsRecord,> = {
     : never
 }
 
-export const getDefaultFromSchema = (schema: Schema.Schema.Any): unknown => {
-  const ast = schema.ast
+export const getDefaultFromSchema = (schema: Schema.Top): unknown => {
+  const ast = AST.toEncoded(schema.ast)
   switch (ast._tag) {
-    case "StringKeyword":
+    case "String":
     case "TemplateLiteral":
       return ""
-    case "NumberKeyword":
+    case "Number":
       return 0
-    case "BooleanKeyword":
+    case "Boolean":
       return false
     case "Literal":
       return ast.literal
-    case "Enums": {
+    case "Enum": {
       const first = ast.enums[0]
       return first ? first[1] : undefined
     }
-    case "TypeLiteral": {
+    case "Objects": {
       const result: Record<string, unknown> = {}
       for (const prop of ast.propertySignatures) {
         result[prop.name as string] = getDefaultFromSchema(Schema.make(prop.type))
@@ -83,14 +82,10 @@ export const getDefaultFromSchema = (schema: Schema.Schema.Any): unknown => {
       const first = ast.types[0]
       return first ? getDefaultFromSchema(Schema.make(first)) : undefined
     }
-    case "NeverKeyword":
+    case "Never":
       return undefined
-    case "Transformation":
-      return getDefaultFromSchema(Schema.make(ast.from))
-    case "Refinement":
-      return getDefaultFromSchema(Schema.make(ast.from))
     case "Suspend":
-      return getDefaultFromSchema(Schema.make(ast.f()))
+      return getDefaultFromSchema(Schema.make(ast.thunk()))
     default:
       return ""
   }
@@ -117,20 +112,17 @@ export const createTouchedRecord = (fields: FieldsRecord, value: boolean): Recor
 }
 
 export const extractStructFieldDefs = (
-  schema: Schema.Schema.Any
-): ReadonlyArray<FieldDef<string, Schema.Schema.Any>> | undefined => {
-  const unwrapTypeLiteral = (ast: AST.AST): AST.TypeLiteral | undefined => {
-    if (AST.isTypeLiteral(ast)) return ast
-    if (AST.isRefinement(ast)) return unwrapTypeLiteral(ast.from)
-    if (AST.isTransformation(ast)) return unwrapTypeLiteral(ast.from)
-    if (AST.isSuspend(ast)) return unwrapTypeLiteral(ast.f())
+  schema: Schema.Top
+): ReadonlyArray<FieldDef<string, Schema.Top>> | undefined => {
+  const unwrapObjects = (ast: AST.AST): AST.Objects | undefined => {
+    const base = AST.toType(ast)
+    if (AST.isObjects(base)) return base
+    if (AST.isSuspend(base)) return unwrapObjects(base.thunk())
     return undefined
   }
 
-  const typeLiteral = unwrapTypeLiteral(schema.ast)
-  if (!typeLiteral) return undefined
+  const objects = unwrapObjects(schema.ast)
+  if (!objects) return undefined
 
-  return typeLiteral.propertySignatures.map((prop) =>
-    makeField(prop.name as string, { ast: prop.type } as Schema.Schema.Any)
-  )
+  return objects.propertySignatures.map((prop) => makeField(prop.name as string, { ast: prop.type } as Schema.Top))
 }

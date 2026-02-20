@@ -24,7 +24,9 @@ export const parse = (mode?: FormMode): ParsedMode => {
   }
 
   if (validation === "onChange") {
-    const debounceMs = mode?.debounce === undefined ? null : Duration.toMillis(mode.debounce)
+    const debounceMs = mode?.debounce === undefined
+      ? null
+      : Duration.toMillis(Duration.fromDurationInputUnsafe(mode.debounce))
     const autoSubmit = mode?.autoSubmit === true
     return { validation: "onChange", debounce: debounceMs, autoSubmit }
   }

@@ -1,6 +1,6 @@
 import * as Option from "effect/Option"
-import * as ParseResult from "effect/ParseResult"
-import type * as AST from "effect/SchemaAST"
+import type * as Schema from "effect/Schema"
+import * as SchemaIssue from "effect/SchemaIssue"
 import { schemaPathToFieldPath } from "./Path.ts"
 
 export type ErrorSource = "field" | "refinement"
@@ -13,74 +13,50 @@ export interface ErrorEntry {
 interface IssueSourceEntry {
   readonly path: ReadonlyArray<PropertyKey>
   readonly source: ErrorSource
-  readonly issue: ParseResult.ParseIssue
+  readonly issue: SchemaIssue.Issue
 }
 
-const getBaseAST = (ast: AST.AST): AST.AST => {
-  switch (ast._tag) {
-    case "Refinement":
-    case "Transformation":
-      return getBaseAST(ast.from)
-    default:
-      return ast
-  }
-}
+const standardFormatter = SchemaIssue.makeFormatterStandardSchemaV1()
 
-const isCompositeType = (ast: AST.AST): boolean => {
-  const base = getBaseAST(ast)
-  switch (base._tag) {
-    case "TypeLiteral": // Schema.Struct
-    case "TupleType": // Schema.Tuple
-    case "Declaration": // Schema.Class, Schema.TaggedClass
-    case "Union": // Schema.Union
-    case "Suspend": // Recursive schemas
-      return true
-    default:
-      return false
-  }
-}
-
-const collectIssueSources = (error: ParseResult.ParseError): ReadonlyArray<IssueSourceEntry> => {
+const collectIssueSources = (error: Schema.SchemaError): ReadonlyArray<IssueSourceEntry> => {
   const entries: Array<IssueSourceEntry> = []
 
-  const walk = (issue: ParseResult.ParseIssue, path: ReadonlyArray<PropertyKey>, source: ErrorSource): void => {
+  const walk = (issue: SchemaIssue.Issue, path: ReadonlyArray<PropertyKey>, source: ErrorSource): void => {
     switch (issue._tag) {
-      case "Refinement":
-        if (issue.kind === "Predicate" && isCompositeType(issue.ast.from) && path.length === 0) {
+      case "Filter":
+        if (path.length === 0) {
           walk(issue.issue, path, "refinement")
         } else {
           walk(issue.issue, path, source)
         }
         break
-      case "Pointer": {
-        const pointerPath = Array.isArray(issue.path) ? issue.path : [issue.path]
-        walk(issue.issue, [...path, ...pointerPath], source)
+      case "Encoding":
+        if (path.length === 0) {
+          walk(issue.issue, path, "refinement")
+        } else {
+          walk(issue.issue, path, source)
+        }
         break
-      }
-      case "Composite": {
-        const issues = Array.isArray(issue.issues) ? issue.issues : [issue.issues]
-        for (const sub of issues) {
+      case "Pointer":
+        walk(issue.issue, [...path, ...issue.path], source)
+        break
+      case "Composite":
+        for (const sub of issue.issues) {
           walk(sub, path, source)
         }
         break
-      }
-      case "Type":
-      case "Missing":
-      case "Unexpected":
-      case "Forbidden":
-        entries.push({ path, source, issue })
-        break
-      case "Transformation":
-        if (
-          issue.kind === "Transformation" &&
-          issue.ast.transformation._tag === "FinalTransformation" &&
-          isCompositeType(issue.ast.from) &&
-          path.length === 0
-        ) {
-          walk(issue.issue, path, "refinement")
-        } else {
-          walk(issue.issue, path, source)
+      case "AnyOf":
+        for (const sub of issue.issues) {
+          walk(sub, path, source)
         }
+        break
+      case "InvalidType":
+      case "InvalidValue":
+      case "MissingKey":
+      case "UnexpectedKey":
+      case "Forbidden":
+      case "OneOf":
+        entries.push({ path, source, issue })
         break
     }
   }
@@ -89,25 +65,34 @@ const collectIssueSources = (error: ParseResult.ParseError): ReadonlyArray<Issue
   return entries
 }
 
-const getIssueMessage = (issue: ParseResult.ParseIssue): string | undefined => {
-  const formatted = ParseResult.ArrayFormatter.formatIssueSync(issue)
-  return formatted[0]?.message
+const getIssueMessage = (issue: SchemaIssue.Issue): string | undefined => {
+  const formatted = standardFormatter(issue)
+  return formatted.issues[0]?.message
 }
 
-export const extractFirstError = (error: ParseResult.ParseError): Option.Option<string> => {
-  const issues = ParseResult.ArrayFormatter.formatErrorSync(error)
-  if (issues.length === 0) {
+export const extractFirstError = (error: Schema.SchemaError): Option.Option<string> => {
+  const formatted = standardFormatter(error.issue)
+  if (formatted.issues.length === 0) {
     return Option.none()
   }
-  return Option.some(issues[0].message)
+  return Option.some(formatted.issues[0].message)
 }
 
-export const routeErrors = (error: ParseResult.ParseError): Map<string, string> => {
-  const result = new Map<string, string>()
-  const issues = ParseResult.ArrayFormatter.formatErrorSync(error)
+const normalizePath = (
+  path: ReadonlyArray<PropertyKey | { readonly key: PropertyKey }> | undefined
+): ReadonlyArray<PropertyKey> => {
+  if (!path) return []
+  return path.map((segment) =>
+    typeof segment === "object" && segment !== null && "key" in segment ? segment.key : segment as PropertyKey
+  )
+}
 
-  for (const issue of issues) {
-    const fieldPath = schemaPathToFieldPath(issue.path)
+export const routeErrors = (error: Schema.SchemaError): Map<string, string> => {
+  const result = new Map<string, string>()
+  const formatted = standardFormatter(error.issue)
+
+  for (const issue of formatted.issues) {
+    const fieldPath = schemaPathToFieldPath(normalizePath(issue.path))
     if (fieldPath && !result.has(fieldPath)) {
       result.set(fieldPath, issue.message)
     }
@@ -116,9 +101,9 @@ export const routeErrors = (error: ParseResult.ParseError): Map<string, string> 
   return result
 }
 
-export const routeErrorsWithSource = (error: ParseResult.ParseError): Map<string, ErrorEntry> => {
+export const routeErrorsWithSource = (error: Schema.SchemaError): Map<string, ErrorEntry> => {
   const result = new Map<string, ErrorEntry>()
-  const formattedIssues = ParseResult.ArrayFormatter.formatErrorSync(error)
+  const formattedIssues = standardFormatter(error.issue).issues
   const issueSources = collectIssueSources(error)
   const messageSources = new Map<string, ErrorSource>()
   const refinementPaths = new Set<string>()
@@ -139,7 +124,7 @@ export const routeErrorsWithSource = (error: ParseResult.ParseError): Map<string
   }
 
   for (const issue of formattedIssues) {
-    const fieldPath = schemaPathToFieldPath(issue.path) ?? ""
+    const fieldPath = schemaPathToFieldPath(normalizePath(issue.path)) ?? ""
     if (result.has(fieldPath)) continue
     const preferredSource: ErrorSource = refinementPaths.has(fieldPath) ? "refinement" : "field"
     const messageKey = `${fieldPath}::${issue.message}`
@@ -152,7 +137,7 @@ export const routeErrorsWithSource = (error: ParseResult.ParseError): Map<string
 
   if (result.size < formattedIssues.length) {
     for (const issue of formattedIssues) {
-      const fieldPath = schemaPathToFieldPath(issue.path) ?? ""
+      const fieldPath = schemaPathToFieldPath(normalizePath(issue.path)) ?? ""
       if (result.has(fieldPath)) continue
       const messageKey = `${fieldPath}::${issue.message}`
       const issueSource = messageSources.get(messageKey) ?? "field"

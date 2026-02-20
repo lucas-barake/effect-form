@@ -1,10 +1,11 @@
-import * as Atom from "@effect-atom/atom/Atom"
-import * as Registry from "@effect-atom/atom/Registry"
-import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as SchemaGetter from "effect/SchemaGetter"
+import * as ServiceMap from "effect/ServiceMap"
+import * as Atom from "effect/unstable/reactivity/Atom"
+import * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as Field from "../src/Field.js"
 import * as FormAtoms from "../src/FormAtoms.js"
@@ -604,7 +605,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       registry.set(
         atoms.stateAtom,
@@ -623,7 +624,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       registry.set(
         atoms.stateAtom,
@@ -640,7 +641,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       registry.set(
         atoms.stateAtom,
@@ -661,7 +662,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       registry.set(
         atoms.stateAtom,
@@ -684,7 +685,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -707,7 +708,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -726,7 +727,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -745,7 +746,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -764,7 +765,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -794,7 +795,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -810,7 +811,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -833,7 +834,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -857,7 +858,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -884,7 +885,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({
         title: "My List",
@@ -915,7 +916,7 @@ describe("FormAtoms", () => {
       const ItemsField = Field.makeArrayField("items", ItemSchema)
       const form = FormBuilder.empty.addField(TitleField).addField(ItemsField)
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({
         title: "My List",
@@ -979,7 +980,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeArrayTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({
         title: "My List",
@@ -1008,7 +1009,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -1048,7 +1049,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({
         name: "John",
@@ -1085,7 +1086,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -1109,7 +1110,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -1136,7 +1137,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const initialState = atoms.operations.createInitialState({
           name: "John",
@@ -1160,7 +1161,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const initialState = atoms.operations.createInitialState({
           name: "John",
@@ -1181,7 +1182,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeArrayTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const initialState = atoms.operations.createInitialState({
           title: "My List",
@@ -1217,7 +1218,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const initialState = atoms.operations.createInitialState({
           name: "John",
@@ -1234,7 +1235,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         let state = atoms.operations.createInitialState({
           name: "John",
@@ -1255,7 +1256,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const nameValue = atoms.getFieldAtoms(atoms.fieldRefs.name).value
 
@@ -1266,7 +1267,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const nameValue = atoms.getFieldAtoms(atoms.fieldRefs.name).value
         expect(registry.get(nameValue)).toEqual(Option.none())
@@ -1286,7 +1287,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const isDirty = atoms.getFieldAtoms(atoms.fieldRefs.name).isDirty
 
@@ -1297,7 +1298,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const initialState = atoms.operations.createInitialState({
           name: "John",
@@ -1314,7 +1315,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         let state = atoms.operations.createInitialState({
           name: "John",
@@ -1334,7 +1335,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         let state = atoms.operations.createInitialState({
           name: "John",
@@ -1357,7 +1358,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         registry.set(
           atoms.stateAtom,
@@ -1376,7 +1377,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const isTouched = atoms.getFieldAtoms(atoms.fieldRefs.name).isTouched
 
@@ -1387,7 +1388,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const initialState = atoms.operations.createInitialState({
           name: "John",
@@ -1404,7 +1405,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const initialState = atoms.operations.createInitialState({
           name: "John",
@@ -1426,7 +1427,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const { setTouched } = atoms.getFieldAtoms(atoms.fieldRefs.name)
 
@@ -1442,7 +1443,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const isValidating = atoms.getFieldAtoms(atoms.fieldRefs.name).isValidating
 
@@ -1455,7 +1456,7 @@ describe("FormAtoms", () => {
         const runtime = Atom.runtime(Layer.empty)
         const form = makeTestForm()
         const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-        const registry = Registry.make()
+        const registry = AtomRegistry.make()
 
         const error = atoms.getFieldAtoms(atoms.fieldRefs.name).error
 
@@ -1469,12 +1470,12 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const EmailField = Field.makeField(
         "email",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Email is required" })))
       )
       const form = FormBuilder.empty.addField(EmailField)
       const onSubmit = vi.fn()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({ email: "" })
       registry.set(atoms.stateAtom, Option.some(initialState))
@@ -1497,12 +1498,12 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const EmailField = Field.makeField(
         "email",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Email is required" })))
       )
       const form = FormBuilder.empty.addField(EmailField)
       const onSubmit = vi.fn()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({ email: "test@example.com" })
       registry.set(atoms.stateAtom, Option.some(initialState))
@@ -1529,20 +1530,20 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Name is required" })))
       )
       const EmailField = Field.makeField(
         "email",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Email is required" })))
       )
       const AgeField = Field.makeField(
         "age",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Age is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Age is required" })))
       )
       const form = FormBuilder.empty.addField(NameField).addField(EmailField).addField(AgeField)
       const onSubmit = vi.fn()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({ name: "", email: "", age: "" })
       registry.set(atoms.stateAtom, Option.some(initialState))
@@ -1565,12 +1566,12 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const EmailField = Field.makeField(
         "email",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Email is required" })))
       )
       const form = FormBuilder.empty.addField(EmailField)
       const onSubmit = vi.fn()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ email: "first@example.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -1604,7 +1605,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -1629,7 +1630,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const initialState = atoms.operations.createInitialState({
         name: "John",
@@ -1652,7 +1653,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       registry.set(
         atoms.stateAtom,
@@ -1669,12 +1670,12 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Name is required" })))
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
       state = atoms.operations.createSubmitState(state)
@@ -1699,7 +1700,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       state = atoms.operations.createSubmitState(state)
@@ -1718,11 +1719,14 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.filterEffect(() => Effect.succeed("Name is invalid")))
+        Schema.String.pipe(Schema.decode({
+          decode: SchemaGetter.checkEffect(() => Effect.succeed("Name is invalid")),
+          encode: SchemaGetter.passthrough()
+        }))
       )
       const form = FormBuilder.empty.addField(NameField)
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "bad" })
       state = atoms.operations.createSubmitState(state)
@@ -1744,10 +1748,10 @@ describe("FormAtoms", () => {
     })
 
     it("uses runtime services in field-level filterEffect", () => {
-      class NameValidator extends Context.Tag("NameValidator")<
+      class NameValidator extends ServiceMap.Service<
         NameValidator,
         { readonly isInvalid: (name: string) => Effect.Effect<boolean> }
-      >() {}
+      >()("NameValidator") {}
 
       const NameValidatorLive = Layer.succeed(NameValidator, {
         isInvalid: (name) => Effect.succeed(name === "taken")
@@ -1757,18 +1761,21 @@ describe("FormAtoms", () => {
       const NameField = Field.makeField(
         "name",
         Schema.String.pipe(
-          Schema.filterEffect((value) =>
-            Effect.gen(function*() {
-              const validator = yield* NameValidator
-              const isInvalid = yield* validator.isInvalid(value)
-              return isInvalid ? "Name is already taken" : true
-            })
-          )
+          Schema.decode({
+            decode: SchemaGetter.checkEffect((value: string) =>
+              Effect.gen(function*() {
+                const validator = yield* NameValidator
+                const isInvalid = yield* validator.isInvalid(value)
+                if (isInvalid) return "Name is already taken"
+              })
+            ),
+            encode: SchemaGetter.passthrough()
+          })
         )
       )
       const form = FormBuilder.empty.addField(NameField)
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "taken" })
       state = atoms.operations.createSubmitState(state)
@@ -1793,7 +1800,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       state = atoms.operations.createSubmitState(state)
@@ -1818,7 +1825,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       state = atoms.operations.createSubmitState(state)
@@ -1847,12 +1854,12 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Name is required" })))
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -1874,12 +1881,12 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Name is required" })))
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onBlur" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
       state = atoms.operations.setFieldTouched(state, "name", true)
@@ -1904,12 +1911,12 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Name is required" })))
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onChange" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       state = atoms.operations.setFieldValue(state, "name", "")
@@ -1934,12 +1941,12 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Name is required" })))
       )
       const EmailField = Field.makeField("email", Schema.String)
       const form = FormBuilder.empty.addField(NameField).addField(EmailField)
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onChange" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -1963,7 +1970,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onChange" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -2000,7 +2007,7 @@ describe("FormAtoms", () => {
         onSubmit: () => {},
         mode: { validation: "onChange", debounce: "300 millis" }
       })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -2037,7 +2044,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onBlur" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -2068,7 +2075,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       state = atoms.operations.createSubmitState(state)
@@ -2099,7 +2106,7 @@ describe("FormAtoms", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
       const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -2144,7 +2151,7 @@ describe("FormAtoms", () => {
         onSubmit,
         mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true }
       })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -2167,8 +2174,8 @@ describe("FormAtoms", () => {
       let resolveSubmit: (() => void) | undefined
 
       const onSubmit = vi.fn(() =>
-        Effect.async<void, never>((cb) => {
-          resolveSubmit = () => cb(Effect.void)
+        Effect.callback<void, never>(function(resume) {
+          resolveSubmit = () => resume(Effect.void)
         }).pipe(Effect.tap(() => Effect.sync(() => completions())))
       )
 
@@ -2178,7 +2185,7 @@ describe("FormAtoms", () => {
         onSubmit,
         mode: { validation: "onChange", debounce: "50 millis", autoSubmit: true }
       })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -2210,7 +2217,7 @@ describe("FormAtoms", () => {
         onSubmit,
         mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true }
       })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -2235,7 +2242,7 @@ describe("FormAtoms", () => {
         onSubmit,
         mode: { validation: "onChange" }
       })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       registry.set(atoms.stateAtom, Option.some(state))
@@ -2263,7 +2270,7 @@ describe("FormAtoms", () => {
         onSubmit,
         mode: { validation: "onBlur", autoSubmit: true }
       })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       state = atoms.operations.createSubmitState(state)
@@ -2297,7 +2304,7 @@ describe("FormAtoms", () => {
         onSubmit,
         mode: { validation: "onBlur", autoSubmit: true }
       })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       state = atoms.operations.createSubmitState(state)
@@ -2330,7 +2337,7 @@ describe("FormAtoms", () => {
         onSubmit,
         mode: { validation: "onBlur" }
       })
-      const registry = Registry.make()
+      const registry = AtomRegistry.make()
 
       let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
       state = atoms.operations.setFieldValue(state, "name", "Jane")

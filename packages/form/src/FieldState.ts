@@ -1,7 +1,7 @@
 import type * as Option from "effect/Option"
 import type * as Schema from "effect/Schema"
 
-export type FieldValue<T,> = T extends Schema.Schema.Any ? Schema.Schema.Encoded<T> : T
+export type FieldValue<T,> = T extends Schema.Top ? Schema.Codec.Encoded<T> : T
 
 export interface FieldState<E,> {
   readonly value: E

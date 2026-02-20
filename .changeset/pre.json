@@ -1,0 +1,9 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "@lucas-barake/effect-form": "0.24.0",
+    "@lucas-barake/effect-form-react": "0.25.0"
+  },
+  "changesets": []
+}

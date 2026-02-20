@@ -1,15 +1,16 @@
-import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
-import * as Atom from "@effect-atom/atom/Atom"
-import * as Registry from "@effect-atom/atom/Registry"
-import * as Result from "@effect-atom/atom/Result"
+import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import { render, screen, waitFor } from "@testing-library/react"
 import { userEvent } from "@testing-library/user-event"
-import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as SchemaGetter from "effect/SchemaGetter"
+import * as ServiceMap from "effect/ServiceMap"
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
+import * as Atom from "effect/unstable/reactivity/Atom"
+import * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
 import * as React from "react"
 import { describe, expect, expectTypeOf, it, vi } from "vitest"
 
@@ -86,7 +87,7 @@ describe("FormReact.make", () => {
     it("shows validation error after touch (onBlur mode)", async () => {
       const user = userEvent.setup()
 
-      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
+      const NonEmpty = Schema.String.pipe(Schema.check(Schema.isMinLength(1, { message: "Required" })))
       const NameField = Field.makeField("name", NonEmpty)
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -346,7 +347,10 @@ describe("FormReact.make", () => {
       const user = userEvent.setup()
 
       const ItemSchema = Schema.Struct({ name: Schema.String }).pipe(
-        Schema.filterEffect(() => Effect.succeed(true))
+        Schema.decode({
+          decode: SchemaGetter.checkEffect(() => Effect.succeed(undefined)),
+          encode: SchemaGetter.passthrough()
+        })
       )
       const ItemsArrayField = Field.makeArrayField("items", ItemSchema)
       const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
@@ -630,7 +634,10 @@ describe("FormReact.make", () => {
       const submitHandler = vi.fn()
 
       const AsyncEmail = Schema.String.pipe(
-        Schema.filterEffect(() => Effect.succeed(true).pipe(Effect.delay("10 millis")))
+        Schema.decode({
+          decode: SchemaGetter.checkEffect(() => Effect.succeed(undefined).pipe(Effect.delay("10 millis"))),
+          encode: SchemaGetter.passthrough()
+        })
       )
 
       const EmailField = Field.makeField("email", AsyncEmail)
@@ -661,7 +668,10 @@ describe("FormReact.make", () => {
       const user = userEvent.setup()
 
       const AsyncField = Schema.String.pipe(
-        Schema.filterEffect(() => Effect.succeed(true).pipe(Effect.delay("100 millis")))
+        Schema.decode({
+          decode: SchemaGetter.checkEffect(() => Effect.succeed(undefined).pipe(Effect.delay("100 millis"))),
+          encode: SchemaGetter.passthrough()
+        })
       )
 
       const ValidatingInput: FormReact.FieldComponent<string> = ({ field }) => (
@@ -832,10 +842,10 @@ describe("FormReact.make", () => {
     it("refineEffect works with Effect services from runtime", async () => {
       const user = userEvent.setup()
 
-      class UsernameValidator extends Context.Tag("UsernameValidator")<
+      class UsernameValidator extends ServiceMap.Service<
         UsernameValidator,
         { readonly isTaken: (username: string) => Effect.Effect<boolean> }
-      >() {}
+      >()("UsernameValidator") {}
 
       const UsernameValidatorLive = Layer.succeed(UsernameValidator, {
         isTaken: (username) => Effect.succeed(username === "taken")
@@ -859,7 +869,7 @@ describe("FormReact.make", () => {
         .addField(UsernameField)
         .refineEffect((values) =>
           Effect.gen(function*() {
-            const registry = yield* Registry.AtomRegistry
+            const registry = yield* AtomRegistry.AtomRegistry
             expect(typeof registry.get).toBe("function")
 
             const validator = yield* UsernameValidator
@@ -1134,7 +1144,7 @@ describe("FormReact.make", () => {
       )
 
       const ItemSchema = Schema.Struct({
-        name: Schema.String.pipe(Schema.minLength(3, { message: () => "Name must be at least 3 characters" }))
+        name: Schema.String.pipe(Schema.check(Schema.isMinLength(3, { message: "Name must be at least 3 characters" })))
       })
 
       const ItemsArrayField = Field.makeArrayField("items", ItemSchema)
@@ -1180,7 +1190,7 @@ describe("FormReact.make", () => {
     it("onSubmit mode shows errors after submit attempt", async () => {
       const user = userEvent.setup()
 
-      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
+      const NonEmpty = Schema.String.pipe(Schema.check(Schema.isMinLength(1, { message: "Required" })))
       const NameField = Field.makeField("name", NonEmpty)
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -1213,7 +1223,7 @@ describe("FormReact.make", () => {
     it("onChange mode shows errors immediately without needing blur", async () => {
       const user = userEvent.setup()
 
-      const MinLength = Schema.String.pipe(Schema.minLength(3, { message: () => "Min 3 chars" }))
+      const MinLength = Schema.String.pipe(Schema.check(Schema.isMinLength(3, { message: "Min 3 chars" })))
       const NameField = Field.makeField("name", MinLength)
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -1247,7 +1257,7 @@ describe("FormReact.make", () => {
     it("onSubmit mode keeps errors when typing still-invalid values after failed submit", async () => {
       const user = userEvent.setup()
 
-      const MinLength = Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" }))
+      const MinLength = Schema.String.pipe(Schema.check(Schema.isMinLength(8, { message: "Min 8 chars" })))
       const PasswordField = Field.makeField("password", MinLength)
       const formBuilder = FormBuilder.empty.addField(PasswordField)
 
@@ -1285,7 +1295,7 @@ describe("FormReact.make", () => {
     it("onSubmit mode clears errors when typing valid values after failed submit", async () => {
       const user = userEvent.setup()
 
-      const MinLength = Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" }))
+      const MinLength = Schema.String.pipe(Schema.check(Schema.isMinLength(8, { message: "Min 8 chars" })))
       const PasswordField = Field.makeField("password", MinLength)
       const formBuilder = FormBuilder.empty.addField(PasswordField)
 
@@ -1324,7 +1334,7 @@ describe("FormReact.make", () => {
     it("cross-field refinement errors persist until re-submit", async () => {
       const user = userEvent.setup()
 
-      const PasswordField = Field.makeField("password", Schema.String.pipe(Schema.minLength(4)))
+      const PasswordField = Field.makeField("password", Schema.String.pipe(Schema.check(Schema.isMinLength(4))))
       const ConfirmField = Field.makeField("confirm", Schema.String)
 
       const formBuilder = FormBuilder.empty
@@ -1392,7 +1402,7 @@ describe("FormReact.make", () => {
 
       const PasswordField = Field.makeField(
         "password",
-        Schema.String.pipe(Schema.minLength(8, { message: () => "Min 8 chars" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(8, { message: "Min 8 chars" })))
       )
       const ConfirmField = Field.makeField("confirm", Schema.String)
 
@@ -1472,13 +1482,16 @@ describe("FormReact.make", () => {
       const user = userEvent.setup()
 
       const AsyncMinLength = Schema.String.pipe(
-        Schema.minLength(8, { message: () => "Too short" }),
-        Schema.filterEffect((_value) =>
-          Effect.gen(function*() {
-            yield* Effect.sleep("200 millis")
-            return undefined
-          })
-        )
+        Schema.check(Schema.isMinLength(8, { message: "Too short" })),
+        Schema.decode({
+          decode: SchemaGetter.checkEffect((_value) =>
+            Effect.gen(function*() {
+              yield* Effect.sleep("200 millis")
+              return undefined
+            })
+          ),
+          encode: SchemaGetter.passthrough()
+        })
       )
       const PasswordField = Field.makeField("password", AsyncMinLength)
       const formBuilder = FormBuilder.empty.addField(PasswordField)
@@ -1640,7 +1653,7 @@ describe("FormReact.make", () => {
       })
 
       let capturedIsDirty: boolean | undefined
-      let capturedSubmitResult: Result.Result<unknown, unknown> | undefined
+      let capturedSubmitResult: AsyncResult.AsyncResult<unknown, unknown> | undefined
 
       const Consumer = () => {
         useAtomSubscribe(form.isDirty, (v) => {
@@ -1660,7 +1673,7 @@ describe("FormReact.make", () => {
       )
 
       expect(capturedIsDirty).toBe(false)
-      expect(Result.isInitial(capturedSubmitResult!)).toBe(true)
+      expect(AsyncResult.isInitial(capturedSubmitResult!)).toBe(true)
     })
 
     it("exposes submitResult.waiting during submission", async () => {
@@ -1710,7 +1723,7 @@ describe("FormReact.make", () => {
     it("exposes submitResult with failure on validation error", async () => {
       const user = userEvent.setup()
 
-      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
+      const NonEmpty = Schema.String.pipe(Schema.check(Schema.isMinLength(1, { message: "Required" })))
       const NameField = Field.makeField("name", NonEmpty)
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -1721,7 +1734,7 @@ describe("FormReact.make", () => {
         onSubmit
       })
 
-      let capturedResult: Result.Result<unknown, unknown> | undefined
+      let capturedResult: AsyncResult.AsyncResult<unknown, unknown> | undefined
 
       const Consumer = () => {
         useAtomSubscribe(form.submit, (v) => {
@@ -1744,7 +1757,7 @@ describe("FormReact.make", () => {
 
       await waitFor(() => {
         expect(capturedResult).toBeDefined()
-        expect(Result.isFailure(capturedResult!)).toBe(true)
+        expect(AsyncResult.isFailure(capturedResult!)).toBe(true)
       })
     })
 
@@ -2169,7 +2182,7 @@ describe("FormReact.make", () => {
         Atom.keepAlive
       )
 
-      const NonEmpty = Schema.String.pipe(Schema.minLength(1, { message: () => "Required" }))
+      const NonEmpty = Schema.String.pipe(Schema.check(Schema.isMinLength(1, { message: "Required" })))
       const NameField = Field.makeField("name", NonEmpty)
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -2213,12 +2226,15 @@ describe("FormReact.make", () => {
       const NameField = Field.makeField(
         "name",
         Schema.String.pipe(
-          Schema.filterEffect(() =>
-            Effect.gen(function*() {
-              yield* Registry.AtomRegistry
-              return true as const
-            })
-          )
+          Schema.decode({
+            decode: SchemaGetter.checkEffect(() =>
+              Effect.gen(function*() {
+                yield* AtomRegistry.AtomRegistry
+                return undefined
+              })
+            ),
+            encode: SchemaGetter.passthrough()
+          })
         )
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
@@ -2266,7 +2282,7 @@ describe("FormReact.make", () => {
     const NameFieldMinLength = Field.makeField(
       "name",
       Schema.String.pipe(
-        Schema.minLength(5, { message: () => "Must be at least 5 characters" })
+        Schema.check(Schema.isMinLength(5, { message: "Must be at least 5 characters" }))
       )
     )
     const AgeField = Field.makeField("age", Schema.String)
@@ -2617,7 +2633,7 @@ describe("FormReact.make", () => {
     it("shows field errors immediately with validateOnInit + invalid defaults", async () => {
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -2648,7 +2664,7 @@ describe("FormReact.make", () => {
     it("shows no errors with validateOnInit + valid defaults", async () => {
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -2727,7 +2743,7 @@ describe("FormReact.make", () => {
 
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -2758,7 +2774,7 @@ describe("FormReact.make", () => {
     it("reset clears validate errors and validationCount", async () => {
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -2802,7 +2818,7 @@ describe("FormReact.make", () => {
     it("does not re-validate when KeepAlive preserves state", async () => {
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -2857,7 +2873,7 @@ describe("FormReact.make", () => {
 
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -2888,7 +2904,7 @@ describe("FormReact.make", () => {
     it("imperative validate shows errors after programmatic setValues", async () => {
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -2934,7 +2950,7 @@ describe("FormReact.make", () => {
     it("imperative validate clears previous errors when values are now valid", async () => {
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -2982,7 +2998,7 @@ describe("FormReact.make", () => {
     it("calling validate multiple times reflects latest state each time", async () => {
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -3060,7 +3076,7 @@ describe("FormReact.make", () => {
 
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
@@ -3177,11 +3193,11 @@ describe("FormReact.make", () => {
 
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Name too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Name too short" })))
       )
       const EmailField = Field.makeField(
         "email",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Email too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Email too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField).addField(EmailField)
 
@@ -3219,7 +3235,10 @@ describe("FormReact.make", () => {
     it("works in onBlur mode", async () => {
       const user = userEvent.setup()
 
-      const NameField = Field.makeField("name", Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" })))
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
+      )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.make(formBuilder, {
@@ -3258,7 +3277,10 @@ describe("FormReact.make", () => {
     })
 
     it("works in onChange mode", async () => {
-      const NameField = Field.makeField("name", Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" })))
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
+      )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.make(formBuilder, {
@@ -3301,7 +3323,10 @@ describe("FormReact.make", () => {
     })
 
     it("reset clears per-field validation state", async () => {
-      const NameField = Field.makeField("name", Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" })))
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
+      )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.make(formBuilder, {
@@ -3342,7 +3367,10 @@ describe("FormReact.make", () => {
     })
 
     it("per-field validate works after reset", async () => {
-      const NameField = Field.makeField("name", Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" })))
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
+      )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.make(formBuilder, {
@@ -3389,7 +3417,10 @@ describe("FormReact.make", () => {
     })
 
     it("does not affect form-level validationCount or submitCount", async () => {
-      const NameField = Field.makeField("name", Schema.String.pipe(Schema.minLength(5, { message: () => "Too short" })))
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Too short" })))
+      )
       const formBuilder = FormBuilder.empty.addField(NameField)
 
       const form = FormReact.make(formBuilder, {
@@ -3465,15 +3496,15 @@ describe("FormReact.make", () => {
 
       const NameField = Field.makeField(
         "name",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Name too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Name too short" })))
       )
       const EmailField = Field.makeField(
         "email",
-        Schema.String.pipe(Schema.minLength(5, { message: () => "Email too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(5, { message: "Email too short" })))
       )
       const AgeField = Field.makeField(
         "age",
-        Schema.String.pipe(Schema.minLength(2, { message: () => "Age too short" }))
+        Schema.String.pipe(Schema.check(Schema.isMinLength(2, { message: "Age too short" })))
       )
       const formBuilder = FormBuilder.empty.addField(NameField).addField(EmailField).addField(AgeField)
 

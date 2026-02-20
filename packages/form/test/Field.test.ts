@@ -10,14 +10,12 @@ describe("Field", () => {
     })
 
     it("unwraps refinements and transformations", () => {
-      const refined = Schema.Number.pipe(Schema.greaterThan(1))
-      const transformed = Schema.transform(
-        Schema.Number,
-        Schema.String,
-        {
-          decode: (value) => String(value),
-          encode: (value) => Number(value)
-        }
+      const refined = Schema.Number.pipe(Schema.check(Schema.isGreaterThan(1)))
+      const transformed = Schema.Number.pipe(
+        Schema.decodeTo(Schema.String, {
+          decode: (value: number) => String(value),
+          encode: (value: string) => Number(value)
+        })
       )
 
       expect(Field.getDefaultFromSchema(refined)).toBe(0)
@@ -26,8 +24,8 @@ describe("Field", () => {
 
     it("returns defaults for literals, enums, and unions", () => {
       const literal = Schema.Literal("pending")
-      const enums = Schema.Enums({ Red: "red", Blue: "blue" })
-      const union = Schema.Union(Schema.Literal("a"), Schema.Literal("b"))
+      const enums = Schema.Enum({ Red: "red", Blue: "blue" })
+      const union = Schema.Union([Schema.Literal("a"), Schema.Literal("b")])
 
       expect(Field.getDefaultFromSchema(literal)).toBe("pending")
       expect(Field.getDefaultFromSchema(enums)).toBe("red")
@@ -35,8 +33,8 @@ describe("Field", () => {
     })
 
     it("returns undefined for empty enums and unions", () => {
-      const emptyEnums = Schema.Enums({}) as unknown as Schema.Schema.Any
-      const emptyUnion = Schema.Union() as unknown as Schema.Schema.Any
+      const emptyEnums = Schema.Enum({}) as unknown as Schema.Top
+      const emptyUnion = Schema.Union([]) as unknown as Schema.Top
 
       expect(Field.getDefaultFromSchema(emptyEnums)).toBeUndefined()
       expect(Field.getDefaultFromSchema(emptyUnion)).toBeUndefined()
@@ -86,14 +84,12 @@ describe("Field", () => {
 
     it("unwraps refinements, transformations, and suspends", () => {
       const base = Schema.Struct({ name: Schema.String, age: Schema.Number })
-      const refined = base.pipe(Schema.filter(() => true))
-      const transformed = Schema.transform(
-        base,
-        base,
-        {
-          decode: (value) => value,
-          encode: (value) => value
-        }
+      const refined = base.pipe(Schema.check(Schema.makeFilter(() => true)))
+      const transformed = base.pipe(
+        Schema.decodeTo(base, {
+          decode: (value: { readonly name: string; readonly age: number }) => value,
+          encode: (value: { readonly name: string; readonly age: number }) => value
+        })
       )
       const suspended = Schema.suspend(() => base)
 

@@ -1,8 +1,9 @@
-import type * as Registry from "@effect-atom/atom/Registry"
 import type * as Effect from "effect/Effect"
 import type * as Option from "effect/Option"
 import * as Predicate from "effect/Predicate"
 import * as Schema from "effect/Schema"
+import * as SchemaGetter from "effect/SchemaGetter"
+import type * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
 
 import type {
   AnyFieldDef,
@@ -13,6 +14,11 @@ import type {
   FieldsRecord
 } from "./Field.ts"
 import { isArrayFieldDef, isFieldDef, makeField } from "./Field.ts"
+
+type FilterResult = undefined | boolean | string | {
+  readonly path: ReadonlyArray<PropertyKey>
+  readonly message: string
+}
 
 export interface SubmittedValues<TFields extends FieldsRecord,> {
   readonly encoded: EncodedFromFields<TFields>
@@ -51,12 +57,12 @@ export interface FormState<TFields extends FieldsRecord,> {
 
 interface SyncRefinement {
   readonly _tag: "sync"
-  readonly fn: (values: unknown) => Schema.FilterOutput
+  readonly fn: (values: unknown) => FilterResult
 }
 
 interface AsyncRefinement {
   readonly _tag: "async"
-  readonly fn: (values: unknown) => Effect.Effect<Schema.FilterOutput, never, unknown>
+  readonly fn: (values: unknown) => Effect.Effect<FilterResult, never, unknown>
 }
 
 type Refinement = SyncRefinement | AsyncRefinement
@@ -67,21 +73,21 @@ export interface FormBuilder<TFields extends FieldsRecord, R,> {
   readonly refinements: ReadonlyArray<Refinement>
   readonly _R?: R
 
-  addField<K extends string, S extends Schema.Schema.Any,>(
+  addField<K extends string, S extends Schema.Top,>(
     this: FormBuilder<TFields, R>,
     field: FieldDef<K, S>
-  ): FormBuilder<TFields & { readonly [key in K]: FieldDef<K, S> }, R | Schema.Schema.Context<S>>
+  ): FormBuilder<TFields & { readonly [key in K]: FieldDef<K, S> }, R | Schema.Codec.DecodingServices<S>>
 
-  addField<K extends string, S extends Schema.Schema.Any,>(
+  addField<K extends string, S extends Schema.Top,>(
     this: FormBuilder<TFields, R>,
     field: ArrayFieldDef<K, S>
-  ): FormBuilder<TFields & { readonly [key in K]: ArrayFieldDef<K, S> }, R | Schema.Schema.Context<S>>
+  ): FormBuilder<TFields & { readonly [key in K]: ArrayFieldDef<K, S> }, R | Schema.Codec.DecodingServices<S>>
 
-  addField<K extends string, S extends Schema.Schema.Any,>(
+  addField<K extends string, S extends Schema.Top,>(
     this: FormBuilder<TFields, R>,
     key: K,
     schema: S
-  ): FormBuilder<TFields & { readonly [key in K]: FieldDef<K, S> }, R | Schema.Schema.Context<S>>
+  ): FormBuilder<TFields & { readonly [key in K]: FieldDef<K, S> }, R | Schema.Codec.DecodingServices<S>>
 
   merge<TFields2 extends FieldsRecord, R2,>(
     this: FormBuilder<TFields, R>,
@@ -90,13 +96,13 @@ export interface FormBuilder<TFields extends FieldsRecord, R,> {
 
   refine(
     this: FormBuilder<TFields, R>,
-    predicate: (values: DecodedFromFields<TFields>) => Schema.FilterOutput
+    predicate: (values: DecodedFromFields<TFields>) => FilterResult
   ): FormBuilder<TFields, R>
 
   refineEffect<RD,>(
     this: FormBuilder<TFields, R>,
-    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>
-  ): FormBuilder<TFields, R | Exclude<RD, Registry.AtomRegistry>>
+    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<FilterResult, never, RD>
+  ): FormBuilder<TFields, R | Exclude<RD, AtomRegistry.AtomRegistry>>
 }
 
 const FormBuilderProto = {
@@ -104,7 +110,7 @@ const FormBuilderProto = {
   addField<TFields extends FieldsRecord, R,>(
     this: FormBuilder<TFields, R>,
     keyOrField: string | AnyFieldDef,
-    schema?: Schema.Schema.Any
+    schema?: Schema.Top
   ): FormBuilder<any, any> {
     const field = typeof keyOrField === "string"
       ? makeField(keyOrField, schema!)
@@ -125,7 +131,7 @@ const FormBuilderProto = {
   },
   refine<TFields extends FieldsRecord, R,>(
     this: FormBuilder<TFields, R>,
-    predicate: (values: DecodedFromFields<TFields>) => Schema.FilterOutput
+    predicate: (values: DecodedFromFields<TFields>) => FilterResult
   ): FormBuilder<TFields, R> {
     const newSelf = Object.create(FormBuilderProto)
     newSelf.fields = this.fields
@@ -137,8 +143,8 @@ const FormBuilderProto = {
   },
   refineEffect<TFields extends FieldsRecord, R, RD,>(
     this: FormBuilder<TFields, R>,
-    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>
-  ): FormBuilder<TFields, R | Exclude<RD, Registry.AtomRegistry>> {
+    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<FilterResult, never, RD>
+  ): FormBuilder<TFields, R | Exclude<RD, AtomRegistry.AtomRegistry>> {
     const newSelf = Object.create(FormBuilderProto)
     newSelf.fields = this.fields
     newSelf.refinements = [
@@ -161,8 +167,8 @@ export const empty: FormBuilder<{}, never> = (() => {
 
 export const buildSchema = <TFields extends FieldsRecord, R,>(
   self: FormBuilder<TFields, R>
-): Schema.Schema<DecodedFromFields<TFields>, EncodedFromFields<TFields>, R> => {
-  const schemaFields: Record<string, Schema.Schema.Any> = {}
+): Schema.Codec<DecodedFromFields<TFields>, EncodedFromFields<TFields>, R> => {
+  const schemaFields: Record<string, Schema.Top> = {}
   for (const [key, def] of Object.entries(self.fields)) {
     if (isArrayFieldDef(def)) {
       schemaFields[key] = Schema.Array(def.itemSchema)
@@ -171,17 +177,22 @@ export const buildSchema = <TFields extends FieldsRecord, R,>(
     }
   }
 
-  let schema: Schema.Schema<any, any, any> = Schema.Struct(schemaFields)
+  let schema: Schema.Codec<any, any, any, any> = Schema.Struct(schemaFields)
 
   for (const refinement of self.refinements) {
     if (refinement._tag === "sync") {
-      schema = schema.pipe(Schema.filter(refinement.fn))
+      schema = schema.pipe(Schema.check(Schema.makeFilter((input) => refinement.fn(input))))
     } else {
-      schema = schema.pipe(Schema.filterEffect(refinement.fn))
+      schema = schema.pipe(
+        Schema.decode({
+          decode: SchemaGetter.checkEffect((input) => refinement.fn(input)),
+          encode: SchemaGetter.passthrough()
+        })
+      )
     }
   }
 
-  return schema as Schema.Schema<
+  return schema as Schema.Codec<
     DecodedFromFields<TFields>,
     EncodedFromFields<TFields>,
     R
