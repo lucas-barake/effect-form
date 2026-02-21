@@ -16,6 +16,15 @@ export interface ParsedMode {
   readonly autoSubmit: boolean
 }
 
+const parseDurationInputUnsafe: (input: Duration.DurationInput) => Duration.Duration =
+  "fromInputUnsafe" in Duration
+    ? (
+      Duration as {
+        readonly fromInputUnsafe: (input: Duration.DurationInput) => Duration.Duration
+      }
+    ).fromInputUnsafe
+    : Duration.fromDurationInputUnsafe
+
 export const parse = (mode?: FormMode): ParsedMode => {
   const validation = mode?.validation ?? "onSubmit"
 
@@ -26,7 +35,7 @@ export const parse = (mode?: FormMode): ParsedMode => {
   if (validation === "onChange") {
     const debounceMs = mode?.debounce === undefined
       ? null
-      : Duration.toMillis(Duration.fromDurationInputUnsafe(mode.debounce))
+      : Duration.toMillis(parseDurationInputUnsafe(mode.debounce))
     const autoSubmit = mode?.autoSubmit === true
     return { validation: "onChange", debounce: debounceMs, autoSubmit }
   }
