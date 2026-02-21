@@ -3,12 +3,12 @@ import * as Duration from "effect/Duration"
 export type FormMode =
   | { readonly validation?: "onSubmit"; readonly autoSubmit?: false; readonly debounce?: never }
   | { readonly validation: "onBlur"; readonly autoSubmit?: boolean; readonly debounce?: never }
-  | { readonly validation: "onChange"; readonly debounce?: Duration.DurationInput; readonly autoSubmit?: boolean }
+  | { readonly validation: "onChange"; readonly debounce?: Duration.Input; readonly autoSubmit?: boolean }
 
 export type FormModeWithoutAutoSubmit =
   | { readonly validation?: "onSubmit"; readonly autoSubmit?: false; readonly debounce?: never }
   | { readonly validation: "onBlur"; readonly autoSubmit?: false; readonly debounce?: never }
-  | { readonly validation: "onChange"; readonly debounce?: Duration.DurationInput; readonly autoSubmit?: false }
+  | { readonly validation: "onChange"; readonly debounce?: Duration.Input; readonly autoSubmit?: false }
 
 export interface ParsedMode {
   readonly validation: "onSubmit" | "onBlur" | "onChange"
@@ -16,14 +16,7 @@ export interface ParsedMode {
   readonly autoSubmit: boolean
 }
 
-const parseDurationInputUnsafe: (input: Duration.DurationInput) => Duration.Duration =
-  "fromInputUnsafe" in Duration
-    ? (
-      Duration as {
-        readonly fromInputUnsafe: (input: Duration.DurationInput) => Duration.Duration
-      }
-    ).fromInputUnsafe
-    : Duration.fromDurationInputUnsafe
+const parseDurationInputUnsafe: (input: Duration.Input) => Duration.Duration = Duration.fromInputUnsafe
 
 export const parse = (mode?: FormMode): ParsedMode => {
   const validation = mode?.validation ?? "onSubmit"
