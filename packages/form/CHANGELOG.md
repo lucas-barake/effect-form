@@ -1,5 +1,11 @@
 # @lucas-barake/effect-form
 
+## 0.25.0-beta.1
+
+### Patch Changes
+
+- [#77](https://github.com/lucas-barake/effect-form/pull/77) [`4b1a8b1`](https://github.com/lucas-barake/effect-form/commit/4b1a8b154286e7149cb7318d029de7d2deb0e713) Thanks [@BleedingDev](https://github.com/BleedingDev)! - Update for Effect v4 beta.10: `Duration.DurationInput` to `Duration.Input`, `Duration.fromDurationInputUnsafe` to `Duration.fromInputUnsafe`, `Schema.decodeTo` now takes `SchemaGetter` instances.
+
 ## 0.25.0-beta.0
 
 ### Minor Changes

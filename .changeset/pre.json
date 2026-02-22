@@ -6,6 +6,7 @@
     "@lucas-barake/effect-form-react": "0.25.0"
   },
   "changesets": [
-    "effect-v4-migration"
+    "effect-v4-migration",
+    "fix-duration-input-compat"
   ]
 }
