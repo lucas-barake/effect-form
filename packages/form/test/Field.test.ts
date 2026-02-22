@@ -1,4 +1,5 @@
 import * as Schema from "effect/Schema"
+import * as SchemaGetter from "effect/SchemaGetter"
 import { describe, expect, it } from "vitest"
 import * as Field from "../src/Field.js"
 
@@ -13,8 +14,8 @@ describe("Field", () => {
       const refined = Schema.Number.pipe(Schema.check(Schema.isGreaterThan(1)))
       const transformed = Schema.Number.pipe(
         Schema.decodeTo(Schema.String, {
-          decode: (value: number) => String(value),
-          encode: (value: string) => Number(value)
+          decode: SchemaGetter.transform((value: number) => String(value)),
+          encode: SchemaGetter.transform((value: string) => Number(value))
         })
       )
 
@@ -87,8 +88,8 @@ describe("Field", () => {
       const refined = base.pipe(Schema.check(Schema.makeFilter(() => true)))
       const transformed = base.pipe(
         Schema.decodeTo(base, {
-          decode: (value: { readonly name: string; readonly age: number }) => value,
-          encode: (value: { readonly name: string; readonly age: number }) => value
+          decode: SchemaGetter.passthrough(),
+          encode: SchemaGetter.passthrough()
         })
       )
       const suspended = Schema.suspend(() => base)

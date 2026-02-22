@@ -3,12 +3,12 @@ import * as Duration from "effect/Duration"
 export type FormMode =
   | { readonly validation?: "onSubmit"; readonly autoSubmit?: false; readonly debounce?: never }
   | { readonly validation: "onBlur"; readonly autoSubmit?: boolean; readonly debounce?: never }
-  | { readonly validation: "onChange"; readonly debounce?: Duration.DurationInput; readonly autoSubmit?: boolean }
+  | { readonly validation: "onChange"; readonly debounce?: Duration.Input; readonly autoSubmit?: boolean }
 
 export type FormModeWithoutAutoSubmit =
   | { readonly validation?: "onSubmit"; readonly autoSubmit?: false; readonly debounce?: never }
   | { readonly validation: "onBlur"; readonly autoSubmit?: false; readonly debounce?: never }
-  | { readonly validation: "onChange"; readonly debounce?: Duration.DurationInput; readonly autoSubmit?: false }
+  | { readonly validation: "onChange"; readonly debounce?: Duration.Input; readonly autoSubmit?: false }
 
 export interface ParsedMode {
   readonly validation: "onSubmit" | "onBlur" | "onChange"
@@ -26,7 +26,7 @@ export const parse = (mode?: FormMode): ParsedMode => {
   if (validation === "onChange") {
     const debounceMs = mode?.debounce === undefined
       ? null
-      : Duration.toMillis(Duration.fromDurationInputUnsafe(mode.debounce))
+      : Duration.toMillis(Duration.fromInputUnsafe(mode.debounce))
     const autoSubmit = mode?.autoSubmit === true
     return { validation: "onChange", debounce: debounceMs, autoSubmit }
   }
