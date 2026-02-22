@@ -130,19 +130,19 @@ importers:
   packages/form:
     dependencies:
       effect:
-        specifier: ^4.0.0-beta.10
+        specifier: 4.0.0-beta.10
         version: 4.0.0-beta.10
 
   packages/form-react:
     dependencies:
       '@effect/atom-react':
-        specifier: ^4.0.0-beta.10
+        specifier: 4.0.0-beta.10
         version: 4.0.0-beta.10(effect@4.0.0-beta.10)(react@19.2.3)(scheduler@0.27.0)
       '@lucas-barake/effect-form':
         specifier: workspace:^
         version: link:../form
       effect:
-        specifier: ^4.0.0-beta.10
+        specifier: 4.0.0-beta.10
         version: 4.0.0-beta.10
       react:
         specifier: ^19.0.0
