@@ -21,14 +21,14 @@ importers:
         specifier: ^2.29.7
         version: 2.29.8(@types/node@24.10.4)
       '@effect/atom-react':
-        specifier: 4.0.0-beta.9
-        version: 4.0.0-beta.9(effect@4.0.0-beta.9)(react@19.2.3)(scheduler@0.27.0)
+        specifier: 4.0.0-beta.10
+        version: 4.0.0-beta.10(effect@4.0.0-beta.10)(react@19.2.3)(scheduler@0.27.0)
       '@effect/language-service':
         specifier: ^0.55.2
         version: 0.55.5
       '@effect/vitest':
-        specifier: 4.0.0-beta.9
-        version: 4.0.0-beta.9(effect@4.0.0-beta.9)(vitest@4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2))
+        specifier: 4.0.0-beta.10
+        version: 4.0.0-beta.10(effect@4.0.0-beta.10)(vitest@4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2))
       '@testing-library/jest-dom':
         specifier: ^6.9.1
         version: 6.9.1
@@ -63,8 +63,8 @@ importers:
         specifier: ^0.51.1
         version: 0.51.1
       effect:
-        specifier: 4.0.0-beta.9
-        version: 4.0.0-beta.9
+        specifier: 4.0.0-beta.10
+        version: 4.0.0-beta.10
       glob:
         specifier: ^11.0.3
         version: 11.1.0
@@ -130,20 +130,20 @@ importers:
   packages/form:
     dependencies:
       effect:
-        specifier: ^4.0.0-beta.9
-        version: 4.0.0-beta.9
+        specifier: ^4.0.0-beta.10
+        version: 4.0.0-beta.10
 
   packages/form-react:
     dependencies:
       '@effect/atom-react':
-        specifier: ^4.0.0-beta.0
-        version: 4.0.0-beta.3(effect@4.0.0-beta.3)(react@19.2.3)(scheduler@0.27.0)
+        specifier: ^4.0.0-beta.10
+        version: 4.0.0-beta.10(effect@4.0.0-beta.10)(react@19.2.3)(scheduler@0.27.0)
       '@lucas-barake/effect-form':
         specifier: workspace:^
         version: link:../form
       effect:
-        specifier: ^4.0.0-beta.0
-        version: 4.0.0-beta.3
+        specifier: ^4.0.0-beta.10
+        version: 4.0.0-beta.10
       react:
         specifier: ^19.0.0
         version: 19.2.3
@@ -442,17 +442,10 @@ packages:
       '@effect/rpc': ^0.73.0
       effect: ^3.19.15
 
-  '@effect/atom-react@4.0.0-beta.3':
-    resolution: {integrity: sha512-j/00W1x0P+RJI0PswP9VKcaipLwSULPfqIKEe+Wagr3nNttTQiQ2gFOUzVfzETjhLi9bhuorLN6mEZb7Z6dHvA==}
+  '@effect/atom-react@4.0.0-beta.10':
+    resolution: {integrity: sha512-PNN+JXouSpDnQG4CYJhkjio0vvyR/qwncBMC8A1U1DO9txh0nQ4C4BnlrHG1FqxP8YcQgWL7KMJY5sRczOeHQw==}
     peerDependencies:
-      effect: ^4.0.0-beta.3
-      react: ^19.2.4
-      scheduler: '*'
-
-  '@effect/atom-react@4.0.0-beta.9':
-    resolution: {integrity: sha512-8IPN+Ea3qn6PWPyEtsUEzgcfC5XmZ3g3avbKJ1s8S1ZsMgKftAn62bsdpLCK5gtSVcmiQoeq/K/iElMKlOQCHg==}
-    peerDependencies:
-      effect: ^4.0.0-beta.9
+      effect: ^4.0.0-beta.10
       react: ^19.2.4
       scheduler: '*'
 
@@ -484,10 +477,10 @@ packages:
       '@effect/platform': ^0.94.0
       effect: ^3.19.13
 
-  '@effect/vitest@4.0.0-beta.9':
-    resolution: {integrity: sha512-cpZ55sKlPuVMne6kFyguOTCsr+wySloAgThjYQGLcVsvvAamWIf5UyC0fQ4Dd0B0PnD2COitO2MtR7Fxa6KqSw==}
+  '@effect/vitest@4.0.0-beta.10':
+    resolution: {integrity: sha512-WmE8vCNw+eDoAq9CwwymrAdIBw1f+8hDP3AUF7jyC7/Cj/kyAYOFwkbtKmDXIFaTlf7G/2fmulEXeCO5W8j0kQ==}
     peerDependencies:
-      effect: ^4.0.0-beta.9
+      effect: ^4.0.0-beta.10
       vitest: ^3.0.0
 
   '@esbuild/aix-ppc64@0.25.12':
@@ -1719,11 +1712,8 @@ packages:
   effect@3.19.15:
     resolution: {integrity: sha512-vzMmgfZKLcojmUjBdlQx+uaKryO7yULlRxjpDnHdnvcp1NPHxJyoM6IOXBLlzz2I/uPtZpGKavt5hBv7IvGZkA==}
 
-  effect@4.0.0-beta.3:
-    resolution: {integrity: sha512-hSc3GKzm7qK6c7MDrX/+rtSlds3+TJXvOJ6JmraQqEMeNHdu2tsrPbfAHt0ppfJAWzd6EipcXlTgEEMHw8V0fA==}
-
-  effect@4.0.0-beta.9:
-    resolution: {integrity: sha512-qF1Iil0cicsyxtBIH+oK6U0dMo/uBTf7qWUf4a1U1OJEN2zhxnMkGP4g2CYuRwoGeDJUaVRcMowNrSNV6pYNUw==}
+  effect@4.0.0-beta.10:
+    resolution: {integrity: sha512-UvxWmT0uzWZqNmQODfW7y1zb0LMlH3xtSn/UESpck2Wvv6SogxibYPWKKNcUsRMm5wwprOoW2IwItYLQyZpe8Q==}
 
   electron-to-chromium@1.5.267:
     resolution: {integrity: sha512-0Drusm6MVRXSOJpGbaSVgcQsuB4hEkMpHXaVstcPmhu5LIedxs1xNK/nIxmQIU/RPC0+1/o0AVZfBTkTNJOdUw==}
@@ -3294,15 +3284,9 @@ snapshots:
       '@effect/rpc': 0.73.0(@effect/platform@0.94.2(effect@3.19.15))(effect@3.19.15)
       effect: 3.19.15
 
-  '@effect/atom-react@4.0.0-beta.3(effect@4.0.0-beta.3)(react@19.2.3)(scheduler@0.27.0)':
+  '@effect/atom-react@4.0.0-beta.10(effect@4.0.0-beta.10)(react@19.2.3)(scheduler@0.27.0)':
     dependencies:
-      effect: 4.0.0-beta.3
-      react: 19.2.3
-      scheduler: 0.27.0
-
-  '@effect/atom-react@4.0.0-beta.9(effect@4.0.0-beta.9)(react@19.2.3)(scheduler@0.27.0)':
-    dependencies:
-      effect: 4.0.0-beta.9
+      effect: 4.0.0-beta.10
       react: 19.2.3
       scheduler: 0.27.0
 
@@ -3327,9 +3311,9 @@ snapshots:
       effect: 3.19.15
       msgpackr: 1.11.8
 
-  '@effect/vitest@4.0.0-beta.9(effect@4.0.0-beta.9)(vitest@4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@effect/vitest@4.0.0-beta.10(effect@4.0.0-beta.10)(vitest@4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
-      effect: 4.0.0-beta.9
+      effect: 4.0.0-beta.10
       vitest: 4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2)
 
   '@esbuild/aix-ppc64@0.25.12':
@@ -4329,20 +4313,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effect@4.0.0-beta.3:
-    dependencies:
-      '@standard-schema/spec': 1.1.0
-      fast-check: 4.5.3
-      find-my-way-ts: 0.1.6
-      ini: 6.0.0
-      kubernetes-types: 1.30.0
-      msgpackr: 1.11.8
-      multipasta: 0.2.7
-      toml: 3.0.0
-      uuid: 13.0.0
-      yaml: 2.8.2
-
-  effect@4.0.0-beta.9:
+  effect@4.0.0-beta.10:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 4.5.3
