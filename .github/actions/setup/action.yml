@@ -18,4 +18,9 @@ runs:
         node-version: ${{ inputs.node-version }}
     - name: Install dependencies
       shell: bash
-      run: pnpm install
+      run: |
+        for i in 1 2 3; do
+          pnpm install && break
+          echo "pnpm install failed (attempt $i/3), retrying in $((i * 3))s..."
+          sleep $((i * 3))
+        done

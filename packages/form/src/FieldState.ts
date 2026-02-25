@@ -4,6 +4,7 @@ import type * as Schema from "effect/Schema"
 export type FieldValue<T,> = T extends Schema.Top ? Schema.Codec.Encoded<T> : T
 
 export interface FieldState<E,> {
+  readonly path: string
   readonly value: E
   readonly onChange: (value: E) => void
   readonly onBlur: () => void
