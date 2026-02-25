@@ -624,6 +624,65 @@ describe("FormReact.make", () => {
     })
   })
 
+  describe("field path", () => {
+    it("exposes the field key as path for top-level fields", () => {
+      const NameField = Field.makeField("name", Schema.String)
+      const formBuilder = FormBuilder.empty.addField(NameField)
+
+      const PathInput: FormReact.FieldComponent<string> = ({ field }) => (
+        <span data-testid="field-path">{field.path}</span>
+      )
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: PathInput },
+        onSubmit: () => {}
+      })
+
+      render(
+        <form.Initialize defaultValues={{ name: "" }}>
+          <form.name />
+        </form.Initialize>
+      )
+
+      expect(screen.getByTestId("field-path")).toHaveTextContent("name")
+    })
+
+    it("exposes the correct nested path for fields inside array items", () => {
+      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+
+      const ItemPathInput: FormReact.FieldComponent<string> = ({ field }) => (
+        <span data-testid="field-path">{field.path}</span>
+      )
+
+      const form = FormReact.make(formBuilder, {
+        fields: { items: { name: ItemPathInput } },
+        onSubmit: () => {}
+      })
+
+      render(
+        <form.Initialize defaultValues={{ items: [{ name: "A" }, { name: "B" }] }}>
+          <form.items>
+            {({ items }) => (
+              <>
+                {items.map((_, i) => (
+                  <form.items.Item key={i} index={i}>
+                    <form.items.name />
+                  </form.items.Item>
+                ))}
+              </>
+            )}
+          </form.items>
+        </form.Initialize>
+      )
+
+      const paths = screen.getAllByTestId("field-path")
+      expect(paths).toHaveLength(2)
+      expect(paths[0]).toHaveTextContent("items[0].name")
+      expect(paths[1]).toHaveTextContent("items[1].name")
+    })
+  })
+
   describe("async validation", () => {
     it("submit works with async schema validation (filterEffect)", async () => {
       const user = userEvent.setup()
