@@ -662,6 +662,7 @@ form.validate // AtomResultFn<void> - trigger full schema validation without sub
 
 ```ts
 interface FieldState<E,> {
+  path: string // Dot-notation path identifying the field (e.g. "name", "items[0].street")
   value: E // Current field value (encoded type)
   onChange: (value: E) => void
   onBlur: () => void

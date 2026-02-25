@@ -157,6 +157,7 @@ const makeFieldComponent = <S extends Schema.Top, P,>(
 
     const fieldState = React.useMemo(
       () => ({
+        path: fieldPath,
         value,
         onChange,
         onBlur,
@@ -165,7 +166,7 @@ const makeFieldComponent = <S extends Schema.Top, P,>(
         isValidating,
         isDirty
       }),
-      [value, onChange, onBlur, displayError, isTouched, isValidating, isDirty]
+      [fieldPath, value, onChange, onBlur, displayError, isTouched, isValidating, isDirty]
     )
 
     return <Component field={fieldState} props={extraProps} />
