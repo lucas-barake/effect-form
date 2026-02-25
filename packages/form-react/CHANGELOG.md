@@ -1,5 +1,16 @@
 # @lucas-barake/effect-form-react
 
+## 0.26.0
+
+### Minor Changes
+
+- [#79](https://github.com/lucas-barake/effect-form/pull/79) [`dbcb2d4`](https://github.com/lucas-barake/effect-form/commit/dbcb2d4b9269df7b59568195f7837cab36424f4b) Thanks [@hdoro](https://github.com/hdoro)! - Expose `path` property in `FieldState` for use in field `name` and `id` attributes.
+
+### Patch Changes
+
+- Updated dependencies [[`dbcb2d4`](https://github.com/lucas-barake/effect-form/commit/dbcb2d4b9269df7b59568195f7837cab36424f4b)]:
+  - @lucas-barake/effect-form@0.25.0
+
 ## 0.25.0
 
 ### Minor Changes
