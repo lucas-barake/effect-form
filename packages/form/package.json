@@ -1,6 +1,6 @@
 {
   "name": "@lucas-barake/effect-form",
-  "version": "0.25.0-beta.2",
+  "version": "0.25.0-beta.3",
   "description": "Type-safe form builder powered by Effect Schema",
   "type": "module",
   "publishConfig": {

@@ -1,5 +1,14 @@
 # @lucas-barake/effect-form-react
 
+## 0.26.0-beta.2
+
+### Patch Changes
+
+- [#83](https://github.com/lucas-barake/effect-form/pull/83) [`6cc58b2`](https://github.com/lucas-barake/effect-form/commit/6cc58b27d16fe802f6e6ca488aa7cb04e847b06a) Thanks [@lucas-barake](https://github.com/lucas-barake)! - update effect to beta.18
+
+- Updated dependencies [[`6cc58b2`](https://github.com/lucas-barake/effect-form/commit/6cc58b27d16fe802f6e6ca488aa7cb04e847b06a)]:
+  - @lucas-barake/effect-form@0.25.0-beta.3
+
 ## 0.26.0-beta.1
 
 ### Minor Changes
