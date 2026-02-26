@@ -1,5 +1,18 @@
 # @lucas-barake/effect-form-react
 
+## 0.26.0-beta.1
+
+### Minor Changes
+
+- [#81](https://github.com/lucas-barake/effect-form/pull/81) [`cb68e9e`](https://github.com/lucas-barake/effect-form/commit/cb68e9ed1f9270a1b9d68beacdbb7825119c3d74) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Expose `path` property in `FieldState` for use in field `name` and `id` attributes.
+
+### Patch Changes
+
+- [#81](https://github.com/lucas-barake/effect-form/pull/81) [`cb68e9e`](https://github.com/lucas-barake/effect-form/commit/cb68e9ed1f9270a1b9d68beacdbb7825119c3d74) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Update effect peer dependency to v4 beta.14.
+
+- Updated dependencies [[`cb68e9e`](https://github.com/lucas-barake/effect-form/commit/cb68e9ed1f9270a1b9d68beacdbb7825119c3d74), [`cb68e9e`](https://github.com/lucas-barake/effect-form/commit/cb68e9ed1f9270a1b9d68beacdbb7825119c3d74)]:
+  - @lucas-barake/effect-form@0.25.0-beta.2
+
 ## 0.26.0-beta.0
 
 ### Minor Changes
