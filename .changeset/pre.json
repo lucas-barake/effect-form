@@ -6,6 +6,7 @@
     "@lucas-barake/effect-form-react": "0.25.0"
   },
   "changesets": [
+    "bump-effect-beta-18",
     "effect-v4-migration",
     "expose-field-path",
     "fix-duration-input-compat",
