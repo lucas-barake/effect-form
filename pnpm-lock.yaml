@@ -21,14 +21,14 @@ importers:
         specifier: ^2.29.7
         version: 2.29.8(@types/node@24.10.4)
       '@effect/atom-react':
-        specifier: 4.0.0-beta.14
-        version: 4.0.0-beta.14(effect@4.0.0-beta.14)(react@19.2.3)(scheduler@0.27.0)
+        specifier: 4.0.0-beta.18
+        version: 4.0.0-beta.18(effect@4.0.0-beta.18)(react@19.2.3)(scheduler@0.27.0)
       '@effect/language-service':
         specifier: ^0.55.2
         version: 0.55.5
       '@effect/vitest':
-        specifier: 4.0.0-beta.14
-        version: 4.0.0-beta.14(effect@4.0.0-beta.14)(vitest@4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2))
+        specifier: 4.0.0-beta.18
+        version: 4.0.0-beta.18(effect@4.0.0-beta.18)(vitest@4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2))
       '@testing-library/jest-dom':
         specifier: ^6.9.1
         version: 6.9.1
@@ -63,8 +63,8 @@ importers:
         specifier: ^0.51.1
         version: 0.51.1
       effect:
-        specifier: 4.0.0-beta.14
-        version: 4.0.0-beta.14
+        specifier: 4.0.0-beta.18
+        version: 4.0.0-beta.18
       glob:
         specifier: ^11.0.3
         version: 11.1.0
@@ -130,20 +130,20 @@ importers:
   packages/form:
     dependencies:
       effect:
-        specifier: 4.0.0-beta.14
-        version: 4.0.0-beta.14
+        specifier: 4.0.0-beta.18
+        version: 4.0.0-beta.18
 
   packages/form-react:
     dependencies:
       '@effect/atom-react':
-        specifier: 4.0.0-beta.14
-        version: 4.0.0-beta.14(effect@4.0.0-beta.14)(react@19.2.3)(scheduler@0.27.0)
+        specifier: 4.0.0-beta.18
+        version: 4.0.0-beta.18(effect@4.0.0-beta.18)(react@19.2.3)(scheduler@0.27.0)
       '@lucas-barake/effect-form':
         specifier: workspace:^
         version: link:../form
       effect:
-        specifier: 4.0.0-beta.14
-        version: 4.0.0-beta.14
+        specifier: 4.0.0-beta.18
+        version: 4.0.0-beta.18
       react:
         specifier: ^19.0.0
         version: 19.2.3
@@ -442,10 +442,10 @@ packages:
       '@effect/rpc': ^0.73.0
       effect: ^3.19.15
 
-  '@effect/atom-react@4.0.0-beta.14':
-    resolution: {integrity: sha512-gi9rJ9ISEk4HLAULgxU4PqX7XAfQF7bjCp+EMfTiqEiz0v7iYQcIaYWy2BaQuSyu0diDeurWDhYwerf+mGYL6g==}
+  '@effect/atom-react@4.0.0-beta.18':
+    resolution: {integrity: sha512-8//FBttmh0emNCq1gTaDO4vmjgwHddOopfngpnkwmRUifD1vChre8Ij1A1WeBzn4Y4HN0K8+HONzxzBfYZY9vA==}
     peerDependencies:
-      effect: ^4.0.0-beta.14
+      effect: ^4.0.0-beta.18
       react: ^19.2.4
       scheduler: '*'
 
@@ -477,10 +477,10 @@ packages:
       '@effect/platform': ^0.94.0
       effect: ^3.19.13
 
-  '@effect/vitest@4.0.0-beta.14':
-    resolution: {integrity: sha512-Gv8ZQjvgvdLrBg5hh6KhPj+IGowpI3/D+Lbaca586H0iDKnkXzLqMEm5Op+iCOU7HbPI07ksT3Ol2AEWTulSdA==}
+  '@effect/vitest@4.0.0-beta.18':
+    resolution: {integrity: sha512-zGcQbOhm5fOK91UVsr/4l0rEnew91nX/gr5ckL3UJevljWV3dg/tZHbMATfcIO9v+G4P2ADsZfQRhAo8y1LwgA==}
     peerDependencies:
-      effect: ^4.0.0-beta.14
+      effect: ^4.0.0-beta.18
       vitest: ^3.0.0
 
   '@esbuild/aix-ppc64@0.25.12':
@@ -1712,8 +1712,8 @@ packages:
   effect@3.19.15:
     resolution: {integrity: sha512-vzMmgfZKLcojmUjBdlQx+uaKryO7yULlRxjpDnHdnvcp1NPHxJyoM6IOXBLlzz2I/uPtZpGKavt5hBv7IvGZkA==}
 
-  effect@4.0.0-beta.14:
-    resolution: {integrity: sha512-3er8DIukOoOpJc2qCRqejpzBGoUdG1t8pXcvA9blttSP9nxs7Ue6BkOLSQBaq3yIXWUXmL5GPELnDARP5oMbfQ==}
+  effect@4.0.0-beta.18:
+    resolution: {integrity: sha512-VkQ1p4ZMYqFsyVbj8AuSZJPsFIWF0YOLYX8d8SF/aV1bAlTtuedc2cHganATrRUgcZz3pPEc1ntINhMH3ULw0g==}
 
   electron-to-chromium@1.5.267:
     resolution: {integrity: sha512-0Drusm6MVRXSOJpGbaSVgcQsuB4hEkMpHXaVstcPmhu5LIedxs1xNK/nIxmQIU/RPC0+1/o0AVZfBTkTNJOdUw==}
@@ -3284,9 +3284,9 @@ snapshots:
       '@effect/rpc': 0.73.0(@effect/platform@0.94.2(effect@3.19.15))(effect@3.19.15)
       effect: 3.19.15
 
-  '@effect/atom-react@4.0.0-beta.14(effect@4.0.0-beta.14)(react@19.2.3)(scheduler@0.27.0)':
+  '@effect/atom-react@4.0.0-beta.18(effect@4.0.0-beta.18)(react@19.2.3)(scheduler@0.27.0)':
     dependencies:
-      effect: 4.0.0-beta.14
+      effect: 4.0.0-beta.18
       react: 19.2.3
       scheduler: 0.27.0
 
@@ -3311,9 +3311,9 @@ snapshots:
       effect: 3.19.15
       msgpackr: 1.11.8
 
-  '@effect/vitest@4.0.0-beta.14(effect@4.0.0-beta.14)(vitest@4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@effect/vitest@4.0.0-beta.18(effect@4.0.0-beta.18)(vitest@4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
-      effect: 4.0.0-beta.14
+      effect: 4.0.0-beta.18
       vitest: 4.0.16(@types/node@24.10.4)(jsdom@27.3.0)(tsx@4.21.0)(yaml@2.8.2)
 
   '@esbuild/aix-ppc64@0.25.12':
@@ -4313,7 +4313,7 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effect@4.0.0-beta.14:
+  effect@4.0.0-beta.18:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 4.5.3
