@@ -10,6 +10,7 @@
     "effect-v4-migration",
     "expose-field-path",
     "fix-duration-input-compat",
-    "update-effect-beta-14"
+    "update-effect-beta-14",
+    "update-effect-beta-27"
   ]
 }
