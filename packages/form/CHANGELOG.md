@@ -1,5 +1,11 @@
 # @lucas-barake/effect-form
 
+## 0.25.0-beta.4
+
+### Patch Changes
+
+- [#85](https://github.com/lucas-barake/effect-form/pull/85) [`ef7cc0d`](https://github.com/lucas-barake/effect-form/commit/ef7cc0dbf2b3d1ea78107ddcc46d3c8f093bbab5) Thanks [@lucas-barake](https://github.com/lucas-barake)! - update effect to v4 beta.27
+
 ## 0.25.0-beta.3
 
 ### Patch Changes
