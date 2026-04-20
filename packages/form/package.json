@@ -47,9 +47,9 @@
   "license": "MIT",
   "sideEffects": [],
   "peerDependencies": {
-    "effect": "4.0.0-beta.52"
+    "effect": ">=4.0.0-beta.52 <4.0.1"
   },
-  "dependencies": {
+  "devDependencies": {
     "effect": "4.0.0-beta.52"
   }
 }
