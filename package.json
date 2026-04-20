@@ -24,34 +24,37 @@
     "pre-commit": "pnpm lint"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["dprint", "simple-git-hooks"]
+    "onlyBuiltDependencies": [
+      "dprint",
+      "simple-git-hooks"
+    ]
   },
   "devDependencies": {
-    "@babel/cli": "^7.28.3",
-    "@babel/core": "^7.28.5",
-    "@changesets/changelog-github": "^0.5.1",
-    "@changesets/cli": "^2.29.7",
-    "@effect/language-service": "^0.55.2",
-    "@effect/atom-react": "4.0.0-beta.27",
-    "@effect/vitest": "4.0.0-beta.27",
+    "@babel/cli": "^7.28.6",
+    "@babel/core": "^7.29.0",
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.31.0",
+    "@effect/atom-react": "4.0.0-beta.52",
+    "@effect/language-service": "^0.85.1",
+    "@effect/vitest": "4.0.0-beta.52",
     "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.1",
+    "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/jsdom": "^27.0.0",
-    "@types/node": "^24.10.1",
-    "@types/react": "^19.2.5",
+    "@types/jsdom": "^28.0.1",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@typescript/native-preview": "7.0.0-dev.20260201.1",
-    "@vitest/coverage-v8": "^4.0.7",
+    "@typescript/native-preview": "7.0.0-dev.20260420.1",
+    "@vitest/coverage-v8": "^4.1.4",
     "babel-plugin-annotate-pure-calls": "^0.5.0",
-    "dprint": "^0.51.1",
-    "effect": "4.0.0-beta.27",
-    "glob": "^11.0.3",
-    "jsdom": "^27.3.0",
+    "dprint": "^0.54.0",
+    "effect": "4.0.0-beta.52",
+    "glob": "^13.0.6",
+    "jsdom": "^29.0.2",
     "madge": "^8.0.0",
-    "oxlint": "^1.42.0",
-    "simple-git-hooks": "^2.12.1",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
+    "oxlint": "1.42.0",
+    "simple-git-hooks": "^2.13.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
   }
 }

@@ -15,11 +15,6 @@ import type {
 } from "./Field.ts"
 import { isArrayFieldDef, isFieldDef, makeField } from "./Field.ts"
 
-type FilterResult = undefined | boolean | string | {
-  readonly path: ReadonlyArray<PropertyKey>
-  readonly message: string
-}
-
 export interface SubmittedValues<TFields extends FieldsRecord,> {
   readonly encoded: EncodedFromFields<TFields>
   readonly decoded: DecodedFromFields<TFields>
@@ -57,12 +52,12 @@ export interface FormState<TFields extends FieldsRecord,> {
 
 interface SyncRefinement {
   readonly _tag: "sync"
-  readonly fn: (values: unknown) => FilterResult
+  readonly fn: (values: unknown) => Schema.FilterOutput
 }
 
 interface AsyncRefinement {
   readonly _tag: "async"
-  readonly fn: (values: unknown) => Effect.Effect<FilterResult, never, unknown>
+  readonly fn: (values: unknown) => Effect.Effect<undefined | boolean | Schema.FilterIssue, never, unknown>
 }
 
 type Refinement = SyncRefinement | AsyncRefinement
@@ -96,12 +91,12 @@ export interface FormBuilder<TFields extends FieldsRecord, R,> {
 
   refine(
     this: FormBuilder<TFields, R>,
-    predicate: (values: DecodedFromFields<TFields>) => FilterResult
+    predicate: (values: DecodedFromFields<TFields>) => Schema.FilterOutput
   ): FormBuilder<TFields, R>
 
   refineEffect<RD,>(
     this: FormBuilder<TFields, R>,
-    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<FilterResult, never, RD>
+    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>
   ): FormBuilder<TFields, R | Exclude<RD, AtomRegistry.AtomRegistry>>
 }
 
@@ -131,7 +126,7 @@ const FormBuilderProto = {
   },
   refine<TFields extends FieldsRecord, R,>(
     this: FormBuilder<TFields, R>,
-    predicate: (values: DecodedFromFields<TFields>) => FilterResult
+    predicate: (values: DecodedFromFields<TFields>) => Schema.FilterOutput
   ): FormBuilder<TFields, R> {
     const newSelf = Object.create(FormBuilderProto)
     newSelf.fields = this.fields
@@ -143,7 +138,7 @@ const FormBuilderProto = {
   },
   refineEffect<TFields extends FieldsRecord, R, RD,>(
     this: FormBuilder<TFields, R>,
-    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<FilterResult, never, RD>
+    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>
   ): FormBuilder<TFields, R | Exclude<RD, AtomRegistry.AtomRegistry>> {
     const newSelf = Object.create(FormBuilderProto)
     newSelf.fields = this.fields

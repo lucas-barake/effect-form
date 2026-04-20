@@ -49,14 +49,17 @@
   "license": "MIT",
   "sideEffects": [],
   "dependencies": {
-    "@lucas-barake/effect-form": "workspace:^"
+    "@effect/atom-react": "4.0.0-beta.52",
+    "@lucas-barake/effect-form": "workspace:^",
+    "effect": "4.0.0-beta.52",
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.1"
   },
   "peerDependencies": {
-    "@effect/atom-react": "4.0.0-beta.27",
-    "effect": "4.0.0-beta.27",
+    "@effect/atom-react": "4.0.0-beta.52",
+    "effect": "4.0.0-beta.52",
     "react": "^19.0.0"
   }
 }
