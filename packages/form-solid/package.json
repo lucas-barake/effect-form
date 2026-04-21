@@ -1,0 +1,68 @@
+{
+  "name": "@lucas-barake/effect-form-solid",
+  "version": "0.0.0-beta.0",
+  "description": "Solid bindings for @lucas-barake/effect-form",
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "exports": {
+      "./package.json": "./package.json",
+      ".": "./dist/index.js",
+      "./*": "./dist/*.js",
+      "./internal/*": null
+    }
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./internal/*": null
+  },
+  "files": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucas-barake/effect-form.git"
+  },
+  "homepage": "https://github.com/lucas-barake/effect-form",
+  "scripts": {
+    "build": "tsc -b tsconfig.json && pnpm babel",
+    "build:tsgo": "tsgo -b tsconfig.json && pnpm babel",
+    "babel": "babel dist --plugins annotate-pure-calls --out-dir dist --source-maps"
+  },
+  "keywords": [
+    "effect",
+    "form",
+    "solid",
+    "schema",
+    "validation",
+    "typescript"
+  ],
+  "author": "Lucas Barake",
+  "license": "MIT",
+  "sideEffects": [],
+  "dependencies": {
+    "@lucas-barake/effect-form": "workspace:^"
+  },
+  "devDependencies": {
+    "@effect/atom-solid": "4.0.0-beta.52",
+    "@solidjs/testing-library": "^0.8.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "effect": "4.0.0-beta.52",
+    "solid-js": "^1.9.12",
+    "vite-plugin-solid": "^2.11.12"
+  },
+  "peerDependencies": {
+    "@effect/atom-solid": ">=4.0.0-beta.52 <4.0.1",
+    "effect": ">=4.0.0-beta.52 <4.0.1",
+    "solid-js": ">=1 <2"
+  }
+}

@@ -25,7 +25,6 @@
     "skipLibCheck": true,
     "noErrorTruncation": true,
     "types": [],
-    "jsx": "react-jsx",
     "plugins": [{ "name": "@effect/language-service" }]
   }
 }
