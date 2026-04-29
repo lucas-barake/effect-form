@@ -33,9 +33,8 @@
   },
   "homepage": "https://github.com/lucas-barake/effect-form",
   "scripts": {
-    "build": "tsc -b tsconfig.json && pnpm babel",
-    "build:tsgo": "tsgo -b tsconfig.json && pnpm babel",
-    "babel": "babel dist --plugins annotate-pure-calls --out-dir dist --source-maps"
+    "build": "tsc -b tsconfig.json",
+    "build:tsgo": "tsgo -b tsconfig.json"
   },
   "keywords": [
     "effect",
