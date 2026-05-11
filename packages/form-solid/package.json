@@ -8,22 +8,32 @@
     "provenance": true,
     "exports": {
       "./package.json": "./package.json",
-      ".": "./dist/index.js",
-      "./*": "./dist/*.js",
+      ".": {
+        "types": "./dist/index.d.ts",
+        "solid": "./dist/index.jsx",
+        "default": "./dist/index.js"
+      },
+      "./FormSolid": {
+        "types": "./dist/FormSolid.d.ts",
+        "solid": "./dist/FormSolid.jsx",
+        "default": "./dist/FormSolid.js"
+      },
       "./internal/*": null
     }
   },
   "exports": {
     "./package.json": "./package.json",
     ".": "./src/index.ts",
-    "./*": "./src/*.ts",
+    "./FormSolid": "./src/FormSolid.tsx",
     "./internal/*": null
   },
   "files": [
     "src/**/*.ts",
     "src/**/*.tsx",
     "dist/**/*.js",
+    "dist/**/*.jsx",
     "dist/**/*.js.map",
+    "dist/**/*.jsx.map",
     "dist/**/*.d.ts",
     "dist/**/*.d.ts.map"
   ],
@@ -33,7 +43,7 @@
   },
   "homepage": "https://github.com/lucas-barake/effect-form",
   "scripts": {
-    "build": "tsc -b tsconfig.json",
+    "build": "tsc -b tsconfig.json && rollup -c",
     "build:tsgo": "tsgo -b tsconfig.json"
   },
   "keywords": [
@@ -55,7 +65,12 @@
     "@solidjs/testing-library": "^0.8.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
+    "@babel/preset-typescript": "^7.26.0",
+    "@rollup/plugin-babel": "6.0.4",
+    "@rollup/plugin-node-resolve": "15.3.0",
+    "babel-preset-solid": "^1.9.3",
     "effect": "4.0.0-beta.52",
+    "rollup": "^4.27.4",
     "solid-js": "^1.9.12",
     "vite-plugin-solid": "^2.11.12"
   },
