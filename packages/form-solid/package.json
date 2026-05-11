@@ -1,6 +1,6 @@
 {
   "name": "@lucas-barake/effect-form-solid",
-  "version": "0.0.0-beta.0",
+  "version": "0.0.0-beta.1",
   "description": "Solid bindings for @lucas-barake/effect-form",
   "type": "module",
   "publishConfig": {

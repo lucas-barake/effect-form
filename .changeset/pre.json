@@ -3,13 +3,16 @@
   "tag": "beta",
   "initialVersions": {
     "@lucas-barake/effect-form": "0.24.0",
-    "@lucas-barake/effect-form-react": "0.25.0"
+    "@lucas-barake/effect-form-react": "0.25.0",
+    "@lucas-barake/effect-form-solid": "0.0.0-beta.0"
   },
   "changesets": [
     "bump-effect-beta-18",
     "effect-v4-migration",
     "expose-field-path",
     "fix-duration-input-compat",
+    "heavy-eels-tickle",
+    "true-pandas-lay",
     "update-effect-beta-14",
     "update-effect-beta-27"
   ]
