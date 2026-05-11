@@ -4,6 +4,7 @@
   "include": [],
   "references": [
     { "path": "packages/form" },
-    { "path": "packages/form-react" }
+    { "path": "packages/form-react" },
+    { "path": "packages/form-solid" }
   ]
 }

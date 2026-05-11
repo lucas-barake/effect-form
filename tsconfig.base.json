@@ -24,8 +24,8 @@
     "stripInternal": false,
     "skipLibCheck": true,
     "noErrorTruncation": true,
-    "types": [],
     "jsx": "react-jsx",
+    "types": [],
     "plugins": [{ "name": "@effect/language-service" }]
   }
 }
