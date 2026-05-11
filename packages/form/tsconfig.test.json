@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.json",
+  "include": ["./src/**/*.ts", "./test/**/*.ts", "./vitest.config.ts"],
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "erasableSyntaxOnly": false,
+    "types": ["node"]
+  }
+}
