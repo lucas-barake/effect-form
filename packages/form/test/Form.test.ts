@@ -83,7 +83,7 @@ describe("Form", () => {
         .addField("a", Schema.String)
         .refine((values) => {
           if (values.a !== "a") {
-            return { path: ["a"], message: "A invalid" }
+            return { path: ["a"], issue: "A invalid" }
           }
         })
 
@@ -91,7 +91,7 @@ describe("Form", () => {
         .addField("b", Schema.String)
         .refine((values) => {
           if (values.b !== "b") {
-            return { path: ["b"], message: "B invalid" }
+            return { path: ["b"], issue: "B invalid" }
           }
         })
 
@@ -180,7 +180,7 @@ describe("Form", () => {
         .addField(ConfirmPasswordField)
         .refine((values) => {
           if (values.password !== values.confirmPassword) {
-            return { path: ["confirmPassword"], message: "Passwords must match" }
+            return { path: ["confirmPassword"], issue: "Passwords must match" }
           }
         })
 
@@ -202,7 +202,7 @@ describe("Form", () => {
           Effect.gen(function*() {
             yield* Effect.sleep("1 millis")
             if (values.username === "taken") {
-              return { path: ["username"], message: "Username is already taken" }
+              return { path: ["username"], issue: "Username is already taken" }
             }
           })
         )
@@ -230,12 +230,12 @@ describe("Form", () => {
         .addField(BField)
         .refine((values) => {
           if (values.a === "error") {
-            return { path: ["a"], message: "First refinement failed" }
+            return { path: ["a"], issue: "First refinement failed" }
           }
         })
         .refine((values) => {
           if (values.b === "error") {
-            return { path: ["b"], message: "Second refinement failed" }
+            return { path: ["b"], issue: "Second refinement failed" }
           }
         })
 

@@ -2,12 +2,12 @@ import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import { render, screen, waitFor } from "@testing-library/react"
 import { userEvent } from "@testing-library/user-event"
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import * as SchemaGetter from "effect/SchemaGetter"
-import * as ServiceMap from "effect/ServiceMap"
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
 import * as Atom from "effect/unstable/reactivity/Atom"
 import * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
@@ -814,7 +814,7 @@ describe("FormReact.make", () => {
       const formBuilder = FormBuilder.empty.addField(PasswordField).addField(ConfirmPasswordField)
         .refine((values) => {
           if (values.password !== values.confirmPassword) {
-            return { path: ["confirmPassword"], message: "Passwords must match" }
+            return { path: ["confirmPassword"], issue: "Passwords must match" }
           }
         })
 
@@ -870,7 +870,7 @@ describe("FormReact.make", () => {
           Effect.gen(function*() {
             yield* Effect.sleep("20 millis")
             if (values.username === "taken") {
-              return { path: ["username"], message: "Username is already taken" }
+              return { path: ["username"], issue: "Username is already taken" }
             }
           })
         )
@@ -901,7 +901,7 @@ describe("FormReact.make", () => {
     it("refineEffect works with Effect services from runtime", async () => {
       const user = userEvent.setup()
 
-      class UsernameValidator extends ServiceMap.Service<
+      class UsernameValidator extends Context.Service<
         UsernameValidator,
         { readonly isTaken: (username: string) => Effect.Effect<boolean> }
       >()("UsernameValidator") {}
@@ -934,7 +934,7 @@ describe("FormReact.make", () => {
             const validator = yield* UsernameValidator
             const isTaken = yield* validator.isTaken(values.username)
             if (isTaken) {
-              return { path: ["username"], message: "Username is already taken" }
+              return { path: ["username"], issue: "Username is already taken" }
             }
           })
         )
@@ -997,12 +997,12 @@ describe("FormReact.make", () => {
         .addField(FieldBField)
         .refine((values) => {
           if (values.fieldA === "error1") {
-            return { path: ["fieldA"], message: "First validation failed" }
+            return { path: ["fieldA"], issue: "First validation failed" }
           }
         })
         .refine((values) => {
           if (values.fieldB === "error2") {
-            return { path: ["fieldB"], message: "Second validation failed" }
+            return { path: ["fieldB"], issue: "Second validation failed" }
           }
         })
 
@@ -1079,7 +1079,7 @@ describe("FormReact.make", () => {
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], issue: "Passwords must match" }
           }
         })
 
@@ -1146,7 +1146,7 @@ describe("FormReact.make", () => {
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], issue: "Passwords must match" }
           }
         })
 
@@ -1401,7 +1401,7 @@ describe("FormReact.make", () => {
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], issue: "Passwords must match" }
           }
         })
 
@@ -1470,7 +1470,7 @@ describe("FormReact.make", () => {
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Must match password" }
+            return { path: ["confirm"], issue: "Must match password" }
           }
         })
 
@@ -1595,7 +1595,7 @@ describe("FormReact.make", () => {
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], issue: "Passwords must match" }
           }
         })
 
@@ -2776,7 +2776,7 @@ describe("FormReact.make", () => {
         .addField(ConfirmField)
         .refine((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], issue: "Passwords must match" }
           }
         })
 

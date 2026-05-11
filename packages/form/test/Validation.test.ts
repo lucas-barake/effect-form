@@ -174,7 +174,7 @@ describe("Validation", () => {
           if (values.password !== values.confirmPassword) {
             return {
               path: ["confirmPassword"],
-              message: "Passwords must match"
+              issue: "Passwords must match"
             }
           }
         }))
@@ -220,7 +220,7 @@ describe("Validation", () => {
       }).pipe(
         Schema.check(Schema.makeFilter((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Must match" }
+            return { path: ["confirm"], issue: "Must match" }
           }
         }))
       )
@@ -246,7 +246,7 @@ describe("Validation", () => {
               union: { readonly type: "a"; readonly value: string } | { readonly type: "b"; readonly count: number }
             ) => {
               if (union.type === "a" && union.value.length < 3) {
-                return { path: ["value"], message: "Value too short" }
+                return { path: ["value"], issue: "Value too short" }
               }
             }
           )
@@ -272,7 +272,7 @@ describe("Validation", () => {
       const schema = PasswordForm.pipe(
         Schema.check(Schema.makeFilter((values) => {
           if (values.password !== values.confirm) {
-            return { path: ["confirm"], message: "Passwords must match" }
+            return { path: ["confirm"], issue: "Passwords must match" }
           }
         }))
       )
@@ -297,7 +297,7 @@ describe("Validation", () => {
             Effect.sync(() => {
               const reserved = ["admin", "root", "taken"]
               if (reserved.includes(values.username.toLowerCase())) {
-                return { path: ["username"], message: "Username is reserved" }
+                return { path: ["username"], issue: "Username is reserved" }
               }
             })
           ),
@@ -406,7 +406,7 @@ describe("Validation", () => {
 
     it("prefers refinement errors when field and refinement target the same path", async () => {
       const schema = Schema.Struct({ age: Schema.Number }).pipe(
-        Schema.check(Schema.makeFilter(() => ({ path: ["age"], message: "Refinement error" })))
+        Schema.check(Schema.makeFilter(() => ({ path: ["age"], issue: "Refinement error" })))
       )
 
       const result = await Effect.runPromise(

@@ -1,9 +1,9 @@
+import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import * as SchemaGetter from "effect/SchemaGetter"
-import * as ServiceMap from "effect/ServiceMap"
 import * as Atom from "effect/unstable/reactivity/Atom"
 import * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -1748,7 +1748,7 @@ describe("FormAtoms", () => {
     })
 
     it("uses runtime services in field-level filterEffect", () => {
-      class NameValidator extends ServiceMap.Service<
+      class NameValidator extends Context.Service<
         NameValidator,
         { readonly isInvalid: (name: string) => Effect.Effect<boolean> }
       >()("NameValidator") {}
