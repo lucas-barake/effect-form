@@ -51,10 +51,11 @@ export const setNestedValue = <T,>(obj: T, path: string, value: unknown): T => {
   if (path === "") return value as T
   const parts = path.replace(BRACKET_NOTATION_REGEX, ".$1").split(".")
   const result = { ...obj } as Record<string, unknown>
+  const lastPart = parts[parts.length - 1]
+  if (lastPart === undefined) return result as T
 
   let current = result
-  for (let i = 0; i < parts.length - 1; i++) {
-    const part = parts[i]
+  for (const part of parts.slice(0, -1)) {
     if (Array.isArray(current[part])) {
       current[part] = [...(current[part] as Array<unknown>)]
     } else {
@@ -63,6 +64,6 @@ export const setNestedValue = <T,>(obj: T, path: string, value: unknown): T => {
     current = current[part] as Record<string, unknown>
   }
 
-  current[parts[parts.length - 1]] = value
+  current[lastPart] = value
   return result as T
 }

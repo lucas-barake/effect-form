@@ -269,6 +269,9 @@ const makeArrayFieldComponent = <S extends Schema.Top,>(
   if (subFieldDefs) {
     for (const subDef of subFieldDefs) {
       const itemComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any, any>>>)[subDef.key]
+      if (itemComponent === undefined) {
+        throw new Error(`Missing field component for ${subDef.key}`)
+      }
       itemFieldComponents[subDef.key] = makeFieldComponent(
         subDef.key,
         subDef,
@@ -321,6 +324,9 @@ const makeFieldComponents = <TFields extends Field.FieldsRecord, CM extends Fiel
       )
     } else if (Field.isFieldDef(def)) {
       const fieldComponent = (componentMap as Record<string, React.FC<FieldComponentProps<any, any>>>)[key]
+      if (fieldComponent === undefined) {
+        throw new Error(`Missing field component for ${key}`)
+      }
       components[key] = makeFieldComponent(
         key,
         def,

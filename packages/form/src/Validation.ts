@@ -75,7 +75,8 @@ export const extractFirstError = (error: Schema.SchemaError): Option.Option<stri
   if (formatted.issues.length === 0) {
     return Option.none()
   }
-  return Option.some(formatted.issues[0].message)
+  const issue = formatted.issues[0]
+  return issue === undefined ? Option.none() : Option.some(issue.message)
 }
 
 const normalizePath = (
