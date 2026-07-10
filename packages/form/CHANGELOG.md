@@ -1,5 +1,29 @@
 # @lucas-barake/effect-form
 
+## 0.25.0-beta.6
+
+### Minor Changes
+
+- [#100](https://github.com/lucas-barake/effect-form/pull/100) [`5e30412`](https://github.com/lucas-barake/effect-form/commit/5e30412536a11a61a2c39cfac6226ac12f89e2c6) Thanks [@lucas-barake](https://github.com/lucas-barake)! - use `Atom.debounce` for validation and auto-submit debouncing; `ParsedMode.debounce` now carries `Duration.Input` instead of milliseconds
+
+- [#99](https://github.com/lucas-barake/effect-form/pull/99) [`e1239e8`](https://github.com/lucas-barake/effect-form/commit/e1239e8a64d3bc420184d713389191357f1adaa9) Thanks [@lucas-barake](https://github.com/lucas-barake)! - replace the internal weak-registry with `Atom.family`; `validationAtomsRegistry` and `fieldAtomsRegistry` are removed from the `FormAtoms` interface
+
+### Patch Changes
+
+- [#93](https://github.com/lucas-barake/effect-form/pull/93) [`e69326e`](https://github.com/lucas-barake/effect-form/commit/e69326ea5af521c254ae24d9d557c34359224c30) Thanks [@lucas-barake](https://github.com/lucas-barake)! - default array schemas to `[]` in `getDefaultFromSchema`
+
+- [#95](https://github.com/lucas-barake/effect-form/pull/95) [`953fdf9`](https://github.com/lucas-barake/effect-form/commit/953fdf9cf0dca708248c823d876d32f1aac97af2) Thanks [@lucas-barake](https://github.com/lucas-barake)! - use AsyncResult accessors instead of manual result inspection in display-error logic
+
+- [#102](https://github.com/lucas-barake/effect-form/pull/102) [`1f9b932`](https://github.com/lucas-barake/effect-form/commit/1f9b932e3f0a40fbecb26e54bbe7cf2d47aaa9c7) Thanks [@lucas-barake](https://github.com/lucas-barake)! - fix auto-submit silently dropping a change made during a follow-up submit
+
+- [#98](https://github.com/lucas-barake/effect-form/pull/98) [`4e76a88`](https://github.com/lucas-barake/effect-form/commit/4e76a88ce14ee175b544ee5b9f1614a8b8f37c90) Thanks [@lucas-barake](https://github.com/lucas-barake)! - descriptive errors when form atoms are used before initialization
+
+- [#103](https://github.com/lucas-barake/effect-form/pull/103) [`4bb950c`](https://github.com/lucas-barake/effect-form/commit/4bb950c1626284f7053b58d2e6e0a6705a8f1a15) Thanks [@lucas-barake](https://github.com/lucas-barake)! - a failed `onSubmit` is no longer recorded as a successful submit (`lastSubmittedValues` only updates when `onSubmit` succeeds)
+
+- [#96](https://github.com/lucas-barake/effect-form/pull/96) [`860cd81`](https://github.com/lucas-barake/effect-form/commit/860cd8134dbef0ce3410570325104114c80bcb40) Thanks [@lucas-barake](https://github.com/lucas-barake)! - flatten builder field intersections for readable hover types
+
+- [#104](https://github.com/lucas-barake/effect-form/pull/104) [`243a2b6`](https://github.com/lucas-barake/effect-form/commit/243a2b6e299c11375cdeb4dc0d45158c437e9999) Thanks [@lucas-barake](https://github.com/lucas-barake)! - preserve field edits made during an in-flight async submit instead of reverting to the pre-submit snapshot
+
 ## 0.25.0-beta.5
 
 ### Patch Changes

@@ -7,11 +7,22 @@
     "@lucas-barake/effect-form-solid": "0.0.0-beta.0"
   },
   "changesets": [
+    "array-default-schemas",
+    "asyncresult-accessors",
+    "atom-debounce",
+    "atom-family-registries",
+    "autosubmit-lost-change",
     "bump-effect-beta-18",
+    "descriptive-uninit-errors",
     "effect-v4-migration",
     "expose-field-path",
+    "failed-submit-not-recorded",
     "fix-duration-input-compat",
     "heavy-eels-tickle",
+    "rooterror-built-form",
+    "simplify-builder-types",
+    "solid-array-tracking",
+    "submit-stale-writeback",
     "true-pandas-lay",
     "update-effect-beta-14",
     "update-effect-beta-27"
