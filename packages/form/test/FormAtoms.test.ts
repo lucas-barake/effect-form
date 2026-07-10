@@ -2045,6 +2045,41 @@ describe("FormAtoms", () => {
       )
     })
 
+    it("hides stored field-source error while validation is re-running", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.decode({
+          decode: SchemaGetter.checkEffect(() => Effect.never),
+          encode: SchemaGetter.passthrough()
+        }))
+      )
+      const EmailField = Field.makeField("email", Schema.String)
+      const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {}, mode: { validation: "onSubmit" } })
+      const registry = AtomRegistry.make()
+
+      let state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      state = atoms.operations.createSubmitState(state)
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.set(atoms.errorsAtom, new Map([["name", { message: "Name error", source: "field" as const }]]))
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      registry.mount(fieldAtoms.displayErrorAtom)
+      registry.mount(fieldAtoms.validationAtom)
+
+      expect(registry.get(fieldAtoms.displayErrorAtom)).toEqual(Option.some("Name error"))
+
+      registry.set(fieldAtoms.validationAtom, "John")
+
+      return new Promise<void>((resolve) =>
+        setTimeout(() => {
+          expect(Option.isNone(registry.get(fieldAtoms.displayErrorAtom))).toBe(true)
+          resolve()
+        }, 50)
+      )
+    })
+
     it("keeps stored refinement error even when validation passes", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()

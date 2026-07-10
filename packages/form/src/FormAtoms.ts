@@ -1,8 +1,8 @@
-import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
 import * as Atom from "effect/unstable/reactivity/Atom"
 import * as Field from "./Field.ts"
 import * as FormBuilder from "./FormBuilder.ts"
@@ -381,21 +381,14 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       const isTouched = get(touchedAtom)
       const submitCount = get(submitCountAtom)
 
-      let livePerFieldError: Option.Option<string> = Option.none()
-      if (validationResult._tag === "Failure") {
-        const parseError = Cause.findErrorOption(validationResult.cause)
-        if (Option.isSome(parseError) && Schema.isSchemaError(parseError.value)) {
-          livePerFieldError = Validation.extractFirstError(parseError.value)
-        }
-      }
+      const livePerFieldError = Option.flatMap(AsyncResult.error(validationResult), Validation.extractFirstError)
 
       let validationError: Option.Option<string> = Option.none()
       if (Option.isSome(livePerFieldError)) {
         validationError = livePerFieldError
       } else if (Option.isSome(storedError)) {
-        const isValidating = validationResult.waiting
         const shouldHideStoredError = storedError.value.source === "field" &&
-          (validationResult._tag === "Success" || isValidating)
+          (AsyncResult.isSuccess(validationResult) || AsyncResult.isWaiting(validationResult))
         if (!shouldHideStoredError) {
           validationError = Option.some(storedError.value.message)
         }
@@ -799,7 +792,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       })
     ).pipe(Atom.setIdleTTL(0))
 
-    const isValidating = Atom.readable((get) => get(internal.validationAtom).waiting).pipe(Atom.setIdleTTL(0))
+    const isValidating = Atom.readable((get) => AsyncResult.isWaiting(get(internal.validationAtom))).pipe(
+      Atom.setIdleTTL(0)
+    )
 
     const setValueAtom = setValueFamily(fieldKey)
 
@@ -857,7 +852,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       const debounceMs = parsedMode.debounce
 
       const triggerSubmit = () => {
-        if (get.once(submitAtom).waiting) {
+        if (AsyncResult.isWaiting(get.once(submitAtom))) {
           pendingChanges = true
           return
         }
@@ -888,7 +883,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
         lastValues = currentValues
 
         const submitResult = get.once(submitAtom)
-        if (submitResult.waiting) {
+        if (AsyncResult.isWaiting(submitResult)) {
           pendingChanges = true
         } else {
           debouncedSubmit()
@@ -897,7 +892,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 
       get.subscribe(submitAtom, () => {
         const result = get.once(submitAtom)
-        const isSubmitting = result.waiting
+        const isSubmitting = AsyncResult.isWaiting(result)
         const justFinished = wasSubmitting && !isSubmitting
         // Update wasSubmitting BEFORE triggering a follow-up submit. debouncedSubmit
         // (no debounce) synchronously re-enters this subscription with the new
@@ -914,7 +909,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 
   const onBlurSubmitAtom: Atom.Writable<void, void> = parsedMode.autoSubmit && parsedMode.validation === "onBlur"
     ? Atom.fnSync<void>()((_: void, get) => {
-      if (get(submitAtom).waiting) return
+      if (AsyncResult.isWaiting(get(submitAtom))) return
       const stateOption = get(stateAtom)
       if (Option.isNone(stateOption)) return
       const { lastSubmittedValues, values } = stateOption.value
