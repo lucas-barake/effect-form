@@ -621,6 +621,23 @@ triggerValidate()
 
 Unlike `submit`, `validate` only runs schema validation and shows errors. It does not call `onSubmit`, bump `submitCount`, or store `lastSubmittedValues`.
 
+## 20. defaultValues Are Read Once
+
+`Initialize` reads `defaultValues` on mount only — changing the prop on a mounted form is intentionally ignored (your users' in-progress edits are never clobbered by a re-render). To load new values into a live form, write them with `form.setValues`; to fully re-initialize (new initial values, cleared dirty/touched/submit state), remount `Initialize` with a `key`:
+
+```tsx
+// Update values in place — dirty tracking still compares against the original defaults
+const setValues = useAtomSet(form.setValues)
+setValues(fetchedUser)
+
+// Re-initialize from scratch when the underlying entity changes
+<form.Initialize key={userId} defaultValues={userValues}>
+  {children}
+</form.Initialize>
+```
+
+> Remounting re-initializes because form state is disposed when `Initialize` unmounts — unless a `KeepAlive` is mounted (section 18), in which case the existing state survives and `defaultValues` is ignored on the next mount.
+
 ## Available Atoms
 
 All forms expose these atoms for fine-grained subscriptions:
