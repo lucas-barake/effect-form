@@ -2,6 +2,9 @@
 
 Type-safe forms powered by Effect Schema.
 
+> [!NOTE]
+> This branch targets **Effect v4** (beta). For the Effect v3 version, see the [v3 branch](https://github.com/lucas-barake/effect-form/tree/v3) and its [README](https://github.com/lucas-barake/effect-form/blob/v3/README.md).
+
 ## Installation
 
 Requires Effect v4 beta, React 19, and `@effect/atom-react`.
