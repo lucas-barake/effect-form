@@ -1599,6 +1599,48 @@ describe("FormAtoms", () => {
       expect(Option.getOrThrow(finalState.lastSubmittedValues).encoded.email).toBe("first@example.com")
     })
 
+    it("preserves a field edit made during an in-flight async submit", async () => {
+      let releaseDecode: (() => void) | undefined
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(
+          Schema.decode({
+            decode: SchemaGetter.checkEffect((_v: string) =>
+              Effect.callback<string | undefined, never>((resume) => {
+                releaseDecode = () => resume(Effect.succeed(undefined)) // valid
+              })
+            ),
+            encode: SchemaGetter.passthrough()
+          })
+        )
+      )
+
+      const runtime = Atom.runtime(Layer.empty)
+      const form = FormBuilder.empty.addField(NameField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = AtomRegistry.make()
+
+      registry.set(atoms.stateAtom, Option.some(atoms.operations.createInitialState({ name: "V0" })))
+      registry.mount(atoms.stateAtom)
+      registry.mount(atoms.submitAtom)
+
+      // start submit -> async decode is now gated (in-flight)
+      registry.set(atoms.submitAtom, undefined)
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      // user edits the field while the submit's decode is in-flight
+      const cur = Option.getOrThrow(registry.get(atoms.stateAtom))
+      registry.set(atoms.stateAtom, Option.some(atoms.operations.setFieldValue(cur, "name", "V1")))
+
+      // complete the decode -> submit writes its success state
+      releaseDecode?.()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+
+      const finalValues = Option.getOrThrow(registry.get(atoms.stateAtom)).values
+      // the edit made during submit must not be silently reverted
+      expect(finalValues).toEqual({ name: "V1" })
+    })
+
     it("does not record lastSubmittedValues when onSubmit itself fails", async () => {
       const runtime = Atom.runtime(Layer.empty)
       const EmailField = Field.makeField(
