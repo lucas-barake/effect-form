@@ -10,7 +10,7 @@ import type * as Schema from "effect/Schema"
 import * as Atom from "effect/unstable/reactivity/Atom"
 import type * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
 import type { Accessor, Component, JSX } from "solid-js"
-import { createContext, createMemo, createSignal, onCleanup, onMount, Show, useContext } from "solid-js"
+import { createContext, createMemo, createSignal, onCleanup, onMount, Show, untrack, useContext } from "solid-js"
 
 export type FieldValue<T,> = FieldStateModule.FieldValue<T>
 
@@ -224,7 +224,17 @@ const makeArrayFieldComponent = <S extends Schema.Top,>(
       })
     }
 
-    return <>{props.children({ items: items(), append, remove, swap, move })}</>
+    const ops: ArrayFieldOperations<Schema.Codec.Encoded<S>> = {
+      get items() {
+        return items()
+      },
+      append,
+      remove,
+      swap,
+      move
+    }
+
+    return <>{untrack(() => props.children(ops))}</>
   }
 
   const ItemWrapper: Component<{
