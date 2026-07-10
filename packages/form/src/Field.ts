@@ -65,6 +65,8 @@ export const getDefaultFromSchema = (schema: Schema.Top): unknown => {
       return 0
     case "Boolean":
       return false
+    case "Arrays":
+      return []
     case "Literal":
       return ast.literal
     case "Enum": {
