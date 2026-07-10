@@ -483,18 +483,26 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
             )
           )
           const submitState = operations.createSubmitState(state.value)
-          get.set(
-            stateAtom,
-            Option.some({
-              ...submitState,
-              lastSubmittedValues: Option.some({ encoded: values, decoded })
-            })
-          )
+          get.set(stateAtom, Option.some(submitState))
           const result = config.onSubmit(args, { decoded, encoded: values, get })
-          if (Effect.isEffect(result)) {
-            return yield* result as Effect.Effect<A, E, R>
+          const output = Effect.isEffect(result)
+            ? yield* (result as Effect.Effect<A, E, R>)
+            : (result as A)
+          // Only record the values as "last submitted" once onSubmit has
+          // succeeded. A failed onSubmit must not be reported as a successful
+          // submit, otherwise revertToLastSubmit / hasChangedSinceSubmit would
+          // treat unsaved, failed values as persisted.
+          const afterSubmit = get(stateAtom)
+          if (Option.isSome(afterSubmit)) {
+            get.set(
+              stateAtom,
+              Option.some({
+                ...afterSubmit.value,
+                lastSubmittedValues: Option.some({ encoded: values, decoded })
+              })
+            )
           }
-          return result as A
+          return output
         }),
       config.reactivityKeys ? { reactivityKeys: config.reactivityKeys } : undefined
     )
