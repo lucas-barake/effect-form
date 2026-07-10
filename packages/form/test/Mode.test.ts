@@ -44,7 +44,7 @@ describe("Mode", () => {
 
       expect(result).toEqual({
         validation: "onChange",
-        debounce: 500,
+        debounce: "500 millis",
         autoSubmit: false
       })
     })
@@ -64,7 +64,7 @@ describe("Mode", () => {
 
       expect(result).toEqual({
         validation: "onChange",
-        debounce: 1000,
+        debounce: "1 second",
         autoSubmit: false
       })
     })

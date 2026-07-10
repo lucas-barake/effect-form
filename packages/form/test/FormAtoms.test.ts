@@ -2299,6 +2299,265 @@ describe("FormAtoms", () => {
       vi.useRealTimers()
     })
 
+    it("runs exactly one validation after the quiet period for rapid changes", async () => {
+      vi.useFakeTimers()
+      try {
+        const runtime = Atom.runtime(Layer.empty)
+        const decodeSpy = vi.fn((_value: string) => true)
+        const NameField = Field.makeField("name", Schema.String.pipe(Schema.check(Schema.makeFilter(decodeSpy))))
+        const EmailField = Field.makeField("email", Schema.String)
+        const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+        const atoms = FormAtoms.make({
+          runtime,
+          formBuilder: form,
+          onSubmit: () => {},
+          mode: { validation: "onChange", debounce: "300 millis" }
+        })
+        const registry = AtomRegistry.make()
+
+        const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+        registry.mount(fieldAtoms.valueAtom)
+        registry.mount(fieldAtoms.triggerValidationAtom)
+        registry.mount(fieldAtoms.validationAtom)
+
+        const state2 = atoms.operations.setFieldValue(state, "name", "Ja")
+        registry.set(atoms.stateAtom, Option.some(state2))
+        const state3 = atoms.operations.setFieldValue(state2, "name", "Jan")
+        registry.set(atoms.stateAtom, Option.some(state3))
+        const state4 = atoms.operations.setFieldValue(state3, "name", "Jane")
+        registry.set(atoms.stateAtom, Option.some(state4))
+
+        await vi.advanceTimersByTimeAsync(299)
+        expect(decodeSpy).not.toHaveBeenCalled()
+
+        await vi.advanceTimersByTimeAsync(1)
+        expect(decodeSpy).toHaveBeenCalledTimes(1)
+        expect(decodeSpy.mock.calls[0][0]).toBe("Jane")
+
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(decodeSpy).toHaveBeenCalledTimes(1)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("still validates when the value returns to its original value within the debounce window", async () => {
+      vi.useFakeTimers()
+      try {
+        const runtime = Atom.runtime(Layer.empty)
+        const decodeSpy = vi.fn((_value: string) => true)
+        const NameField = Field.makeField("name", Schema.String.pipe(Schema.check(Schema.makeFilter(decodeSpy))))
+        const EmailField = Field.makeField("email", Schema.String)
+        const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+        const atoms = FormAtoms.make({
+          runtime,
+          formBuilder: form,
+          onSubmit: () => {},
+          mode: { validation: "onChange", debounce: "300 millis" }
+        })
+        const registry = AtomRegistry.make()
+
+        const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+        registry.mount(fieldAtoms.valueAtom)
+        registry.mount(fieldAtoms.triggerValidationAtom)
+        registry.mount(fieldAtoms.validationAtom)
+
+        const state2 = atoms.operations.setFieldValue(state, "name", "Jane")
+        registry.set(atoms.stateAtom, Option.some(state2))
+        const state3 = atoms.operations.setFieldValue(state2, "name", "John")
+        registry.set(atoms.stateAtom, Option.some(state3))
+
+        await vi.advanceTimersByTimeAsync(300)
+        expect(decodeSpy).toHaveBeenCalledTimes(1)
+        expect(decodeSpy.mock.calls[0][0]).toBe("John")
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("validates immediately when debounce is zero", async () => {
+      vi.useFakeTimers()
+      try {
+        const runtime = Atom.runtime(Layer.empty)
+        const decodeSpy = vi.fn((_value: string) => true)
+        const NameField = Field.makeField("name", Schema.String.pipe(Schema.check(Schema.makeFilter(decodeSpy))))
+        const EmailField = Field.makeField("email", Schema.String)
+        const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+        const atoms = FormAtoms.make({
+          runtime,
+          formBuilder: form,
+          onSubmit: () => {},
+          mode: { validation: "onChange", debounce: 0 }
+        })
+        const registry = AtomRegistry.make()
+
+        const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+        registry.mount(fieldAtoms.valueAtom)
+        registry.mount(fieldAtoms.triggerValidationAtom)
+        registry.mount(fieldAtoms.validationAtom)
+
+        const newState = atoms.operations.setFieldValue(state, "name", "Jane")
+        registry.set(atoms.stateAtom, Option.some(newState))
+
+        await vi.advanceTimersByTimeAsync(0)
+        expect(decodeSpy).toHaveBeenCalledTimes(1)
+        expect(decodeSpy.mock.calls[0][0]).toBe("Jane")
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("validates immediately when debounce is absent", async () => {
+      vi.useFakeTimers()
+      try {
+        const runtime = Atom.runtime(Layer.empty)
+        const decodeSpy = vi.fn((_value: string) => true)
+        const NameField = Field.makeField("name", Schema.String.pipe(Schema.check(Schema.makeFilter(decodeSpy))))
+        const EmailField = Field.makeField("email", Schema.String)
+        const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+        const atoms = FormAtoms.make({
+          runtime,
+          formBuilder: form,
+          onSubmit: () => {},
+          mode: { validation: "onChange" }
+        })
+        const registry = AtomRegistry.make()
+
+        const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+        registry.mount(fieldAtoms.valueAtom)
+        registry.mount(fieldAtoms.triggerValidationAtom)
+        registry.mount(fieldAtoms.validationAtom)
+
+        const newState = atoms.operations.setFieldValue(state, "name", "Jane")
+        registry.set(atoms.stateAtom, Option.some(newState))
+
+        await vi.advanceTimersByTimeAsync(0)
+        expect(decodeSpy).toHaveBeenCalledTimes(1)
+        expect(decodeSpy.mock.calls[0][0]).toBe("Jane")
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("does not debounce validation when autoSubmit is enabled", async () => {
+      vi.useFakeTimers()
+      try {
+        const runtime = Atom.runtime(Layer.empty)
+        const decodeSpy = vi.fn((_value: string) => true)
+        const NameField = Field.makeField("name", Schema.String.pipe(Schema.check(Schema.makeFilter(decodeSpy))))
+        const EmailField = Field.makeField("email", Schema.String)
+        const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+        const atoms = FormAtoms.make({
+          runtime,
+          formBuilder: form,
+          onSubmit: () => {},
+          mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true }
+        })
+        const registry = AtomRegistry.make()
+
+        const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+        registry.mount(fieldAtoms.valueAtom)
+        registry.mount(fieldAtoms.triggerValidationAtom)
+        registry.mount(fieldAtoms.validationAtom)
+
+        const newState = atoms.operations.setFieldValue(state, "name", "Jane")
+        registry.set(atoms.stateAtom, Option.some(newState))
+
+        await vi.advanceTimersByTimeAsync(0)
+        expect(decodeSpy).toHaveBeenCalledTimes(1)
+        expect(decodeSpy.mock.calls[0][0]).toBe("Jane")
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("does not validate on change before the field is touched in onBlur mode", async () => {
+      vi.useFakeTimers()
+      try {
+        const runtime = Atom.runtime(Layer.empty)
+        const decodeSpy = vi.fn((_value: string) => true)
+        const NameField = Field.makeField("name", Schema.String.pipe(Schema.check(Schema.makeFilter(decodeSpy))))
+        const EmailField = Field.makeField("email", Schema.String)
+        const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+        const atoms = FormAtoms.make({
+          runtime,
+          formBuilder: form,
+          onSubmit: () => {},
+          mode: { validation: "onBlur" }
+        })
+        const registry = AtomRegistry.make()
+
+        const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+        registry.mount(fieldAtoms.touchedAtom)
+        registry.mount(fieldAtoms.valueAtom)
+        registry.mount(fieldAtoms.triggerValidationAtom)
+        registry.mount(fieldAtoms.validationAtom)
+
+        const newState = atoms.operations.setFieldValue(state, "name", "Jane")
+        registry.set(atoms.stateAtom, Option.some(newState))
+
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(decodeSpy).not.toHaveBeenCalled()
+        expect(registry.get(fieldAtoms.validationAtom)._tag).toBe("Initial")
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it("validates immediately on blur without any debounce timer in onBlur mode", async () => {
+      vi.useFakeTimers()
+      try {
+        const runtime = Atom.runtime(Layer.empty)
+        const decodeSpy = vi.fn((_value: string) => true)
+        const NameField = Field.makeField("name", Schema.String.pipe(Schema.check(Schema.makeFilter(decodeSpy))))
+        const EmailField = Field.makeField("email", Schema.String)
+        const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+        const atoms = FormAtoms.make({
+          runtime,
+          formBuilder: form,
+          onSubmit: () => {},
+          mode: { validation: "onBlur" }
+        })
+        const registry = AtomRegistry.make()
+
+        const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+        registry.set(atoms.stateAtom, Option.some(state))
+
+        const fieldAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+        registry.mount(fieldAtoms.touchedAtom)
+        registry.mount(fieldAtoms.valueAtom)
+        registry.mount(fieldAtoms.triggerValidationAtom)
+        registry.mount(fieldAtoms.validationAtom)
+
+        const touched = atoms.operations.setFieldTouched(state, "name", true)
+        registry.set(atoms.stateAtom, Option.some(touched))
+
+        await vi.advanceTimersByTimeAsync(0)
+        expect(decodeSpy).toHaveBeenCalledTimes(1)
+        expect(decodeSpy.mock.calls[0][0]).toBe("John")
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it("triggers validation on blur in onBlur mode", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
@@ -2518,6 +2777,95 @@ describe("FormAtoms", () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(submittedNames).toEqual(["b", "c", "d"])
+    })
+
+    it("submits exactly once after the quiet period for rapid changes", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true }
+      })
+      const registry = AtomRegistry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      const state2 = atoms.operations.setFieldValue(state, "name", "Ja")
+      registry.set(atoms.stateAtom, Option.some(state2))
+      const state3 = atoms.operations.setFieldValue(state2, "name", "Jan")
+      registry.set(atoms.stateAtom, Option.some(state3))
+      const state4 = atoms.operations.setFieldValue(state3, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state4))
+
+      await vi.advanceTimersByTimeAsync(299)
+      expect(onSubmit).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+    })
+
+    it("queues exactly one follow-up submit for changes made while a submit is in flight", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const resumes: Array<() => void> = []
+
+      const onSubmit = vi.fn(() =>
+        Effect.callback<void, never>(function(resume) {
+          resumes.push(() => resume(Effect.void))
+        })
+      )
+
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onChange", debounce: "50 millis", autoSubmit: true }
+      })
+      const registry = AtomRegistry.make()
+
+      const state = atoms.operations.createInitialState({ name: "John", email: "test@test.com" })
+      registry.set(atoms.stateAtom, Option.some(state))
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      const state2 = atoms.operations.setFieldValue(state, "name", "Jane")
+      registry.set(atoms.stateAtom, Option.some(state2))
+
+      await vi.advanceTimersByTimeAsync(50)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+
+      const state3 = atoms.operations.setFieldValue(state2, "name", "Janet")
+      registry.set(atoms.stateAtom, Option.some(state3))
+      const state4 = atoms.operations.setFieldValue(state3, "name", "Janette")
+      registry.set(atoms.stateAtom, Option.some(state4))
+
+      await vi.advanceTimersByTimeAsync(200)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+
+      resumes[0]()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(49)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(onSubmit).toHaveBeenCalledTimes(2)
+
+      resumes[1]()
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(onSubmit).toHaveBeenCalledTimes(2)
     })
 
     it("does not trigger submit when values have not changed", async () => {
