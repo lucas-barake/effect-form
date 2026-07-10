@@ -1,3 +1,4 @@
+import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
 import * as Option from "effect/Option"
@@ -199,6 +200,16 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
   const { formBuilder, runtime } = config
   const { fields } = formBuilder
   const parsedMode = Mode.parse(config.mode)
+
+  // A zero (or absent) debounce means "fire synchronously", so only a strictly
+  // positive duration goes through `Atom.debounce`.
+  const positiveDebounce = (input: Duration.Input | null): Duration.Input | null =>
+    input !== null && Duration.toMillis(Duration.fromInputUnsafe(input)) > 0 ? input : null
+
+  const validationDebounce = parsedMode.validation === "onChange" && !parsedMode.autoSubmit
+    ? positiveDebounce(parsedMode.debounce)
+    : null
+  const autoSubmitDebounce = positiveDebounce(parsedMode.debounce)
 
   const combinedSchema = FormBuilder.buildSchema(formBuilder)
 
@@ -406,36 +417,32 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       return shouldShowError ? validationError : Option.none()
     }).pipe(Atom.setIdleTTL(0))
 
+    // Every value change produces a fresh box, so `Atom.debounce` (which drops
+    // updates that are `Object.is`-equal to its current value) still emits when
+    // the value returns to what it was before the burst of changes.
+    const debouncedChangeAtom = validationDebounce === null
+      ? null
+      : Atom.debounce(
+        Atom.readable((get) => ({ value: get(valueAtom) })).pipe(Atom.setIdleTTL(0)),
+        validationDebounce
+      )
+
     const triggerValidationAtom = Atom.readable((get) => {
-      let lastValue = get.once(valueAtom)
-      let timeout: ReturnType<typeof setTimeout> | undefined
-
-      const shouldDebounce = parsedMode.validation === "onChange" &&
-        parsedMode.debounce !== null && !parsedMode.autoSubmit
-      const debounceMs = shouldDebounce ? parsedMode.debounce : null
-
-      const trigger = (value: unknown) => {
-        if (!get.once(shouldValidateAtom)) return
-        if (debounceMs !== null && debounceMs > 0) {
-          if (timeout !== undefined) clearTimeout(timeout)
-          timeout = setTimeout(() => {
-            timeout = undefined
-            get.set(validationAtom, value)
-          }, debounceMs)
-        } else {
-          get.set(validationAtom, value)
-        }
+      if (debouncedChangeAtom !== null) {
+        get.mount(debouncedChangeAtom)
+        get.subscribe(debouncedChangeAtom, (change) => {
+          if (!get.once(shouldValidateAtom)) return
+          get.set(validationAtom, change.value)
+        })
+      } else {
+        let lastValue = get.once(valueAtom)
+        get.subscribe(valueAtom, (newValue) => {
+          if (newValue === lastValue) return
+          lastValue = newValue
+          if (!get.once(shouldValidateAtom)) return
+          get.set(validationAtom, newValue)
+        })
       }
-
-      get.addFinalizer(() => {
-        if (timeout !== undefined) clearTimeout(timeout)
-      })
-
-      get.subscribe(valueAtom, (newValue) => {
-        if (newValue === lastValue) return
-        lastValue = newValue
-        trigger(newValue)
-      })
 
       if (parsedMode.validation === "onBlur") {
         get.subscribe(touchedAtom, (isTouched) => {
@@ -840,71 +847,75 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
   const keepAliveActiveAtom = Atom.make(false).pipe(Atom.setIdleTTL(0))
 
   const autoSubmitAtom: Atom.Atom<void> = parsedMode.autoSubmit && parsedMode.validation === "onChange"
-    ? Atom.readable((get) => {
-      const initialState = get.once(stateAtom)
-      let lastValues: unknown = Option.isSome(initialState)
-        ? initialState.value.values
-        : null
-      let pendingChanges = false
-      let wasSubmitting = false
-      let timeout: ReturnType<typeof setTimeout> | undefined
+    ? (() => {
+      // Submit requests are funneled through a monotonically increasing counter
+      // so `Atom.debounce` can own the timer lifecycle: every bump restarts the
+      // trailing debounce window, and the subscriber below fires once it lands.
+      const submitRequestAtom = Atom.make(0).pipe(Atom.setIdleTTL(0))
+      const debouncedSubmitRequestAtom = autoSubmitDebounce === null
+        ? null
+        : Atom.debounce(submitRequestAtom, autoSubmitDebounce)
 
-      const debounceMs = parsedMode.debounce
+      return Atom.readable((get) => {
+        const initialState = get.once(stateAtom)
+        let lastValues: unknown = Option.isSome(initialState)
+          ? initialState.value.values
+          : null
+        let pendingChanges = false
+        let wasSubmitting = false
 
-      const triggerSubmit = () => {
-        if (AsyncResult.isWaiting(get.once(submitAtom))) {
-          pendingChanges = true
-          return
+        const triggerSubmit = () => {
+          if (AsyncResult.isWaiting(get.once(submitAtom))) {
+            pendingChanges = true
+            return
+          }
+          get.set(submitAtom as Atom.Writable<any, any>, undefined)
         }
-        get.set(submitAtom as Atom.Writable<any, any>, undefined)
-      }
 
-      const debouncedSubmit = () => {
-        if (debounceMs !== null && debounceMs > 0) {
-          if (timeout !== undefined) clearTimeout(timeout)
-          timeout = setTimeout(() => {
-            timeout = undefined
+        let requestSubmit: () => void
+        if (debouncedSubmitRequestAtom === null) {
+          requestSubmit = triggerSubmit
+        } else {
+          get.mount(debouncedSubmitRequestAtom)
+          get.subscribe(debouncedSubmitRequestAtom, () => {
             triggerSubmit()
-          }, debounceMs)
-        } else {
-          triggerSubmit()
+          })
+          requestSubmit = () => {
+            get.set(submitRequestAtom, get.once(submitRequestAtom) + 1)
+          }
         }
-      }
 
-      get.addFinalizer(() => {
-        if (timeout !== undefined) clearTimeout(timeout)
-      })
+        get.subscribe(stateAtom, () => {
+          const state = get.once(stateAtom)
+          if (Option.isNone(state)) return
+          const currentValues = state.value.values
+          if (currentValues === lastValues) return
+          lastValues = currentValues
 
-      get.subscribe(stateAtom, () => {
-        const state = get.once(stateAtom)
-        if (Option.isNone(state)) return
-        const currentValues = state.value.values
-        if (currentValues === lastValues) return
-        lastValues = currentValues
+          const submitResult = get.once(submitAtom)
+          if (AsyncResult.isWaiting(submitResult)) {
+            pendingChanges = true
+          } else {
+            requestSubmit()
+          }
+        })
 
-        const submitResult = get.once(submitAtom)
-        if (AsyncResult.isWaiting(submitResult)) {
-          pendingChanges = true
-        } else {
-          debouncedSubmit()
-        }
-      })
-
-      get.subscribe(submitAtom, () => {
-        const result = get.once(submitAtom)
-        const isSubmitting = AsyncResult.isWaiting(result)
-        const justFinished = wasSubmitting && !isSubmitting
-        // Update wasSubmitting BEFORE triggering a follow-up submit. debouncedSubmit
-        // (no debounce) synchronously re-enters this subscription with the new
-        // waiting=true state; if we assigned wasSubmitting afterwards we'd clobber
-        // that re-entrant true with the stale false, losing the next change.
-        wasSubmitting = isSubmitting
-        if (justFinished && pendingChanges) {
-          pendingChanges = false
-          debouncedSubmit()
-        }
-      })
-    }).pipe(Atom.setIdleTTL(0))
+        get.subscribe(submitAtom, () => {
+          const result = get.once(submitAtom)
+          const isSubmitting = AsyncResult.isWaiting(result)
+          const justFinished = wasSubmitting && !isSubmitting
+          // Update wasSubmitting BEFORE triggering a follow-up submit. requestSubmit
+          // (no debounce) synchronously re-enters this subscription with the new
+          // waiting=true state; if we assigned wasSubmitting afterwards we'd clobber
+          // that re-entrant true with the stale false, losing the next change.
+          wasSubmitting = isSubmitting
+          if (justFinished && pendingChanges) {
+            pendingChanges = false
+            requestSubmit()
+          }
+        })
+      }).pipe(Atom.setIdleTTL(0))
+    })()
     : Atom.readable(() => {}).pipe(Atom.setIdleTTL(0))
 
   const onBlurSubmitAtom: Atom.Writable<void, void> = parsedMode.autoSubmit && parsedMode.validation === "onBlur"
