@@ -3,9 +3,9 @@ name: Check
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main, v4]
+    branches: [main]
   push:
-    branches: [main, v4]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

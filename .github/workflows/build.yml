@@ -3,9 +3,9 @@ name: Build
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main, v4]
+    branches: [main]
   push:
-    branches: [main, v4]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,7 +28,7 @@ jobs:
       - run: pnpm build:tsgo
       - run: pnpm circular
       - name: Create Release Pull Request or Publish
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/v4'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         id: changesets
         uses: changesets/action@v1
         with:
