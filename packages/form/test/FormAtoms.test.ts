@@ -1,3 +1,4 @@
+import * as Cause from "effect/Cause"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
@@ -673,6 +674,98 @@ describe("FormAtoms", () => {
       expect(fieldAtomsA).toBe(fieldAtomsB)
       expect(atoms.getOrCreateValidationAtom("name", Schema.String)).toBe(fieldAtomsA.validationAtom)
       expect(atoms.getFieldAtoms(atoms.fieldRefs.name)).toBe(atoms.getFieldAtoms(atoms.fieldRefs.name))
+    })
+  })
+
+  describe("uninitialized form access", () => {
+    it("valueAtom read throws a descriptive error naming the field and Initialize", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = AtomRegistry.make()
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+
+      expect(() => registry.get(fieldAtoms.valueAtom)).toThrowError(
+        `Field "name" was read before the form was initialized`
+      )
+      expect(() => registry.get(fieldAtoms.valueAtom)).toThrowError(/<form\.Initialize/)
+    })
+
+    it("valueAtom write throws a descriptive error naming the field and Initialize", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = AtomRegistry.make()
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+
+      expect(() => registry.set(fieldAtoms.valueAtom, "Jane")).toThrowError(
+        `Field "name" was read before the form was initialized`
+      )
+      expect(() => registry.set(fieldAtoms.valueAtom, "Jane")).toThrowError(/<form\.Initialize/)
+    })
+
+    it("initialValueAtom read throws a descriptive error naming the field and Initialize", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = AtomRegistry.make()
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("email", Schema.String)
+
+      expect(() => registry.get(fieldAtoms.initialValueAtom)).toThrowError(
+        `Field "email" was read before the form was initialized`
+      )
+      expect(() => registry.get(fieldAtoms.initialValueAtom)).toThrowError(/<form\.Initialize/)
+    })
+
+    it("touchedAtom read and write throw a descriptive error naming the field and Initialize", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = AtomRegistry.make()
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("name", Schema.String)
+
+      expect(() => registry.get(fieldAtoms.touchedAtom)).toThrowError(
+        `Field "name" was read before the form was initialized`
+      )
+      expect(() => registry.set(fieldAtoms.touchedAtom, true)).toThrowError(/<form\.Initialize/)
+    })
+
+    it("includes the full nested field path in the error message", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeArrayTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = AtomRegistry.make()
+
+      const fieldAtoms = atoms.getOrCreateFieldAtoms("items[0].name", Schema.String)
+
+      expect(() => registry.get(fieldAtoms.valueAtom)).toThrowError(
+        `Field "items[0].name" was read before the form was initialized`
+      )
+    })
+
+    it("submitAtom fails with a descriptive defect when submitted before initialization", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
+      const registry = AtomRegistry.make()
+
+      registry.mount(atoms.submitAtom)
+      registry.set(atoms.submitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(onSubmit).not.toHaveBeenCalled()
+      const result = registry.get(atoms.submitAtom)
+      expect(result._tag).toBe("Failure")
+      const defect = result._tag === "Failure" ? Cause.squash(result.cause) : undefined
+      expect(defect).toBeInstanceOf(Error)
+      expect((defect as Error).message).toContain("submit was called before the form was initialized")
+      expect((defect as Error).message).toContain("<form.Initialize")
     })
   })
 

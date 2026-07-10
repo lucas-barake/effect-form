@@ -189,9 +189,17 @@ const makeArrayFieldComponent = <S extends Schema.Top,>(
   }> = ({ children }) => {
     const arrayCtx = useContext(ArrayItemContext)
     const [formStateOption, setFormState] = useAtom(stateAtom)
-    const formState = Option.getOrThrow(formStateOption)
 
     const fieldPath = arrayCtx ? `${arrayCtx.parentPath}.${fieldKey}` : fieldKey
+    if (Option.isNone(formStateOption)) {
+      throw new Error(
+        `Array field "${fieldPath}" was rendered before the form was initialized. ` +
+          "Form state does not exist until initialization: render array field components inside " +
+          "<form.Initialize defaultValues={...}>. " +
+          `See the "Basic Form Setup" section of the README.`
+      )
+    }
+    const formState = formStateOption.value
     const items = React.useMemo(
       () => (getNestedValue(formState.values, fieldPath) ?? []) as ReadonlyArray<Schema.Codec.Encoded<S>>,
       [formState.values, fieldPath]

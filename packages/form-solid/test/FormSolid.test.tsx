@@ -216,6 +216,42 @@ describe("FormSolid.make", () => {
     })
   })
 
+  describe("array fields", () => {
+    it("throws a descriptive error when array field renders outside Initialize", () => {
+      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+
+      const ItemNameInput: FormSolid.FieldComponent<string> = ({ field }) => (
+        <input
+          type="text"
+          value={field().value}
+          onInput={(e) => field().onChange(e.currentTarget.value)}
+          data-testid="item-name"
+        />
+      )
+
+      const form = FormSolid.make(formBuilder, {
+        fields: { items: { name: ItemNameInput } },
+        onSubmit: () => {}
+      })
+
+      expect(() =>
+        render(() => (
+          <form.items>
+            {() => null}
+          </form.items>
+        ))
+      ).toThrowError(`Array field "items" was rendered before the form was initialized`)
+      expect(() =>
+        render(() => (
+          <form.items>
+            {() => null}
+          </form.items>
+        ))
+      ).toThrowError(/<form\.Initialize/)
+    })
+  })
+
   it("submit calls onSubmit with decoded values", async () => {
     const user = userEvent.setup()
     const submitHandler = vi.fn()

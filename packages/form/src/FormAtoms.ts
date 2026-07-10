@@ -178,6 +178,21 @@ export interface FormOperations<TFields extends Field.FieldsRecord,> {
   readonly revertToLastSubmit: (state: FormBuilder.FormState<TFields>) => FormBuilder.FormState<TFields>
 }
 
+const getStateOrThrow = <TFields extends Field.FieldsRecord,>(
+  state: Option.Option<FormBuilder.FormState<TFields>>,
+  fieldPath: string
+): FormBuilder.FormState<TFields> => {
+  if (Option.isNone(state)) {
+    throw new Error(
+      `Field "${fieldPath}" was read before the form was initialized. ` +
+        "Form state does not exist until initialization: render your fields inside " +
+        "<form.Initialize defaultValues={...}> (React/Solid), or set the form state before reading field atoms. " +
+        `See the "Basic Form Setup" section of the README.`
+    )
+  }
+  return state.value
+}
+
 export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void,>(
   config: FormAtomsConfig<TFields, R, A, E, SubmitArgs>
 ): FormAtoms<TFields, R, A, E, SubmitArgs> => {
@@ -316,21 +331,21 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
 
   const fieldAtomsFamily = Atom.family(({ path: fieldPath, schema }: FieldFamilyKey): FieldAtoms => {
     const valueAtom = Atom.writable(
-      (get) => getNestedValue(Option.getOrThrow(get(stateAtom)).values, fieldPath),
+      (get) => getNestedValue(getStateOrThrow(get(stateAtom), fieldPath).values, fieldPath),
       (ctx, value) => {
-        const currentState = Option.getOrThrow(ctx.get(stateAtom))
+        const currentState = getStateOrThrow(ctx.get(stateAtom), fieldPath)
         ctx.set(stateAtom, Option.some(operations.setFieldValue(currentState, fieldPath, value)))
       }
     ).pipe(Atom.setIdleTTL(0))
 
     const initialValueAtom = Atom.readable((get) =>
-      getNestedValue(Option.getOrThrow(get(stateAtom)).initialValues, fieldPath)
+      getNestedValue(getStateOrThrow(get(stateAtom), fieldPath).initialValues, fieldPath)
     ).pipe(Atom.setIdleTTL(0))
 
     const touchedAtom = Atom.writable(
-      (get) => (getNestedValue(Option.getOrThrow(get(stateAtom)).touched, fieldPath) ?? false) as boolean,
+      (get) => (getNestedValue(getStateOrThrow(get(stateAtom), fieldPath).touched, fieldPath) ?? false) as boolean,
       (ctx, value) => {
-        const currentState = Option.getOrThrow(ctx.get(stateAtom))
+        const currentState = getStateOrThrow(ctx.get(stateAtom), fieldPath)
         ctx.set(
           stateAtom,
           Option.some({
@@ -473,7 +488,15 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       (args, get) =>
         Effect.gen(function*() {
           const state = get(stateAtom)
-          if (Option.isNone(state)) return yield* Effect.die("Form not initialized")
+          if (Option.isNone(state)) {
+            return yield* Effect.die(
+              new Error(
+                "submit was called before the form was initialized — mount " +
+                  "<form.Initialize defaultValues={...}> before submitting. " +
+                  `See the "Basic Form Setup" section of the README.`
+              )
+            )
+          }
           const values = state.value.values
           get.set(errorsAtom, new Map())
           const decoded = yield* pipe(

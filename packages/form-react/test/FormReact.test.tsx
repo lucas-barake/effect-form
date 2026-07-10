@@ -343,6 +343,44 @@ describe("FormReact.make", () => {
       })
     })
 
+    it("throws a descriptive error when array field renders outside Initialize", () => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+
+      const ItemsArrayField = Field.makeArrayField("items", Schema.Struct({ name: Schema.String }))
+      const formBuilder = FormBuilder.empty.addField(ItemsArrayField)
+
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
+        <input
+          type="text"
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          data-testid="item-name"
+        />
+      )
+
+      const form = FormReact.make(formBuilder, {
+        fields: { items: { name: ItemNameInput } },
+        onSubmit: () => {}
+      })
+
+      expect(() =>
+        render(
+          <form.items>
+            {() => null}
+          </form.items>
+        )
+      ).toThrowError(`Array field "items" was rendered before the form was initialized`)
+      expect(() =>
+        render(
+          <form.items>
+            {() => null}
+          </form.items>
+        )
+      ).toThrowError(/<form\.Initialize/)
+
+      consoleError.mockRestore()
+    })
+
     it("renders array item subfields when item schema uses filterEffect", async () => {
       const user = userEvent.setup()
 
