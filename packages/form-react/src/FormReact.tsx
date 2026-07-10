@@ -61,6 +61,7 @@ export type BuiltForm<
   readonly lastSubmittedValues: Atom.Atom<Option.Option<FormBuilder.SubmittedValues<TFields>>>
   readonly submitCount: Atom.Atom<number>
   readonly validationCount: Atom.Atom<number>
+  readonly rootError: Atom.Atom<Option.Option<string>>
 
   readonly schema: Schema.Codec<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
   readonly fields: FieldRefs<TFields>

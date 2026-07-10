@@ -255,4 +255,48 @@ describe("FormSolid.make", () => {
       expect(submitHandler).toHaveBeenCalledWith({ name: "John", age: 42 })
     })
   })
+
+  describe("rootError atom", () => {
+    it("exposes root-level refinement errors through form.rootError", async () => {
+      const user = userEvent.setup()
+
+      const NameField = Field.makeField("name", Schema.String)
+      const formBuilder = FormBuilder.empty.addField(NameField)
+        .refine((values) => {
+          if (values.name === "invalid") {
+            return "Form-level validation failed"
+          }
+        })
+
+      const form = FormSolid.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      let rootError: Option.Option<string> = Option.none()
+
+      const TestComponent = () => {
+        useAtomSubscribe(() => form.rootError, (error) => {
+          rootError = error
+        }, { immediate: true })
+        return null
+      }
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(() => (
+        <form.Initialize defaultValues={{ name: "invalid" }}>
+          <form.name />
+          <TestComponent />
+          <SubmitButton />
+        </form.Initialize>
+      ))
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(Option.getOrNull(rootError)).toBe("Form-level validation failed")
+      })
+    })
+  })
 })

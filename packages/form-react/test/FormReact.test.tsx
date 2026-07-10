@@ -3605,4 +3605,46 @@ describe("FormReact.make", () => {
       expect(screen.queryByTestId("email-error")).not.toBeInTheDocument()
     })
   })
+
+  describe("rootError atom", () => {
+    it("exposes root-level refinement errors through form.rootError", async () => {
+      const user = userEvent.setup()
+
+      const NameField = Field.makeField("name", Schema.String)
+      const formBuilder = FormBuilder.empty.addField(NameField)
+        .refine((values) => {
+          if (values.name === "invalid") {
+            return "Form-level validation failed"
+          }
+        })
+
+      const form = FormReact.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => {}
+      })
+
+      expectTypeOf(form.rootError).toEqualTypeOf<Atom.Atom<Option.Option<string>>>()
+
+      const RootError = () => {
+        const rootError = useAtomValue(form.rootError)
+        return Option.isSome(rootError) ? <span data-testid="root-error">{rootError.value}</span> : null
+      }
+
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ name: "invalid" }}>
+          <form.name />
+          <RootError />
+          <SubmitButton />
+        </form.Initialize>
+      )
+
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => {
+        expect(screen.getByTestId("root-error")).toHaveTextContent("Form-level validation failed")
+      })
+    })
+  })
 })
