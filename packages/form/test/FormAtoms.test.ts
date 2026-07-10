@@ -1598,6 +1598,34 @@ describe("FormAtoms", () => {
       expect(Option.isSome(finalState.lastSubmittedValues)).toBe(true)
       expect(Option.getOrThrow(finalState.lastSubmittedValues).encoded.email).toBe("first@example.com")
     })
+
+    it("does not record lastSubmittedValues when onSubmit itself fails", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const EmailField = Field.makeField(
+        "email",
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Email is required" })))
+      )
+      const form = FormBuilder.empty.addField(EmailField)
+      const onSubmit = vi.fn(() => Effect.fail("network error"))
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit })
+      const registry = AtomRegistry.make()
+
+      const initialState = atoms.operations.createInitialState({ email: "valid@example.com" })
+      registry.set(atoms.stateAtom, Option.some(initialState))
+      registry.mount(atoms.stateAtom)
+      registry.mount(atoms.lastSubmittedValuesAtom)
+      registry.mount(atoms.submitAtom)
+      registry.set(atoms.submitAtom, undefined)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      // onSubmit ran (validation passed) but FAILED. The submit did not succeed,
+      // so the form must not report these values as "last submitted".
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      const stateAfter = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
+      expect(Option.isNone(stateAfter.lastSubmittedValues)).toBe(true)
+      expect(Option.isNone(registry.get(atoms.lastSubmittedValuesAtom))).toBe(true)
+    })
   })
 
   describe("rootErrorAtom", () => {
