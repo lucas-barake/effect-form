@@ -2207,6 +2207,60 @@ describe("FormAtoms", () => {
       expect(completions).toHaveBeenCalledTimes(1)
     })
 
+    it("does not lose a change made during a follow-up auto-submit (no debounce)", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+
+      const submittedNames: Array<string> = []
+      const resolvers: Array<() => void> = []
+      const onSubmit = vi.fn((_args: void, ctx: { readonly encoded: { readonly name: string } }) =>
+        Effect.callback<void, never>((resume) => {
+          submittedNames.push(ctx.encoded.name)
+          resolvers.push(() => resume(Effect.void))
+        })
+      )
+
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        // no debounce -> follow-up submit fires synchronously on completion
+        mode: { validation: "onChange", autoSubmit: true }
+      })
+      const registry = AtomRegistry.make()
+
+      const state0 = atoms.operations.createInitialState({ name: "a", email: "e@e.com" })
+      registry.set(atoms.stateAtom, Option.some(state0))
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      // change -> submit A ("b")
+      const stateB = atoms.operations.setFieldValue(state0, "name", "b")
+      registry.set(atoms.stateAtom, Option.some(stateB))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(submittedNames).toEqual(["b"])
+
+      // change during in-flight submit A -> queued as pendingChanges
+      const stateC = atoms.operations.setFieldValue(stateB, "name", "c")
+      registry.set(atoms.stateAtom, Option.some(stateC))
+
+      // complete submit A -> follow-up submit B ("c")
+      resolvers[0]()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(submittedNames).toEqual(["b", "c"])
+
+      // change during in-flight submit B -> must be queued as pendingChanges
+      const stateD = atoms.operations.setFieldValue(stateC, "name", "d")
+      registry.set(atoms.stateAtom, Option.some(stateD))
+
+      // complete submit B -> follow-up submit C ("d") must fire
+      resolvers[1]()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(submittedNames).toEqual(["b", "c", "d"])
+    })
+
     it("does not trigger submit when values have not changed", async () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()

@@ -883,13 +883,16 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       get.subscribe(submitAtom, () => {
         const result = get.once(submitAtom)
         const isSubmitting = result.waiting
-        if (wasSubmitting && !isSubmitting) {
-          if (pendingChanges) {
-            pendingChanges = false
-            debouncedSubmit()
-          }
-        }
+        const justFinished = wasSubmitting && !isSubmitting
+        // Update wasSubmitting BEFORE triggering a follow-up submit. debouncedSubmit
+        // (no debounce) synchronously re-enters this subscription with the new
+        // waiting=true state; if we assigned wasSubmitting afterwards we'd clobber
+        // that re-entrant true with the stale false, losing the next change.
         wasSubmitting = isSubmitting
+        if (justFinished && pendingChanges) {
+          pendingChanges = false
+          debouncedSubmit()
+        }
       })
     }).pipe(Atom.setIdleTTL(0))
     : Atom.readable(() => {}).pipe(Atom.setIdleTTL(0))
