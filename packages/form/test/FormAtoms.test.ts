@@ -653,7 +653,26 @@ describe("FormAtoms", () => {
 
       expect(fieldAtomsA).not.toBe(fieldAtomsB)
       expect(fieldAtomsA.validationAtom).not.toBe(fieldAtomsB.validationAtom)
-      expect(atoms.validationAtomsRegistry.get("name")).toBe(fieldAtomsB.validationAtom)
+      expect(atoms.getOrCreateValidationAtom("name", Schema.Number)).toBe(fieldAtomsB.validationAtom)
+    })
+
+    it("returns the same atoms for repeated calls with the same path and schema", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = AtomRegistry.make()
+
+      registry.set(
+        atoms.stateAtom,
+        Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" }))
+      )
+
+      const fieldAtomsA = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      const fieldAtomsB = atoms.getOrCreateFieldAtoms("name", Schema.String)
+
+      expect(fieldAtomsA).toBe(fieldAtomsB)
+      expect(atoms.getOrCreateValidationAtom("name", Schema.String)).toBe(fieldAtomsA.validationAtom)
+      expect(atoms.getFieldAtoms(atoms.fieldRefs.name)).toBe(atoms.getFieldAtoms(atoms.fieldRefs.name))
     })
   })
 
@@ -669,16 +688,58 @@ describe("FormAtoms", () => {
         Option.some(atoms.operations.createInitialState({ name: "John", email: "test@test.com" }))
       )
 
-      atoms.getOrCreateFieldAtoms("name", Schema.String)
-      atoms.getOrCreateValidationAtom("name", Schema.String)
-
-      expect(atoms.fieldAtomsRegistry.get("name")).toBeDefined()
-      expect(atoms.validationAtomsRegistry.get("name")).toBeDefined()
+      const fieldAtomsBefore = atoms.getOrCreateFieldAtoms("name", Schema.String)
+      const validationAtomBefore = atoms.getOrCreateValidationAtom("name", Schema.String)
 
       atoms.resetValidationAtoms(registry)
 
-      expect(atoms.fieldAtomsRegistry.get("name")).toBeDefined()
-      expect(atoms.validationAtomsRegistry.get("name")).toBeDefined()
+      expect(atoms.getOrCreateFieldAtoms("name", Schema.String)).toBe(fieldAtomsBefore)
+      expect(atoms.getOrCreateValidationAtom("name", Schema.String)).toBe(validationAtomBefore)
+    })
+
+    it("resets validation state and per-field validation counts for every created field", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const NameField = Field.makeField(
+        "name",
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Name is required" })))
+      )
+      const EmailField = Field.makeField(
+        "email",
+        Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Email is required" })))
+      )
+      const form = FormBuilder.empty.addField(NameField).addField(EmailField)
+      const atoms = FormAtoms.make({ runtime, formBuilder: form, onSubmit: () => {} })
+      const registry = AtomRegistry.make()
+
+      registry.set(
+        atoms.stateAtom,
+        Option.some(atoms.operations.createInitialState({ name: "", email: "" }))
+      )
+
+      const nameAtoms = atoms.getOrCreateFieldAtoms("name", NameField.schema)
+      const emailAtoms = atoms.getOrCreateFieldAtoms("email", EmailField.schema)
+
+      registry.mount(nameAtoms.validationAtom)
+      registry.mount(emailAtoms.validationAtom)
+      registry.mount(nameAtoms.fieldValidationCountAtom)
+      registry.mount(emailAtoms.fieldValidationCountAtom)
+
+      registry.set(nameAtoms.validationAtom, "")
+      registry.set(emailAtoms.validationAtom, "")
+      registry.set(nameAtoms.fieldValidationCountAtom, 2)
+      registry.set(emailAtoms.fieldValidationCountAtom, 3)
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(registry.get(nameAtoms.validationAtom)._tag).toBe("Failure")
+      expect(registry.get(emailAtoms.validationAtom)._tag).toBe("Failure")
+
+      atoms.resetValidationAtoms(registry)
+
+      expect(registry.get(nameAtoms.validationAtom)._tag).toBe("Initial")
+      expect(registry.get(emailAtoms.validationAtom)._tag).toBe("Initial")
+      expect(registry.get(nameAtoms.fieldValidationCountAtom)).toBe(0)
+      expect(registry.get(emailAtoms.fieldValidationCountAtom)).toBe(0)
     })
 
     it("returns same public field atoms after reset", () => {
