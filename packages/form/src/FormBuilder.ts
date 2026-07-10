@@ -15,6 +15,17 @@ import type {
 } from "./Field.ts"
 import { isArrayFieldDef, isFieldDef, makeField } from "./Field.ts"
 
+/**
+ * Flattens an intersection of field records into a single object type so that
+ * hover types and error messages display as `{ email: ...; password: ... }`
+ * instead of `{ email: ... } & { password: ... } & ...`.
+ *
+ * Note: `Types.Simplify` from effect is not used here because its
+ * `extends infer B ? B : never` indirection erases the `FieldsRecord`
+ * constraint in generic positions.
+ */
+type Simplify<T,> = { readonly [K in keyof T]: T[K] } & {}
+
 export interface SubmittedValues<TFields extends FieldsRecord,> {
   readonly encoded: EncodedFromFields<TFields>
   readonly decoded: DecodedFromFields<TFields>
@@ -71,23 +82,26 @@ export interface FormBuilder<TFields extends FieldsRecord, R,> {
   addField<K extends string, S extends Schema.Top,>(
     this: FormBuilder<TFields, R>,
     field: FieldDef<K, S>
-  ): FormBuilder<TFields & { readonly [key in K]: FieldDef<K, S> }, R | Schema.Codec.DecodingServices<S>>
+  ): FormBuilder<Simplify<TFields & { readonly [key in K]: FieldDef<K, S> }>, R | Schema.Codec.DecodingServices<S>>
 
   addField<K extends string, S extends Schema.Top,>(
     this: FormBuilder<TFields, R>,
     field: ArrayFieldDef<K, S>
-  ): FormBuilder<TFields & { readonly [key in K]: ArrayFieldDef<K, S> }, R | Schema.Codec.DecodingServices<S>>
+  ): FormBuilder<
+    Simplify<TFields & { readonly [key in K]: ArrayFieldDef<K, S> }>,
+    R | Schema.Codec.DecodingServices<S>
+  >
 
   addField<K extends string, S extends Schema.Top,>(
     this: FormBuilder<TFields, R>,
     key: K,
     schema: S
-  ): FormBuilder<TFields & { readonly [key in K]: FieldDef<K, S> }, R | Schema.Codec.DecodingServices<S>>
+  ): FormBuilder<Simplify<TFields & { readonly [key in K]: FieldDef<K, S> }>, R | Schema.Codec.DecodingServices<S>>
 
   merge<TFields2 extends FieldsRecord, R2,>(
     this: FormBuilder<TFields, R>,
     other: FormBuilder<TFields2, R2>
-  ): FormBuilder<TFields & TFields2, R | R2>
+  ): FormBuilder<Simplify<TFields & TFields2>, R | R2>
 
   refine(
     this: FormBuilder<TFields, R>,
