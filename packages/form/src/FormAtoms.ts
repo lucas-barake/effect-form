@@ -478,11 +478,19 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
               Effect.sync(() => {
                 const routedErrors = Validation.routeErrorsWithSource(parseError)
                 get.set(errorsAtom, routedErrors)
-                get.set(stateAtom, Option.some(operations.createSubmitState(state.value)))
+                // Rebase onto the latest state so edits made during the in-flight
+                // async decode are preserved instead of clobbered by the snapshot.
+                const latest = get(stateAtom)
+                const base = Option.isSome(latest) ? latest.value : state.value
+                get.set(stateAtom, Option.some(operations.createSubmitState(base)))
               })
             )
           )
-          const submitState = operations.createSubmitState(state.value)
+          // Rebase onto the latest state so a field edit made while the async
+          // decode was running is not silently reverted to the pre-submit snapshot.
+          const latestState = get(stateAtom)
+          const baseState = Option.isSome(latestState) ? latestState.value : state.value
+          const submitState = operations.createSubmitState(baseState)
           get.set(stateAtom, Option.some(submitState))
           const result = config.onSubmit(args, { decoded, encoded: values, get })
           const output = Effect.isEffect(result)
