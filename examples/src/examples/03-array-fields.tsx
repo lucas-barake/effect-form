@@ -1,4 +1,4 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
@@ -8,7 +8,7 @@ import styles from "../styles/form.module.css"
 const TodosField = Field.makeArrayField(
   "todos",
   Schema.Struct({
-    text: Schema.String.pipe(Schema.nonEmptyString({ message: () => "Todo text is required" })),
+    text: Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Todo text is required" }))),
     completed: Schema.Boolean
   })
 )

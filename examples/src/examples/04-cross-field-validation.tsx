@@ -1,4 +1,4 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
@@ -7,12 +7,14 @@ import styles from "../styles/form.module.css"
 
 const PasswordField = Field.makeField(
   "password",
-  Schema.String.pipe(Schema.minLength(8, { message: () => "Password must be at least 8 characters" }))
+  Schema.String.pipe(
+    Schema.check(Schema.isMinLength(8, { message: "Password must be at least 8 characters" }))
+  )
 )
 
 const ConfirmPasswordField = Field.makeField(
   "confirmPassword",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Please confirm your password" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Please confirm your password" })))
 )
 
 const signupFormBuilder = FormBuilder.empty
@@ -20,7 +22,7 @@ const signupFormBuilder = FormBuilder.empty
   .addField(ConfirmPasswordField)
   .refine((values) => {
     if (values.password !== values.confirmPassword) {
-      return { path: ["confirmPassword"], message: "Passwords must match" }
+      return { path: ["confirmPassword"], issue: "Passwords must match" }
     }
   })
 

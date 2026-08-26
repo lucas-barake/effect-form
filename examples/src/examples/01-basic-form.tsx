@@ -1,10 +1,10 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
-import * as Result from "@effect-atom/atom/Result"
+import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Data from "effect/Data"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
 import styles from "../styles/form.module.css"
 
 class InvalidCredentialsError extends Data.TaggedError("InvalidCredentialsError")<{
@@ -18,12 +18,14 @@ class AccountLockedError extends Data.TaggedError("AccountLockedError")<{
 
 const EmailField = Field.makeField(
   "email",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Email is required" })))
 )
 
 const PasswordField = Field.makeField(
   "password",
-  Schema.String.pipe(Schema.minLength(8, { message: () => "Password must be at least 8 characters" }))
+  Schema.String.pipe(
+    Schema.check(Schema.isMinLength(8, { message: "Password must be at least 8 characters" }))
+  )
 )
 
 const loginFormBuilder = FormBuilder.empty
@@ -120,7 +122,7 @@ function SubmitButton() {
 function SubmitStatus() {
   const submitResult = useAtomValue(loginForm.submit)
 
-  return Result.builder(submitResult)
+  return AsyncResult.builder(submitResult)
     .onWaiting(() => null)
     .onSuccess((value) => (
       <div className={styles.alertSuccess}>
@@ -144,7 +146,7 @@ function SubmitStatus() {
       )
     )
     .onErrorTag(
-      "ParseError",
+      "SchemaError",
       () => (
         <div className={styles.alertError}>
           Please fix the validation errors above.
@@ -190,7 +192,7 @@ export function BasicForm() {
       <h1 className={styles.pageTitle}>Basic Form</h1>
       <p className={styles.pageDescription}>
         Simple login form with type-safe error handling using <code>Data.TaggedError</code> and{" "}
-        <code>Result.builder()</code>.
+        <code>AsyncResult.builder()</code>.
       </p>
       <p className={styles.pageHint}>
         Try: <code>invalid@example.com</code> for credentials error, <code>locked@example.com</code> for account locked.

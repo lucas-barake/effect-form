@@ -1,21 +1,21 @@
-import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect-atom/atom-react"
-import * as Result from "@effect-atom/atom/Result"
+import { useAtomSet, useAtomSubscribe, useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import { constNull } from "effect/Function"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
 import { useState } from "react"
 import styles from "../styles/form.module.css"
 
 const FirstNameField = Field.makeField(
   "firstName",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "First name is required" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "First name is required" })))
 )
 
 const LastNameField = Field.makeField(
   "lastName",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Last name is required" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Last name is required" })))
 )
 
 const step1Builder = FormBuilder.empty.addField(FirstNameField).addField(LastNameField)
@@ -59,17 +59,17 @@ const step1Form = FormReact.make(step1Builder, {
 
 const StreetField = Field.makeField(
   "street",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Street is required" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Street is required" })))
 )
 
 const CityField = Field.makeField(
   "city",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "City is required" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "City is required" })))
 )
 
 const ZipField = Field.makeField(
   "zip",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "ZIP code is required" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "ZIP code is required" })))
 )
 
 const step2Builder = FormBuilder.empty.addField(StreetField).addField(CityField).addField(ZipField)
@@ -169,7 +169,7 @@ function Step1({ onComplete }: { onComplete: (data: StepData["step1"]) => void }
   const submitResult = useAtomValue(step1Form.submit)
 
   useAtomSubscribe(step1Form.submit, (result) => {
-    if (Result.isSuccess(result) && !result.waiting) {
+    if (AsyncResult.isSuccess(result) && !result.waiting) {
       onComplete(result.value)
     }
   }, { immediate: false })
@@ -177,7 +177,7 @@ function Step1({ onComplete }: { onComplete: (data: StepData["step1"]) => void }
   const handleNext = () => {
     if (isDirty) {
       submit()
-    } else if (Result.isSuccess(submitResult)) {
+    } else if (AsyncResult.isSuccess(submitResult)) {
       onComplete(submitResult.value)
     }
   }
@@ -216,7 +216,7 @@ function Step2({
   const submitResult = useAtomValue(step2Form.submit)
 
   useAtomSubscribe(step2Form.submit, (result) => {
-    if (Result.isSuccess(result) && !result.waiting) {
+    if (AsyncResult.isSuccess(result) && !result.waiting) {
       onComplete(result.value)
     }
   }, { immediate: false })
@@ -224,7 +224,7 @@ function Step2({
   const handleNext = () => {
     if (isDirty) {
       submit()
-    } else if (Result.isSuccess(submitResult)) {
+    } else if (AsyncResult.isSuccess(submitResult)) {
       onComplete(submitResult.value)
     }
   }
@@ -306,7 +306,7 @@ function Step3({
           </div>
         </div>
 
-        {Result.builder(submitResult)
+        {AsyncResult.builder(submitResult)
           .onSuccess((value) => (
             <div className={`${styles.alertSuccess} ${styles.marginBottom16}`}>
               Order submitted! Order ID: <strong>{value.orderId}</strong>

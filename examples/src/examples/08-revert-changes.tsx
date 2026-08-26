@@ -1,19 +1,19 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
-import * as Result from "@effect-atom/atom/Result"
+import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
 import styles from "../styles/form.module.css"
 
 const NameField = Field.makeField(
   "name",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Name is required" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Name is required" })))
 )
 
 const EmailField = Field.makeField(
   "email",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Email is required" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Email is required" })))
 )
 
 const profileFormBuilder = FormBuilder.empty.addField(NameField).addField(EmailField)
@@ -117,7 +117,7 @@ function FormActions() {
 function SaveStatus() {
   const submitResult = useAtomValue(profileForm.submit)
 
-  return Result.builder(submitResult)
+  return AsyncResult.builder(submitResult)
     .onWaiting(() => (
       <div className={styles.alertInfo}>
         Saving...

@@ -1,14 +1,14 @@
-import { useAtomValue } from "@effect-atom/atom-react"
-import * as Result from "@effect-atom/atom/Result"
+import { useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
 import styles from "../styles/form.module.css"
 
 const DisplayNameField = Field.makeField(
   "displayName",
-  Schema.String.pipe(Schema.nonEmptyString({ message: () => "Display name is required" }))
+  Schema.String.pipe(Schema.check(Schema.isNonEmpty({ message: "Display name is required" })))
 )
 
 const BioField = Field.makeField("bio", Schema.String)
@@ -73,7 +73,7 @@ const autoSubmitOnBlurForm = FormReact.make(settingsFormBuilder, {
 function SaveStatus({ form }: { form: typeof autoSubmitOnChangeForm }) {
   const submitResult = useAtomValue(form.submit)
 
-  return Result.builder(submitResult)
+  return AsyncResult.builder(submitResult)
     .onWaiting(() => (
       <div className={`${styles.alertWarning} ${styles.alertSmall}`}>
         Saving...
