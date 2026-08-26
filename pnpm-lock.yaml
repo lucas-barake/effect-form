@@ -89,12 +89,9 @@ importers:
 
   examples:
     dependencies:
-      '@effect-atom/atom':
-        specifier: ^0.5.3
-        version: 0.5.3(@effect/experimental@0.58.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(@effect/platform@0.94.2(effect@3.21.1))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(effect@3.21.1)
-      '@effect-atom/atom-react':
-        specifier: ^0.5.0
-        version: 0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(@effect/platform@0.94.2(effect@3.21.1))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(effect@3.21.1)(react@19.2.5)(scheduler@0.27.0)
+      '@effect/atom-react':
+        specifier: 4.0.0-rc.112
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(react@19.2.5)(scheduler@0.27.0)
       '@lucas-barake/effect-form':
         specifier: workspace:^
         version: link:../packages/form
@@ -102,8 +99,8 @@ importers:
         specifier: workspace:^
         version: link:../packages/form-react
       effect:
-        specifier: ^3.21.1
-        version: 3.21.1
+        specifier: 4.0.0-rc.112
+        version: 4.0.0-rc.112
       react:
         specifier: ^19.2.5
         version: 19.2.5
@@ -118,8 +115,8 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
-        specifier: ^6.0.1
-        version: 6.0.1(vite@6.4.2(@types/node@25.6.0)(tsx@4.21.0)(yaml@2.8.3))
+        specifier: ^5.1.1
+        version: 5.2.0(vite@6.4.2(@types/node@25.6.0)(tsx@4.21.0)(yaml@2.8.3))
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -535,21 +532,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@effect-atom/atom-react@0.5.0':
-    resolution: {integrity: sha512-aFfjWi4rEJCqfM12Oi36/EKaDm/W6n4/N6yM5vL0t/QozKhJhK05rQL/GY4XMxlH2eqkQ4ih8jBQa3Yyp0Fiqw==}
-    peerDependencies:
-      effect: ^3.19
-      react: '>=18 <20'
-      scheduler: '*'
-
-  '@effect-atom/atom@0.5.3':
-    resolution: {integrity: sha512-TRZv/i+YT3TtnN0oFORJqXdxSs1fc7lrJlH+1xZvDFyjC9hgoVnrcKbeZsDFmr6r0wYRqVo7U3IftxiQNjpNZA==}
-    peerDependencies:
-      '@effect/experimental': ^0.58.0
-      '@effect/platform': ^0.94.2
-      '@effect/rpc': ^0.73.0
-      effect: ^3.19.15
-
   '@effect/atom-react@4.0.0-rc.112':
     resolution: {integrity: sha512-Ksf90KQa6D4UDnMj4M84arlVKNIuwxxF2GvgXBzuaYi2LsgririsUhKQ5SYaK1euf8oIYeamEuthoZSbUQmIhw==}
     peerDependencies:
@@ -563,33 +545,9 @@ packages:
       effect: ^4.0.0-rc.112
       solid-js: '>=1.9.14 <2.0.0'
 
-  '@effect/experimental@0.58.0':
-    resolution: {integrity: sha512-IEP9sapjF6rFy5TkoqDPc86st/fnqUfjT7Xa3pWJrFGr1hzaMXHo+mWsYOZS9LAOVKnpHuVziDK97EP5qsCHVA==}
-    peerDependencies:
-      '@effect/platform': ^0.94.0
-      effect: ^3.19.13
-      ioredis: ^5
-      lmdb: ^3
-    peerDependenciesMeta:
-      ioredis:
-        optional: true
-      lmdb:
-        optional: true
-
   '@effect/language-service@0.85.1':
     resolution: {integrity: sha512-EXnJjIy6zQ3nUO/MZ+ynWUb8B895KZPotd1++oTs9JjDkplwM7cb6zo8Zq2zU6piwq+KflO7amXbEfj1UMpHkw==}
     hasBin: true
-
-  '@effect/platform@0.94.2':
-    resolution: {integrity: sha512-85vdwpnK4oH/rJ3EuX/Gi2Hkt+K4HvXWr9bxCuqvty9hxyEcRxkJcqTesYrcVoQB6aULb1Za2B0MKoTbvffB3Q==}
-    peerDependencies:
-      effect: ^3.19.15
-
-  '@effect/rpc@0.73.0':
-    resolution: {integrity: sha512-iMPf6tTriz8sK0l5x4koFId8Hz5nFptHYg8WqyjHGIIVLTpZxuiSqhmXZG7FnAs5N2n6uCEws4wWGcIgXNUrFg==}
-    peerDependencies:
-      '@effect/platform': ^0.94.0
-      effect: ^3.19.13
 
   '@effect/vitest@4.0.0-rc.112':
     resolution: {integrity: sha512-mEKh/FI64mt8JK1/v9mpOrJYdnp+UFZdRUBMEdZMiKz7klg6NPqVgg/oeAGH6wOOQc2iAPcfc2H9BbAv1KyzMQ==}
@@ -949,19 +907,9 @@ packages:
   '@manypkg/get-packages@1.1.3':
     resolution: {integrity: sha512-fo+QhuU3qE/2TQMQmbVMqaQ6EWbMhi4ABWP+O4AM1NqPBuy0OrApV5LO6BrrgnhtAHS2NH6RrVk9OL181tTi8A==}
 
-  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
-    resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
-    cpu: [arm64]
-    os: [darwin]
-
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4':
     resolution: {integrity: sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ==}
     cpu: [arm64]
-    os: [darwin]
-
-  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.3':
-    resolution: {integrity: sha512-mdzd3AVzYKuUmiWOQ8GNhl64/IoFGol569zNRdkLReh6LRLHOXxU4U8eq0JwaD8iFHdVGqSy4IjFL4reoWCDFw==}
-    cpu: [x64]
     os: [darwin]
 
   '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.4':
@@ -969,19 +917,9 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.3':
-    resolution: {integrity: sha512-YxQL+ax0XqBJDZiKimS2XQaf+2wDGVa1enVRGzEvLLVFeqa5kx2bWbtcSXgsxjQB7nRqqIGFIcLteF/sHeVtQg==}
-    cpu: [arm64]
-    os: [linux]
-
   '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.4':
     resolution: {integrity: sha512-dgX0P/9wGPJeHFBG+ZmhgE6bmtMt7NP5CRBGyyktpopdk/mW4POnrpQsSLtKI1dwpc+pPLuXHDh6vvskyQE/sw==}
     cpu: [arm64]
-    os: [linux]
-
-  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.3':
-    resolution: {integrity: sha512-fg0uy/dG/nZEXfYilKoRe7yALaNmHoYeIoJuJ7KJ+YyU2bvY8vPv27f7UKhGRpY6euFYqEVhxCFZgAUNQBM3nw==}
-    cpu: [arm]
     os: [linux]
 
   '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.4':
@@ -989,20 +927,10 @@ packages:
     cpu: [arm]
     os: [linux]
 
-  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.3':
-    resolution: {integrity: sha512-cvwNfbP07pKUfq1uH+S6KJ7dT9K8WOE4ZiAcsrSes+UY55E/0jLYc+vq+DO7jlmqRb5zAggExKm0H7O/CBaesg==}
-    cpu: [x64]
-    os: [linux]
-
   '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.4':
     resolution: {integrity: sha512-8TNXMEjJc3QEy7R/x1INhgiU+XakDAFUzBhaz7+Rbrs8NH5UQeHQxxmzsSBJGyV6I1jW79undiQm8tOI+D+8FQ==}
     cpu: [x64]
     os: [linux]
-
-  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.3':
-    resolution: {integrity: sha512-x0fWaQtYp4E6sktbsdAqnehxDgEc/VwM7uLsRCYWaiGu0ykYdZPiS8zCWdnjHwyiumousxfBm4SO31eXqwEZhQ==}
-    cpu: [x64]
-    os: [win32]
 
   '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.4':
     resolution: {integrity: sha512-CmCXPQrkbwExx3j946/PtHWHbYJiCRBRDl4BlkRQcJB/YOwQxJRTpoo7aTsortjgoJ1x7opzTSxn7C+ASSLVjQ==}
@@ -1066,9 +994,6 @@ packages:
 
   '@rolldown/pluginutils@1.0.0-rc.3':
     resolution: {integrity: sha512-eybk3TjzzzV97Dlj5c+XrBFW57eTNhzod66y9HrBlzJ6NsCrWCp/2kaPS3K9wJmurBC0Tdw4yPjXKZqlznim3Q==}
-
-  '@rolldown/pluginutils@1.0.0-rc.7':
-    resolution: {integrity: sha512-qujRfC8sFVInYSPPMLQByRh7zhwkGFS4+tyMQ83srV1qrxL4g8E2tyxVVyxd0+8QeBM1mIk9KbWxkegRr76XzA==}
 
   '@rollup/plugin-babel@6.0.4':
     resolution: {integrity: sha512-YF7Y52kFdFT/xVSuVdjkV5ZdX/3YtmX0QulG+x0taQOtJdHYzVU61aSSkAgVJ7NOv6qPkIYiJSgSWWN/DM5sGw==}
@@ -1401,19 +1326,6 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       vite: ^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
-
-  '@vitejs/plugin-react@6.0.1':
-    resolution: {integrity: sha512-l9X/E3cDb+xY3SWzlG1MOGt2usfEHGMNIaegaUGFsLkb3RCn/k8/TOXBcab+OndDI4TBtktT8/9BwwW8Vi9KUQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    peerDependencies:
-      '@rolldown/plugin-babel': ^0.1.7 || ^0.2.0
-      babel-plugin-react-compiler: ^1.0.0
-      vite: ^8.0.0
-    peerDependenciesMeta:
-      '@rolldown/plugin-babel':
-        optional: true
-      babel-plugin-react-compiler:
-        optional: true
 
   '@vitest/coverage-v8@4.1.4':
     resolution: {integrity: sha512-x7FptB5oDruxNPDNY2+S8tCh0pcq7ymCe1gTHcsp733jYjrJl8V1gMUlVysuCD9Kz46Xz9t1akkv08dPcYDs1w==}
@@ -1770,9 +1682,6 @@ packages:
     resolution: {integrity: sha512-sIy25poR2gRP/tWPTgP0MPeJoJcpv0xzYDcsboapvthbEt1Qw3Al252CA0xFyIh2cYEGGKyBJtKokryv4ERlJw==}
     hasBin: true
 
-  effect@3.21.1:
-    resolution: {integrity: sha512-bA3TsBd0mByThuCnE6FQqS+L3DLazk4UbE9jp0CqVfIjQl5DKi8sAe93O/ZKeF7clL65fJxcsVGiAKYXdnHByA==}
-
   effect@4.0.0-rc.112:
     resolution: {integrity: sha512-wXxwuh1Ywnv4cPRM3Wfa0vDwuOHnZ1TsTgHJkG9XgzND6inhBH9n1vBxhg3iIXOia/OrpmvVmd3lrD4vq6bF3A==}
 
@@ -1855,10 +1764,6 @@ packages:
   extendable-error@0.1.7:
     resolution: {integrity: sha512-UOiS2in6/Q0FK0R0q6UY9vYpQ21mr/Qn1KOnte7vsACuNJf514WvCCUHSRCPcgjPT2bAhNIJdlE6bVap1GKmeg==}
 
-  fast-check@3.23.2:
-    resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
-    engines: {node: '>=8.0.0'}
-
   fast-check@4.9.0:
     resolution: {integrity: sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==}
     engines: {node: '>=12.17.0'}
@@ -1887,9 +1792,6 @@ packages:
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
-
-  find-my-way-ts@0.1.6:
-    resolution: {integrity: sha512-a85L9ZoXtNAey3Y6Z+eBWW658kO/MwR7zIafkIUPUMf3isZG0NCs2pjW2wtjxAKuJPxMAsHUIP4ZPGv0o5gyTA==}
 
   find-up@4.1.0:
     resolution: {integrity: sha512-PpOwAdQ/YlXQ2vj8a3h8IipDuYRi3wceVQQGYWxNINccq40Anw7BlsEXCMbt1Zt+OLA6Fq9suIpIWD0OsnISlw==}
@@ -2214,22 +2116,12 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  msgpackr-extract@3.0.3:
-    resolution: {integrity: sha512-P0efT1C9jIdVRefqjzOQ9Xml57zpOXnIuS+csaB4MdZbTdmGDLo8XhzBG1N7aO11gKDDkJvBLULeFTo46wwreA==}
-    hasBin: true
-
   msgpackr-extract@3.0.4:
     resolution: {integrity: sha512-4kmO/MdyUIkLIvTPr8VHLil4AtoKIoniWPIEk5+CDy0xnWC84azhSFmuJ7PxZdsYtiP5kEeQsORAVIeMgxT+Hw==}
     hasBin: true
 
-  msgpackr@1.11.10:
-    resolution: {integrity: sha512-iCZNq+HszvF+fC3anCm4nBmWEnbeIAfpDs6IStAEKhQ2YSgkjzVG2FF9XJqwwQh5bH3N9OUTUt4QwVN6MLMLtA==}
-
   msgpackr@2.0.6:
     resolution: {integrity: sha512-plGul/tqjt9vqWFR9zyqyLZls6gb5KTLvnsRO2B9+TZ8tNiXiVI/CR8LiDWlAX4IUeVkQ9gsmzKA6voC2QOciw==}
-
-  multipasta@0.2.7:
-    resolution: {integrity: sha512-KPA58d68KgGil15oDqXjkUBEBYc00XvbPj5/X+dyzeo/lWm9Nc25pQRlf1D+gv4OpK7NM0J1odrbu9JNNGvynA==}
 
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
@@ -2396,9 +2288,6 @@ packages:
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
-
-  pure-rand@6.1.0:
-    resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
 
   pure-rand@8.4.0:
     resolution: {integrity: sha512-IoM8YF/jY0hiugFo/wOWqfmarlE6J0wc6fDK1PhftMk7MGhVZl88sZimmqBBFomLOCSmcCCpsfj7wXASCpvK9A==}
@@ -2730,10 +2619,6 @@ packages:
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
-
-  uuid@11.1.0:
-    resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
-    hasBin: true
 
   vite-plugin-solid@2.11.12:
     resolution: {integrity: sha512-FgjPcx2OwX9h6f28jli7A4bG7PP3te8uyakE5iqsmpq3Jqi1TWLgSroC9N6cMfGRU2zXsl4Q6ISvTr2VL0QHpA==}
@@ -3397,24 +3282,6 @@ snapshots:
   '@dprint/win32-x64@0.54.0':
     optional: true
 
-  '@effect-atom/atom-react@0.5.0(@effect/experimental@0.58.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(@effect/platform@0.94.2(effect@3.21.1))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(effect@3.21.1)(react@19.2.5)(scheduler@0.27.0)':
-    dependencies:
-      '@effect-atom/atom': 0.5.3(@effect/experimental@0.58.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(@effect/platform@0.94.2(effect@3.21.1))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(effect@3.21.1)
-      effect: 3.21.1
-      react: 19.2.5
-      scheduler: 0.27.0
-    transitivePeerDependencies:
-      - '@effect/experimental'
-      - '@effect/platform'
-      - '@effect/rpc'
-
-  '@effect-atom/atom@0.5.3(@effect/experimental@0.58.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(@effect/platform@0.94.2(effect@3.21.1))(@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1))(effect@3.21.1)':
-    dependencies:
-      '@effect/experimental': 0.58.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1)
-      '@effect/platform': 0.94.2(effect@3.21.1)
-      '@effect/rpc': 0.73.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1)
-      effect: 3.21.1
-
   '@effect/atom-react@4.0.0-rc.112(effect@4.0.0-rc.112)(react@19.2.5)(scheduler@0.27.0)':
     dependencies:
       effect: 4.0.0-rc.112
@@ -3426,26 +3293,7 @@ snapshots:
       effect: 4.0.0-rc.112
       solid-js: 1.9.14
 
-  '@effect/experimental@0.58.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1)':
-    dependencies:
-      '@effect/platform': 0.94.2(effect@3.21.1)
-      effect: 3.21.1
-      uuid: 11.1.0
-
   '@effect/language-service@0.85.1': {}
-
-  '@effect/platform@0.94.2(effect@3.21.1)':
-    dependencies:
-      effect: 3.21.1
-      find-my-way-ts: 0.1.6
-      msgpackr: 1.11.10
-      multipasta: 0.2.7
-
-  '@effect/rpc@0.73.0(@effect/platform@0.94.2(effect@3.21.1))(effect@3.21.1)':
-    dependencies:
-      '@effect/platform': 0.94.2(effect@3.21.1)
-      effect: 3.21.1
-      msgpackr: 1.11.10
 
   '@effect/vitest@4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.4)':
     dependencies:
@@ -3652,37 +3500,19 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
-  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
-    optional: true
-
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4':
-    optional: true
-
-  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.3':
     optional: true
 
   '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.4':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.3':
-    optional: true
-
   '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.4':
-    optional: true
-
-  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.3':
     optional: true
 
   '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.4':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.3':
-    optional: true
-
   '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.4':
-    optional: true
-
-  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.3':
     optional: true
 
   '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.4':
@@ -3728,8 +3558,6 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.0.0-rc.3': {}
-
-  '@rolldown/pluginutils@1.0.0-rc.7': {}
 
   '@rollup/plugin-babel@6.0.4(@babel/core@7.29.0)(@types/babel__core@7.20.5)(rollup@4.60.2)':
     dependencies:
@@ -4014,6 +3842,18 @@ snapshots:
       '@typescript/native-preview-win32-arm64': 7.0.0-dev.20260420.1
       '@typescript/native-preview-win32-x64': 7.0.0-dev.20260420.1
 
+  '@vitejs/plugin-react@5.2.0(vite@6.4.2(@types/node@25.6.0)(tsx@4.21.0)(yaml@2.8.3))':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.0)
+      '@babel/plugin-transform-react-jsx-source': 7.27.1(@babel/core@7.29.0)
+      '@rolldown/pluginutils': 1.0.0-rc.3
+      '@types/babel__core': 7.20.5
+      react-refresh: 0.18.0
+      vite: 6.4.2(@types/node@25.6.0)(tsx@4.21.0)(yaml@2.8.3)
+    transitivePeerDependencies:
+      - supports-color
+
   '@vitejs/plugin-react@5.2.0(vite@7.3.0(@types/node@25.6.0)(tsx@4.21.0)(yaml@2.8.3))':
     dependencies:
       '@babel/core': 7.29.0
@@ -4025,11 +3865,6 @@ snapshots:
       vite: 7.3.0(@types/node@25.6.0)(tsx@4.21.0)(yaml@2.8.3)
     transitivePeerDependencies:
       - supports-color
-
-  '@vitejs/plugin-react@6.0.1(vite@6.4.2(@types/node@25.6.0)(tsx@4.21.0)(yaml@2.8.3))':
-    dependencies:
-      '@rolldown/pluginutils': 1.0.0-rc.7
-      vite: 6.4.2(@types/node@25.6.0)(tsx@4.21.0)(yaml@2.8.3)
 
   '@vitest/coverage-v8@4.1.4(vitest@4.1.4)':
     dependencies:
@@ -4417,11 +4252,6 @@ snapshots:
       '@dprint/win32-arm64': 0.54.0
       '@dprint/win32-x64': 0.54.0
 
-  effect@3.21.1:
-    dependencies:
-      '@standard-schema/spec': 1.1.0
-      fast-check: 3.23.2
-
   effect@4.0.0-rc.112:
     dependencies:
       fast-check: 4.9.0
@@ -4535,10 +4365,6 @@ snapshots:
 
   extendable-error@0.1.7: {}
 
-  fast-check@3.23.2:
-    dependencies:
-      pure-rand: 6.1.0
-
   fast-check@4.9.0:
     dependencies:
       pure-rand: 8.4.0
@@ -4576,8 +4402,6 @@ snapshots:
   fill-range@7.1.1:
     dependencies:
       to-regex-range: 5.0.1
-
-  find-my-way-ts@0.1.6: {}
 
   find-up@4.1.0:
     dependencies:
@@ -4894,18 +4718,6 @@ snapshots:
 
   ms@2.1.3: {}
 
-  msgpackr-extract@3.0.3:
-    dependencies:
-      node-gyp-build-optional-packages: 5.2.2
-    optionalDependencies:
-      '@msgpackr-extract/msgpackr-extract-darwin-arm64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-darwin-x64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-linux-arm': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-linux-arm64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-linux-x64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-win32-x64': 3.0.3
-    optional: true
-
   msgpackr-extract@3.0.4:
     dependencies:
       node-gyp-build-optional-packages: 5.2.2
@@ -4918,15 +4730,9 @@ snapshots:
       '@msgpackr-extract/msgpackr-extract-win32-x64': 3.0.4
     optional: true
 
-  msgpackr@1.11.10:
-    optionalDependencies:
-      msgpackr-extract: 3.0.3
-
   msgpackr@2.0.6:
     optionalDependencies:
       msgpackr-extract: 3.0.4
-
-  multipasta@0.2.7: {}
 
   nanoid@3.3.11: {}
 
@@ -5086,8 +4892,6 @@ snapshots:
       parse-ms: 2.1.0
 
   punycode@2.3.1: {}
-
-  pure-rand@6.1.0: {}
 
   pure-rand@8.4.0: {}
 
@@ -5396,8 +5200,6 @@ snapshots:
       picocolors: 1.1.1
 
   util-deprecate@1.0.2: {}
-
-  uuid@11.1.0: {}
 
   vite-plugin-solid@2.11.12(@testing-library/jest-dom@6.9.1)(solid-js@1.9.14)(vite@7.3.0(@types/node@25.6.0)(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:

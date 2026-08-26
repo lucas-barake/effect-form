@@ -1,4 +1,4 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
@@ -7,7 +7,9 @@ import styles from "../styles/form.module.css"
 
 const UsernameField = Field.makeField(
   "username",
-  Schema.String.pipe(Schema.minLength(3, { message: () => "Username must be at least 3 characters" }))
+  Schema.String.pipe(
+    Schema.check(Schema.isMinLength(3, { message: "Username must be at least 3 characters" }))
+  )
 )
 
 const formBuilder = FormBuilder.empty.addField(UsernameField)

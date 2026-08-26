@@ -1,17 +1,17 @@
-import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
-import * as Atom from "@effect-atom/atom/Atom"
+import { useAtomSet, useAtomValue } from "@effect/atom-react"
 import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
+import * as Atom from "effect/unstable/reactivity/Atom"
 import styles from "../styles/form.module.css"
 
-class UsernameValidator extends Context.Tag("UsernameValidator")<
+class UsernameValidator extends Context.Service<
   UsernameValidator,
   { readonly isTaken: (username: string) => Effect.Effect<boolean> }
->() {}
+>()("UsernameValidator") {}
 
 const UsernameValidatorLive = Layer.succeed(UsernameValidator, {
   isTaken: (username) =>
@@ -27,8 +27,10 @@ const runtime = Atom.runtime(UsernameValidatorLive)
 const UsernameField = Field.makeField(
   "username",
   Schema.String.pipe(
-    Schema.minLength(3, { message: () => "Username must be at least 3 characters" }),
-    Schema.pattern(/^[a-zA-Z0-9_]+$/, { message: () => "Only letters, numbers, and underscores" })
+    Schema.check(Schema.isMinLength(3, { message: "Username must be at least 3 characters" })),
+    Schema.check(
+      Schema.isPattern(/^[a-zA-Z0-9_]+$/, { message: "Only letters, numbers, and underscores" })
+    )
   )
 )
 
@@ -39,7 +41,7 @@ const usernameFormBuilder = FormBuilder.empty
       const validator = yield* UsernameValidator
       const isTaken = yield* validator.isTaken(values.username)
       if (isTaken) {
-        return { path: ["username"], message: "This username is already taken" }
+        return { path: ["username"], issue: "This username is already taken" }
       }
     })
   )
