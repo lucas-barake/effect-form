@@ -1,5 +1,15 @@
 # @lucas-barake/effect-form
 
+## 0.25.0-beta.7
+
+### Minor Changes
+
+- [#110](https://github.com/lucas-barake/effect-form/pull/110) [`c10a53e`](https://github.com/lucas-barake/effect-form/commit/c10a53e041c9b0b338b26b2af66be5eb24f07d47) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Require Effect 4.0.0 stable
+
+  - Raise the `effect` peer range to `^4.0.0`, and the `@effect/atom-react` and `@effect/atom-solid` peer ranges to `^4.0.0`. Effect 4.0.0 moved `effect/unstable/reactivity/*` to `effect/reactivity/*`, so beta and rc releases of Effect can no longer satisfy these packages.
+  - Import `Atom`, `AtomRegistry`, and `AsyncResult` from `effect/reactivity/*` instead of `effect/unstable/reactivity/*`.
+  - Raise the Solid adapter's `solid-js` peer floor to `1.9.14`, matching `@effect/atom-solid` 4.0.0.
+
 ## 0.25.0-beta.6
 
 ### Minor Changes
