@@ -1,9 +1,9 @@
 import type * as Effect from "effect/Effect"
 import type * as Option from "effect/Option"
 import * as Predicate from "effect/Predicate"
+import type * as AtomRegistry from "effect/reactivity/AtomRegistry"
 import * as Schema from "effect/Schema"
 import * as SchemaGetter from "effect/SchemaGetter"
-import type * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
 
 import type {
   AnyFieldDef,

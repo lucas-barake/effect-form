@@ -17,7 +17,7 @@ export default {
     "@lucas-barake/effect-form/Path",
     "effect/Layer",
     "effect/Option",
-    "effect/unstable/reactivity/Atom",
+    "effect/reactivity/Atom",
     "solid-js"
   ],
   plugins: [

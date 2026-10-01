@@ -3,8 +3,8 @@ import { Field, FormBuilder, FormSolid } from "@lucas-barake/effect-form-solid"
 import { render, screen, waitFor } from "@solidjs/testing-library"
 import { userEvent } from "@testing-library/user-event"
 import * as Option from "effect/Option"
+import type * as Atom from "effect/reactivity/Atom"
 import * as Schema from "effect/Schema"
-import type * as Atom from "effect/unstable/reactivity/Atom"
 import { describe, expect, it, vi } from "vitest"
 
 const TextInput: FormSolid.FieldComponent<string> = ({ field }) => (
