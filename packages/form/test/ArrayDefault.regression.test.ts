@@ -1,6 +1,6 @@
 import * as Layer from "effect/Layer"
+import * as Atom from "effect/reactivity/Atom"
 import * as Schema from "effect/Schema"
-import * as Atom from "effect/unstable/reactivity/Atom"
 import { describe, expect, it } from "vitest"
 import * as Field from "../src/Field.js"
 import * as FormAtoms from "../src/FormAtoms.js"

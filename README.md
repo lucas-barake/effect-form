@@ -3,14 +3,14 @@
 Type-safe forms powered by Effect Schema.
 
 > [!NOTE]
-> This branch targets **Effect v4** (beta). For the Effect v3 version, see the [v3 branch](https://github.com/lucas-barake/effect-form/tree/v3) and its [README](https://github.com/lucas-barake/effect-form/blob/v3/README.md).
+> This branch targets **Effect v4** (4.0.0 or later). For the Effect v3 version, see the [v3 branch](https://github.com/lucas-barake/effect-form/tree/v3) and its [README](https://github.com/lucas-barake/effect-form/blob/v3/README.md).
 
 ## Installation
 
-Requires Effect v4 beta, React 19, and `@effect/atom-react`.
+Requires Effect 4.0.0 or later, React 19, and `@effect/atom-react` 4.0.0 or later.
 
 ```bash
-pnpm add @lucas-barake/effect-form-react@beta effect@beta @effect/atom-react@beta
+pnpm add @lucas-barake/effect-form-react@beta effect@^4.0.0 @effect/atom-react@^4.0.0
 ```
 
 ## 1. Basic Form Setup
@@ -429,7 +429,7 @@ const TextInput: FormReact.FieldComponent<string> = ({ field }) => (
   </div>
 )
 
-import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
+import * as AsyncResult from "effect/reactivity/AsyncResult"
 
 function SubmitStatus() {
   const submitResult = useAtomValue(loginForm.submit)
@@ -490,7 +490,7 @@ The `onSubmit` callback receives:
 Invalidate reactive queries (`AtomRpc`, `AtomHttpApi`, etc.) after successful form submission using `reactivityKeys`:
 
 ```tsx
-import * as Atom from "effect/unstable/reactivity/Atom"
+import * as Atom from "effect/reactivity/Atom"
 
 const userListAtom = runtime.atom(fetchUsers).pipe(
   Atom.withReactivity(["users"])
