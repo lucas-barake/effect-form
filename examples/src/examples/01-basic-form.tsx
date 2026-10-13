@@ -3,8 +3,8 @@ import { Field, FormBuilder, FormReact } from "@lucas-barake/effect-form-react"
 import * as Data from "effect/Data"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
+import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Schema from "effect/Schema"
-import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
 import styles from "../styles/form.module.css"
 
 class InvalidCredentialsError extends Data.TaggedError("InvalidCredentialsError")<{
