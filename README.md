@@ -3,14 +3,14 @@
 Type-safe forms powered by Effect Schema.
 
 > [!NOTE]
-> This branch targets **Effect v4** (4.0.0 or later). For the Effect v3 version, see the [v3 branch](https://github.com/lucas-barake/effect-form/tree/v3) and its [README](https://github.com/lucas-barake/effect-form/blob/v3/README.md).
+> Requires **Effect v4** (4.0.0 or later). Effect v3 is no longer supported. The last releases for Effect v3 are `@lucas-barake/effect-form@0.25.0` and `@lucas-barake/effect-form-react@0.26.0`.
 
 ## Installation
 
 Requires Effect 4.0.0 or later, React 19, and `@effect/atom-react` 4.0.0 or later.
 
 ```bash
-pnpm add @lucas-barake/effect-form-react@beta effect@^4.0.0 @effect/atom-react@^4.0.0
+pnpm add @lucas-barake/effect-form-react effect@^4.0.0 @effect/atom-react@^4.0.0
 ```
 
 ## 1. Basic Form Setup
