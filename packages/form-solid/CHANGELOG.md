@@ -1,5 +1,36 @@
 # @lucas-barake/effect-form-solid
 
+## 1.0.0
+
+### Major Changes
+
+- [#113](https://github.com/lucas-barake/effect-form/pull/113) [`d9618d9`](https://github.com/lucas-barake/effect-form/commit/d9618d94ff5890a64bebcc6d8f707f25cdf24842) Thanks [@lucas-barake](https://github.com/lucas-barake)! - First stable release, 1.0.0
+
+  - Targets Effect v4 stable. The peer range is `effect ^4.0.0`, with `@effect/atom-react ^4.0.0` for the React adapter and `@effect/atom-solid ^4.0.0` for the Solid adapter.
+  - Effect v3 is no longer supported. The last releases for Effect v3 are `@lucas-barake/effect-form@0.25.0` and `@lucas-barake/effect-form-react@0.26.0`. They stay on npm and receive no further updates.
+  - Install without the `beta` tag. The `0.25.0-beta.*` and `0.26.0-beta.*` prereleases are superseded by this release.
+
+### Minor Changes
+
+- [#110](https://github.com/lucas-barake/effect-form/pull/110) [`c10a53e`](https://github.com/lucas-barake/effect-form/commit/c10a53e041c9b0b338b26b2af66be5eb24f07d47) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Require Effect 4.0.0 stable
+
+  - Raise the `effect` peer range to `^4.0.0`, and the `@effect/atom-react` and `@effect/atom-solid` peer ranges to `^4.0.0`. Effect 4.0.0 moved `effect/unstable/reactivity/*` to `effect/reactivity/*`, so beta and rc releases of Effect can no longer satisfy these packages.
+  - Import `Atom`, `AtomRegistry`, and `AsyncResult` from `effect/reactivity/*` instead of `effect/unstable/reactivity/*`.
+  - Raise the Solid adapter's `solid-js` peer floor to `1.9.14`, matching `@effect/atom-solid` 4.0.0.
+
+### Patch Changes
+
+- [#98](https://github.com/lucas-barake/effect-form/pull/98) [`4e76a88`](https://github.com/lucas-barake/effect-form/commit/4e76a88ce14ee175b544ee5b9f1614a8b8f37c90) Thanks [@lucas-barake](https://github.com/lucas-barake)! - descriptive errors when form atoms are used before initialization
+
+- [#97](https://github.com/lucas-barake/effect-form/pull/97) [`4bf0d88`](https://github.com/lucas-barake/effect-form/commit/4bf0d88a7e0de6d38bdd8b08af931b91918fcc98) Thanks [@lucas-barake](https://github.com/lucas-barake)! - declare `rootError` on `BuiltForm` in the react and solid bindings
+
+- [#101](https://github.com/lucas-barake/effect-form/pull/101) [`fe71942`](https://github.com/lucas-barake/effect-form/commit/fe719426ed263af34ac6e8c8ce8c44cbc579e332) Thanks [@lucas-barake](https://github.com/lucas-barake)! - fix array item inputs losing focus and dropping input after one keystroke
+
+- [#90](https://github.com/lucas-barake/effect-form/pull/90) [`0524514`](https://github.com/lucas-barake/effect-form/commit/0524514d8467c44d4050451f47de8757c37563b1) Thanks [@tim-smart](https://github.com/tim-smart)! - add solid.js package
+
+- Updated dependencies [[`e69326e`](https://github.com/lucas-barake/effect-form/commit/e69326ea5af521c254ae24d9d557c34359224c30), [`953fdf9`](https://github.com/lucas-barake/effect-form/commit/953fdf9cf0dca708248c823d876d32f1aac97af2), [`5e30412`](https://github.com/lucas-barake/effect-form/commit/5e30412536a11a61a2c39cfac6226ac12f89e2c6), [`e1239e8`](https://github.com/lucas-barake/effect-form/commit/e1239e8a64d3bc420184d713389191357f1adaa9), [`1f9b932`](https://github.com/lucas-barake/effect-form/commit/1f9b932e3f0a40fbecb26e54bbe7cf2d47aaa9c7), [`6cc58b2`](https://github.com/lucas-barake/effect-form/commit/6cc58b27d16fe802f6e6ca488aa7cb04e847b06a), [`4e76a88`](https://github.com/lucas-barake/effect-form/commit/4e76a88ce14ee175b544ee5b9f1614a8b8f37c90), [`c10a53e`](https://github.com/lucas-barake/effect-form/commit/c10a53e041c9b0b338b26b2af66be5eb24f07d47), [`495dbc7`](https://github.com/lucas-barake/effect-form/commit/495dbc789522a431ed8e33e42c7dacf1c3acc278), [`cb68e9e`](https://github.com/lucas-barake/effect-form/commit/cb68e9ed1f9270a1b9d68beacdbb7825119c3d74), [`4bb950c`](https://github.com/lucas-barake/effect-form/commit/4bb950c1626284f7053b58d2e6e0a6705a8f1a15), [`4b1a8b1`](https://github.com/lucas-barake/effect-form/commit/4b1a8b154286e7149cb7318d029de7d2deb0e713), [`cc64852`](https://github.com/lucas-barake/effect-form/commit/cc648525467a09b1908c7903428cb5a6ef349271), [`860cd81`](https://github.com/lucas-barake/effect-form/commit/860cd8134dbef0ce3410570325104114c80bcb40), [`243a2b6`](https://github.com/lucas-barake/effect-form/commit/243a2b6e299c11375cdeb4dc0d45158c437e9999), [`cb68e9e`](https://github.com/lucas-barake/effect-form/commit/cb68e9ed1f9270a1b9d68beacdbb7825119c3d74), [`ef7cc0d`](https://github.com/lucas-barake/effect-form/commit/ef7cc0dbf2b3d1ea78107ddcc46d3c8f093bbab5), [`d9618d9`](https://github.com/lucas-barake/effect-form/commit/d9618d94ff5890a64bebcc6d8f707f25cdf24842)]:
+  - @lucas-barake/effect-form@1.0.0
+
 ## 0.0.0-beta.2
 
 ### Patch Changes

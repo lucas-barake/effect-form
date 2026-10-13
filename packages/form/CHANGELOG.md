@@ -1,5 +1,70 @@
 # @lucas-barake/effect-form
 
+## 1.0.0
+
+### Major Changes
+
+- [#113](https://github.com/lucas-barake/effect-form/pull/113) [`d9618d9`](https://github.com/lucas-barake/effect-form/commit/d9618d94ff5890a64bebcc6d8f707f25cdf24842) Thanks [@lucas-barake](https://github.com/lucas-barake)! - First stable release, 1.0.0
+
+  - Targets Effect v4 stable. The peer range is `effect ^4.0.0`, with `@effect/atom-react ^4.0.0` for the React adapter and `@effect/atom-solid ^4.0.0` for the Solid adapter.
+  - Effect v3 is no longer supported. The last releases for Effect v3 are `@lucas-barake/effect-form@0.25.0` and `@lucas-barake/effect-form-react@0.26.0`. They stay on npm and receive no further updates.
+  - Install without the `beta` tag. The `0.25.0-beta.*` and `0.26.0-beta.*` prereleases are superseded by this release.
+
+### Minor Changes
+
+- [#100](https://github.com/lucas-barake/effect-form/pull/100) [`5e30412`](https://github.com/lucas-barake/effect-form/commit/5e30412536a11a61a2c39cfac6226ac12f89e2c6) Thanks [@lucas-barake](https://github.com/lucas-barake)! - use `Atom.debounce` for validation and auto-submit debouncing; `ParsedMode.debounce` now carries `Duration.Input` instead of milliseconds
+
+- [#99](https://github.com/lucas-barake/effect-form/pull/99) [`e1239e8`](https://github.com/lucas-barake/effect-form/commit/e1239e8a64d3bc420184d713389191357f1adaa9) Thanks [@lucas-barake](https://github.com/lucas-barake)! - replace the internal weak-registry with `Atom.family`; `validationAtomsRegistry` and `fieldAtomsRegistry` are removed from the `FormAtoms` interface
+
+- [#110](https://github.com/lucas-barake/effect-form/pull/110) [`c10a53e`](https://github.com/lucas-barake/effect-form/commit/c10a53e041c9b0b338b26b2af66be5eb24f07d47) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Require Effect 4.0.0 stable
+
+  - Raise the `effect` peer range to `^4.0.0`, and the `@effect/atom-react` and `@effect/atom-solid` peer ranges to `^4.0.0`. Effect 4.0.0 moved `effect/unstable/reactivity/*` to `effect/reactivity/*`, so beta and rc releases of Effect can no longer satisfy these packages.
+  - Import `Atom`, `AtomRegistry`, and `AsyncResult` from `effect/reactivity/*` instead of `effect/unstable/reactivity/*`.
+  - Raise the Solid adapter's `solid-js` peer floor to `1.9.14`, matching `@effect/atom-solid` 4.0.0.
+
+- [`495dbc7`](https://github.com/lucas-barake/effect-form/commit/495dbc789522a431ed8e33e42c7dacf1c3acc278) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Migrate to Effect v4 beta
+
+  - Update all Schema APIs: `Schema.Schema.Any` → `Schema.Top`, `Schema.Schema.Encoded` → `Schema.Codec.Encoded`, `Schema.Schema.Context` → `Schema.Codec.DecodingServices`
+  - Update SchemaAST tag names: `StringKeyword` → `String`, `NumberKeyword` → `Number`, `BooleanKeyword` → `Boolean`, `NeverKeyword` → `Never`, `TypeLiteral` → `Objects`, `TupleType` → `Arrays`, `Enums` → `Enum`
+  - Replace `ParseResult.ParseError` with `Schema.SchemaError` throughout
+  - Replace `Schema.decodeUnknown` with `Schema.decodeUnknownEffect`
+  - Replace `Cause.failureOption` with `Cause.findErrorOption`
+  - Replace `Schema.filter`/`Schema.filterEffect` with `Schema.check(Schema.makeFilter(...))` and `Schema.decode({ decode: SchemaGetter.checkEffect(...), encode: SchemaGetter.passthrough() })`
+  - Rewrite `Validation.ts` issue tree walker for v4 issue types (`Filter`, `Encoding`, `AnyOf`, `InvalidType`, etc.)
+  - Update formatter to `SchemaIssue.makeFormatterStandardSchemaV1()`
+  - Remove `Utils.structuralRegion` (structural equality is default in v4)
+  - Update atom imports from `@effect-atom/atom` to `effect/unstable/reactivity/Atom`
+  - Update atom-react imports from `@effect-atom/atom-react` to `@effect/atom-react`
+  - Drop React 18 support (v4 atom-react requires React 19)
+
+- [#81](https://github.com/lucas-barake/effect-form/pull/81) [`cb68e9e`](https://github.com/lucas-barake/effect-form/commit/cb68e9ed1f9270a1b9d68beacdbb7825119c3d74) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Expose `path` property in `FieldState` for use in field `name` and `id` attributes.
+
+### Patch Changes
+
+- [#93](https://github.com/lucas-barake/effect-form/pull/93) [`e69326e`](https://github.com/lucas-barake/effect-form/commit/e69326ea5af521c254ae24d9d557c34359224c30) Thanks [@lucas-barake](https://github.com/lucas-barake)! - default array schemas to `[]` in `getDefaultFromSchema`
+
+- [#95](https://github.com/lucas-barake/effect-form/pull/95) [`953fdf9`](https://github.com/lucas-barake/effect-form/commit/953fdf9cf0dca708248c823d876d32f1aac97af2) Thanks [@lucas-barake](https://github.com/lucas-barake)! - use AsyncResult accessors instead of manual result inspection in display-error logic
+
+- [#102](https://github.com/lucas-barake/effect-form/pull/102) [`1f9b932`](https://github.com/lucas-barake/effect-form/commit/1f9b932e3f0a40fbecb26e54bbe7cf2d47aaa9c7) Thanks [@lucas-barake](https://github.com/lucas-barake)! - fix auto-submit silently dropping a change made during a follow-up submit
+
+- [#83](https://github.com/lucas-barake/effect-form/pull/83) [`6cc58b2`](https://github.com/lucas-barake/effect-form/commit/6cc58b27d16fe802f6e6ca488aa7cb04e847b06a) Thanks [@lucas-barake](https://github.com/lucas-barake)! - update effect to beta.18
+
+- [#98](https://github.com/lucas-barake/effect-form/pull/98) [`4e76a88`](https://github.com/lucas-barake/effect-form/commit/4e76a88ce14ee175b544ee5b9f1614a8b8f37c90) Thanks [@lucas-barake](https://github.com/lucas-barake)! - descriptive errors when form atoms are used before initialization
+
+- [#103](https://github.com/lucas-barake/effect-form/pull/103) [`4bb950c`](https://github.com/lucas-barake/effect-form/commit/4bb950c1626284f7053b58d2e6e0a6705a8f1a15) Thanks [@lucas-barake](https://github.com/lucas-barake)! - a failed `onSubmit` is no longer recorded as a successful submit (`lastSubmittedValues` only updates when `onSubmit` succeeds)
+
+- [#77](https://github.com/lucas-barake/effect-form/pull/77) [`4b1a8b1`](https://github.com/lucas-barake/effect-form/commit/4b1a8b154286e7149cb7318d029de7d2deb0e713) Thanks [@BleedingDev](https://github.com/BleedingDev)! - Update for Effect v4 beta.10: `Duration.DurationInput` to `Duration.Input`, `Duration.fromDurationInputUnsafe` to `Duration.fromInputUnsafe`, `Schema.decodeTo` now takes `SchemaGetter` instances.
+
+- [#89](https://github.com/lucas-barake/effect-form/pull/89) [`cc64852`](https://github.com/lucas-barake/effect-form/commit/cc648525467a09b1908c7903428cb5a6ef349271) Thanks [@tim-smart](https://github.com/tim-smart)! - update effect
+
+- [#96](https://github.com/lucas-barake/effect-form/pull/96) [`860cd81`](https://github.com/lucas-barake/effect-form/commit/860cd8134dbef0ce3410570325104114c80bcb40) Thanks [@lucas-barake](https://github.com/lucas-barake)! - flatten builder field intersections for readable hover types
+
+- [#104](https://github.com/lucas-barake/effect-form/pull/104) [`243a2b6`](https://github.com/lucas-barake/effect-form/commit/243a2b6e299c11375cdeb4dc0d45158c437e9999) Thanks [@lucas-barake](https://github.com/lucas-barake)! - preserve field edits made during an in-flight async submit instead of reverting to the pre-submit snapshot
+
+- [#81](https://github.com/lucas-barake/effect-form/pull/81) [`cb68e9e`](https://github.com/lucas-barake/effect-form/commit/cb68e9ed1f9270a1b9d68beacdbb7825119c3d74) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Update effect peer dependency to v4 beta.14.
+
+- [#85](https://github.com/lucas-barake/effect-form/pull/85) [`ef7cc0d`](https://github.com/lucas-barake/effect-form/commit/ef7cc0dbf2b3d1ea78107ddcc46d3c8f093bbab5) Thanks [@lucas-barake](https://github.com/lucas-barake)! - update effect to v4 beta.27
+
 ## 0.25.0-beta.6
 
 ### Minor Changes
