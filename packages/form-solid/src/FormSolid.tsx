@@ -64,6 +64,7 @@ export type BuiltForm<
   readonly submitCount: Atom.Atom<number>
   readonly validationCount: Atom.Atom<number>
   readonly rootError: Atom.Atom<Option.Option<string>>
+  readonly fieldErrors: Atom.Atom<ReadonlyMap<Field.FieldPath<TFields>, string>>
 
   readonly schema: Schema.Codec<Field.DecodedFromFields<TFields>, Field.EncodedFromFields<TFields>, R>
   readonly fields: FieldRefs<TFields>
@@ -366,6 +367,7 @@ export const make: {
           readonly get: Atom.FnContext
         }
       ) => A | PromiseLike<A> | Effect.Effect<A, E, R>
+      readonly submitErrors?: (error: E) => ReadonlyArray<FormAtoms.SubmitError<TFields>>
     }
   ): BuiltForm<TFields, R, A, E, SubmitArgs, CM>
 
@@ -392,10 +394,11 @@ export const make: {
           readonly get: Atom.FnContext
         }
       ) => A | PromiseLike<A> | Effect.Effect<A, E, R>
+      readonly submitErrors?: (error: E) => ReadonlyArray<FormAtoms.SubmitError<TFields>>
     }
   ): BuiltForm<TFields, R, A, E, SubmitArgs, CM>
 } = (self: any, options: any): any => {
-  const { fields: components, mode, onSubmit, runtime: providedRuntime, reactivityKeys } = options
+  const { fields: components, mode, onSubmit, reactivityKeys, runtime: providedRuntime, submitErrors } = options
   const runtime = providedRuntime ?? Atom.runtime(Layer.empty)
   const { fields } = self
 
@@ -403,6 +406,7 @@ export const make: {
     formBuilder: self,
     runtime,
     onSubmit,
+    submitErrors,
     reactivityKeys,
     mode
   })
@@ -410,6 +414,7 @@ export const make: {
   const {
     autoSubmitAtom,
     combinedSchema,
+    fieldErrorsAtom,
     fieldRefs,
     getFieldAtoms,
     getOrCreateFieldAtoms,
@@ -491,6 +496,7 @@ export const make: {
     submitCount: submitCountAtom,
     validationCount: validationCountAtom,
     rootError: rootErrorAtom,
+    fieldErrors: fieldErrorsAtom,
     schema: combinedSchema,
     fields: fieldRefs,
     Initialize: InitializeComponent,
