@@ -33,8 +33,6 @@ const defaults: Field.EncodedFromFields<Fields> = {
   items: [{ name: "Pen", qty: 1 }, { name: "Ink", qty: 2 }]
 }
 
-// The server replies with whatever paths it wants, so the test casts them the
-// way an adapter narrowing an untyped payload would.
 const reject = (errors: ReadonlyArray<{ readonly path: string; readonly message: string }>) =>
   new SignupRejected({ errors })
 
@@ -195,8 +193,6 @@ describe("submitErrors", () => {
     })
 
     it("lets a live schema error on the field take precedence while it holds the rejected value", async () => {
-      // An effectful field check, like a live availability lookup, can reject the
-      // very value the server rejected, so both errors apply to the same value.
       const unavailable = new Set<string>()
       const SlugSchema = Schema.String.pipe(
         Schema.decode({
@@ -281,7 +277,6 @@ describe("submitErrors", () => {
       const form = makeForm({ onSubmit: rejectAll })
       const slugError = form.fieldError("slug")
 
-      // validate makes field errors displayable again after the submit count resets.
       await submit(form)
       form.registry.set(form.atoms.resetAtom, undefined)
       await validate(form)

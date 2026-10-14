@@ -51,11 +51,7 @@ export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, Su
       readonly get: Atom.FnContext
     }
   ) => A | PromiseLike<A> | Effect.Effect<A, E, R>
-  /**
-   * Maps a typed failure of the Effect returned by `onSubmit` to field errors.
-   * It must be declared after `onSubmit`, because TypeScript infers `E` left
-   * to right.
-   */
+  /** Declare after `onSubmit`: TypeScript infers `E` left to right. */
   readonly submitErrors?: (error: E) => ReadonlyArray<SubmitError<TFields>>
 }
 
@@ -252,14 +248,10 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
 
   const errorsAtom = Atom.make<Map<string, Validation.ErrorEntry>>(new Map()).pipe(Atom.setIdleTTL(0))
 
-  // Kept apart from errorsAtom so validate, which replaces the schema errors,
-  // leaves the server's rejection in place. Each entry remembers the encoded
-  // value it rejected, and a field shows it only while it still holds that value.
   const submitErrorsAtom = Atom.make<ReadonlyMap<string, SubmitErrorEntry>>(new Map()).pipe(Atom.setIdleTTL(0))
 
   const rootErrorAtom = Atom.readable((get) => {
-    // Both stores are read on every build so the submit store stays a dependency
-    // while a schema error hides it. An unread node with no TTL is swept.
+    // Read both unconditionally, or an unread submit store gets swept.
     const schemaEntry = get(errorsAtom).get("")
     const submitEntry = get(submitErrorsAtom).get("")
     const entry = schemaEntry ?? submitEntry
@@ -438,8 +430,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
 
       const livePerFieldError = Option.flatMap(AsyncResult.error(validationResult), Validation.extractFirstError)
 
-      // Read before branching, so a live error that hides the submit error does
-      // not leave the submit store without readers and let it be swept.
+      // Read before branching, or an unread submit store gets swept.
       const submitError = get(submitErrorsAtom).get(fieldPath)
       const isStoredErrorShown = Option.isSome(storedError) && !(storedError.value.source === "field" &&
         (AsyncResult.isSuccess(validationResult) || AsyncResult.isWaiting(validationResult)))
@@ -516,8 +507,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     }
   })
 
-  // Reusing the recorded key object lets the family hit its cached hash and
-  // the identity check instead of hashing and comparing a fresh key structurally.
+  // Reusing the key object skips structural hashing on every lookup.
   const getOrCreateFieldAtoms = (fieldPath: string, schema: Schema.Top): FieldAtoms => {
     const recorded = fieldAtomsKeys.get(fieldPath)
     if (recorded !== undefined && recorded.schema === schema) return fieldAtomsFamily(recorded)
@@ -555,8 +545,6 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     return Array.isArray(items) && Number(index) < items.length
   }
 
-  // A path that matches no field would be stored where nothing reads it, so the
-  // user would never see the rejection. That is a bug in the mapping and must be loud.
   const toSubmitErrorEntries = (
     errors: ReadonlyArray<SubmitError<TFields>>,
     values: Field.EncodedFromFields<TFields>
@@ -839,8 +827,6 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     resetValidationAtoms(get)
   }
 
-  // Field submit errors hide by themselves once the value differs, but the
-  // form-level one has no value to compare, so replacing the values clears it.
   const withoutRootSubmitError = (
     submitErrors: ReadonlyMap<string, SubmitErrorEntry>
   ): ReadonlyMap<string, SubmitErrorEntry> => {
@@ -983,8 +969,6 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
   const getFieldAtoms = <S,>(field: FormBuilder.FieldRef<S>): PublicFieldAtoms<S> =>
     publicFieldAtomsFamily(field.key) as PublicFieldAtoms<S>
 
-  // Rebuilt on every value change, so structural equality keeps subscribers
-  // from re-rendering while the displayed errors stay the same.
   const fieldErrorsAtom = Atom.readable((get) => {
     const fieldErrors = new Map<Field.FieldPath<TFields>, string>()
     const state = get(stateAtom)

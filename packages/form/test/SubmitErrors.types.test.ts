@@ -147,8 +147,6 @@ const suspended = FormBuilder.empty.addField(
 class OpaqueItem extends Schema.Opaque<OpaqueItem>()(Schema.Struct({ name: Schema.String })) {}
 const opaque = FormBuilder.empty.addField(Field.makeArrayField("items", OpaqueItem))
 
-// The runtime path check and the bindings read item sub-fields from the decoded
-// side of the item schema, so the encoded-only key is not a field.
 const transformed = FormBuilder.empty.addField(
   Field.makeArrayField(
     "items",
