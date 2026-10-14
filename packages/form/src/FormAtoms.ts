@@ -224,10 +224,15 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     readonly state: Option.Option<FormBuilder.FormState<TFields>>
   }>({ id: {}, state: Option.none() }).pipe(Atom.setIdleTTL(0))
 
+  // The registry does not build a node when a listener subscribes before its
+  // first read, so that node has no edge to sessionAtom yet and would miss the
+  // change. Refreshing it after each session write builds it and notifies.
   const stateAtom = Atom.writable(
     (get) => get(sessionAtom).state,
-    (ctx, state: Option.Option<FormBuilder.FormState<TFields>>) =>
+    (ctx, state: Option.Option<FormBuilder.FormState<TFields>>) => {
       ctx.set(sessionAtom, { id: ctx.get(sessionAtom).id, state })
+      ctx.refreshSelf()
+    }
   ).pipe(Atom.setIdleTTL(0))
 
   const sessionIdAtom = Atom.readable((get) => get(sessionAtom).id).pipe(Atom.setIdleTTL(0))
@@ -760,6 +765,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
   const initializeAtom = Atom.fnSync<Field.EncodedFromFields<TFields>>()(
     (defaultValues, get) => {
       get.set(sessionAtom, { id: {}, state: Option.some(operations.createInitialState(defaultValues)) })
+      get.refresh(stateAtom)
       clearValidationResults(get)
     },
     { initialValue: undefined as void }

@@ -858,6 +858,39 @@ describe("FormAtoms", () => {
     })
   })
 
+  describe("stateAtom", () => {
+    it("notifies a subscriber registered before the first read when stateAtom is written", () => {
+      const atoms = FormAtoms.make({
+        runtime: Atom.runtime(Layer.empty),
+        formBuilder: makeTestForm(),
+        onSubmit: () => {}
+      })
+      const registry = AtomRegistry.make()
+      const seen: Array<unknown> = []
+      registry.subscribe(atoms.stateAtom, (state) => seen.push(state))
+
+      const initialState = Option.some(atoms.operations.createInitialState({ name: "John", email: "j@x.io" }))
+      registry.set(atoms.stateAtom, initialState)
+
+      expect(seen).toEqual([initialState])
+    })
+
+    it("notifies a subscriber registered before the first read when the form is initialized", () => {
+      const atoms = FormAtoms.make({
+        runtime: Atom.runtime(Layer.empty),
+        formBuilder: makeTestForm(),
+        onSubmit: () => {}
+      })
+      const registry = AtomRegistry.make()
+      const seenValues: Array<unknown> = []
+      registry.subscribe(atoms.stateAtom, (state) => seenValues.push(Option.map(state, (s) => s.values)))
+
+      registry.set(atoms.initializeAtom, { name: "Jane", email: "j@x.io" })
+
+      expect(seenValues).toEqual([Option.some({ name: "Jane", email: "j@x.io" })])
+    })
+  })
+
   describe("derived atoms", () => {
     it("dirtyFieldsAtom reflects state", () => {
       const runtime = Atom.runtime(Layer.empty)
