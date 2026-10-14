@@ -2380,6 +2380,20 @@ describe("FormReact.make", () => {
       expectTypeOf(form.submit).not.toBeAny()
       expectTypeOf(form.Initialize).not.toBeAny()
     })
+
+    it("types the submit error as SchemaError when onSubmit does not return an Effect", () => {
+      const formBuilder = FormBuilder.empty.addField(Field.makeField("name", Schema.String))
+
+      const syncForm = FormReact.make(formBuilder, { fields: { name: TextInput }, onSubmit: () => 1 })
+      const promiseForm = FormReact.make(formBuilder, {
+        runtime: Atom.runtime(Layer.empty),
+        fields: { name: TextInput },
+        onSubmit: () => Promise.resolve("saved")
+      })
+
+      expectTypeOf(syncForm.submit).toEqualTypeOf<Atom.AtomResultFn<void, number, Schema.SchemaError>>()
+      expectTypeOf(promiseForm.submit).toEqualTypeOf<Atom.AtomResultFn<void, string, Schema.SchemaError>>()
+    })
   })
 
   describe("debounce and auto-submit", () => {

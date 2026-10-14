@@ -6,7 +6,7 @@ import * as Option from "effect/Option"
 import type * as Atom from "effect/reactivity/Atom"
 import * as AtomRegistry from "effect/reactivity/AtomRegistry"
 import * as Schema from "effect/Schema"
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, expectTypeOf, it, vi } from "vitest"
 
 const TextInput: FormSolid.FieldComponent<string> = ({ field }) => (
   <div>
@@ -47,6 +47,19 @@ describe("FormSolid.make", () => {
       ))
 
       expect(screen.getByTestId("text-input")).toHaveValue("John")
+    })
+
+    it("types the submit error as SchemaError when onSubmit does not return an Effect", () => {
+      const formBuilder = FormBuilder.empty.addField(Field.makeField("name", Schema.String))
+
+      const syncForm = FormSolid.make(formBuilder, { fields: { name: TextInput }, onSubmit: () => 1 })
+      const promiseForm = FormSolid.make(formBuilder, {
+        fields: { name: TextInput },
+        onSubmit: () => Promise.resolve("saved")
+      })
+
+      expectTypeOf(syncForm.submit).toEqualTypeOf<Atom.AtomResultFn<void, number, Schema.SchemaError>>()
+      expectTypeOf(promiseForm.submit).toEqualTypeOf<Atom.AtomResultFn<void, string, Schema.SchemaError>>()
     })
 
     it("does not show a previous visit's validation error after remounting in the same registry", async () => {

@@ -1796,6 +1796,12 @@ describe("FormAtoms", () => {
       expect(finalValues).toEqual({ name: "V1" })
     })
 
+    it("types the submit error as SchemaError when onSubmit returns a plain value", () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const atoms = FormAtoms.make({ runtime, formBuilder: makeTestForm(), onSubmit: () => 1 })
+      expectTypeOf(atoms.submitAtom).toEqualTypeOf<Atom.AtomResultFn<void, number, Schema.SchemaError>>()
+    })
+
     it("does not record lastSubmittedValues when onSubmit itself fails", async () => {
       const runtime = Atom.runtime(Layer.empty)
       const EmailField = Field.makeField(
@@ -1863,7 +1869,7 @@ describe("FormAtoms", () => {
         onSubmit: (_: void, { decoded }) => Promise.resolve({ savedName: decoded.name })
       })
       expectTypeOf(atoms.submitAtom).toEqualTypeOf<
-        Atom.AtomResultFn<void, { savedName: string }, unknown>
+        Atom.AtomResultFn<void, { savedName: string }, Schema.SchemaError>
       >()
       const registry = AtomRegistry.make()
 

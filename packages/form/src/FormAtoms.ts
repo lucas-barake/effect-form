@@ -196,7 +196,7 @@ const getStateOrThrow = <TFields extends Field.FieldsRecord,>(
   return state.value
 }
 
-export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = void,>(
+export const make = <TFields extends Field.FieldsRecord, R, A, E = never, SubmitArgs = void,>(
   config: FormAtomsConfig<TFields, R, A, E, SubmitArgs>
 ): FormAtoms<TFields, R, A, E, SubmitArgs> => {
   const { formBuilder, runtime } = config

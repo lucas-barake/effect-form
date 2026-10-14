@@ -348,7 +348,7 @@ export const make: {
     TFields extends Field.FieldsRecord,
     R extends AtomRegistry.AtomRegistry,
     A,
-    E,
+    E = never,
     SubmitArgs = void,
     CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
   >(
@@ -373,7 +373,7 @@ export const make: {
     TFields extends Field.FieldsRecord,
     R,
     A,
-    E,
+    E = never,
     SubmitArgs = void,
     ER = never,
     CM extends FieldComponentMap<TFields> = FieldComponentMap<TFields>,
