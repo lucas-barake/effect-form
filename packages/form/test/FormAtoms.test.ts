@@ -922,6 +922,38 @@ describe("FormAtoms", () => {
 
       expect(seenValues).toEqual([Option.some({ name: "Jane", email: "j@x.io" })])
     })
+
+    it("initializes a form whose state was seeded through registry initialValues and not read yet", () => {
+      const atoms = FormAtoms.make({
+        runtime: Atom.runtime(Layer.empty),
+        formBuilder: makeTestForm(),
+        onSubmit: () => {}
+      })
+      const seeded = Option.some(atoms.operations.createInitialState({ name: "Seed", email: "s@x.io" }))
+      const registry = AtomRegistry.make({ initialValues: [[atoms.stateAtom, seeded]] })
+
+      registry.set(atoms.initializeAtom, { name: "Jane", email: "j@x.io" })
+
+      expect(Option.map(registry.get(atoms.stateAtom), (s) => s.values)).toEqual(
+        Option.some({ name: "Jane", email: "j@x.io" })
+      )
+    })
+
+    it("keeps a write to a seeded stateAtom made before its first read", () => {
+      const atoms = FormAtoms.make({
+        runtime: Atom.runtime(Layer.empty),
+        formBuilder: makeTestForm(),
+        onSubmit: () => {}
+      })
+      const seeded = Option.some(atoms.operations.createInitialState({ name: "Seed", email: "s@x.io" }))
+      const registry = AtomRegistry.make({ initialValues: [[atoms.stateAtom, seeded]] })
+
+      registry.set(atoms.stateAtom, Option.some(atoms.operations.createInitialState({ name: "Jane", email: "j@x.io" })))
+
+      expect(Option.map(registry.get(atoms.stateAtom), (s) => s.values)).toEqual(
+        Option.some({ name: "Jane", email: "j@x.io" })
+      )
+    })
   })
 
   describe("derived atoms", () => {
@@ -1985,6 +2017,22 @@ describe("FormAtoms", () => {
 
         expect(registry.get(atoms.errorsAtom).size).toBe(0)
         expect(Option.getOrThrow(registry.get(atoms.stateAtom)).validationCount).toBe(0)
+      })
+
+      it("still records a validation that started right after initialization and settles later", async () => {
+        const { form, settleDecode } = makeGatedDecodeForm()
+        const atoms = FormAtoms.make({ runtime: Atom.runtime(Layer.empty), formBuilder: form, onSubmit: () => {} })
+        const registry = AtomRegistry.make()
+        registry.mount(atoms.stateAtom)
+        registry.mount(atoms.validateAtom)
+
+        registry.set(atoms.initializeAtom, { name: "Jane" })
+        registry.set(atoms.validateAtom, undefined)
+        await new Promise((resolve) => setTimeout(resolve, 20))
+        settleDecode(undefined)
+        await waitForSubmit(registry, atoms.validateAtom)
+
+        expect(Option.getOrThrow(registry.get(atoms.stateAtom)).validationCount).toBe(1)
       })
 
       it("does not count a validation of the previous values against the new session", async () => {

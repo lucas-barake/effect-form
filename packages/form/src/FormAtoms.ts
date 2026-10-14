@@ -215,27 +215,23 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
 
   const combinedSchema = FormBuilder.buildSchema(formBuilder)
 
-  // Each initialization gets a fresh session object stored with the state, so
-  // work started in one session (an in-flight submit, an auto-submit build) can
-  // tell that the form was initialized again since. Keeping it in the same atom
-  // as the state means it is dropped and recreated together with the state.
-  const sessionAtom = Atom.make<{
-    readonly id: object
-    readonly state: Option.Option<FormBuilder.FormState<TFields>>
-  }>({ id: {}, state: Option.none() }).pipe(Atom.setIdleTTL(0))
+  const stateAtom = Atom.make(Option.none<FormBuilder.FormState<TFields>>()).pipe(Atom.setIdleTTL(0))
 
-  // The registry does not build a node when a listener subscribes before its
-  // first read, so that node has no edge to sessionAtom yet and would miss the
-  // change. Refreshing it after each session write builds it and notifies.
-  const stateAtom = Atom.writable(
-    (get) => get(sessionAtom).state,
-    (ctx, state: Option.Option<FormBuilder.FormState<TFields>>) => {
-      ctx.set(sessionAtom, { id: ctx.get(sessionAtom).id, state })
-      ctx.refreshSelf()
-    }
-  ).pipe(Atom.setIdleTTL(0))
+  // Every initialization stores a new, never reused id, so work started before
+  // it (an in-flight submit or validate, an auto-submit build) can tell that the
+  // form was initialized again. The id lives outside stateAtom so that state
+  // keeps its plain writable semantics.
+  let lastSessionId = 0
+  const sessionIdAtom = Atom.make(0).pipe(Atom.setIdleTTL(0))
 
-  const sessionIdAtom = Atom.readable((get) => get(sessionAtom).id).pipe(Atom.setIdleTTL(0))
+  // Mounting keeps the id node alive for the lifetime of the calling fn atom.
+  // Otherwise it could be swept mid-flight and come back at its initial 0.
+  const captureSession = (get: Atom.FnContext) => {
+    get.mount(sessionIdAtom)
+    const sessionId = get(sessionIdAtom)
+    return () => get(sessionIdAtom) === sessionId
+  }
+
   const errorsAtom = Atom.make<Map<string, Validation.ErrorEntry>>(new Map()).pipe(Atom.setIdleTTL(0))
 
   const rootErrorAtom = Atom.readable((get) => {
@@ -509,11 +505,10 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     .fn<SubmitArgs>()(
       (args, get) =>
         Effect.gen(function*() {
-          const sessionId = get(sessionIdAtom)
           const state = get(stateAtom)
           // A submit that settles after the form was initialized again must not
           // write the previous session's results into the new one.
-          const isSameSession = () => get(sessionIdAtom) === sessionId
+          const isSameSession = captureSession(get)
           if (Option.isNone(state)) {
             return yield* Effect.die(
               new Error(
@@ -583,9 +578,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     .fn<void>()(
       (_: void, get) =>
         Effect.gen(function*() {
-          const sessionId = get(sessionIdAtom)
           const state = get(stateAtom)
-          const isSameSession = () => get(sessionIdAtom) === sessionId
+          const isSameSession = captureSession(get)
           if (Option.isNone(state)) return
           const values = state.value.values
           get.set(errorsAtom, new Map())
@@ -767,8 +761,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
   // validation results drops anything computed against the old state.
   const initializeAtom = Atom.fnSync<Field.EncodedFromFields<TFields>>()(
     (defaultValues, get) => {
-      get.set(sessionAtom, { id: {}, state: Option.some(operations.createInitialState(defaultValues)) })
-      get.refresh(stateAtom)
+      get.set(stateAtom, Option.some(operations.createInitialState(defaultValues)))
+      get.set(sessionIdAtom, ++lastSessionId)
       clearValidationResults(get)
     },
     { initialValue: undefined as void }
