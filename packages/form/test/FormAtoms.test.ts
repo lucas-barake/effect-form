@@ -2725,6 +2725,33 @@ describe("FormAtoms", () => {
       vi.useRealTimers()
     })
 
+    it("does not submit the re-initialized defaults when a debounce from before initialization lands", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onChange", debounce: "300 millis", autoSubmit: true }
+      })
+      const registry = AtomRegistry.make()
+
+      registry.set(atoms.initializeAtom, { name: "John", email: "test@test.com" })
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      const state = Option.getOrThrow(registry.get(atoms.stateAtom))
+      registry.set(atoms.stateAtom, Option.some(atoms.operations.setFieldValue(state, "name", "Jane")))
+      await vi.advanceTimersByTimeAsync(100)
+
+      registry.set(atoms.initializeAtom, { name: "Other", email: "other@test.com" })
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(onSubmit).not.toHaveBeenCalled()
+    })
+
     it("triggers submit when values change in onChange auto-submit mode", async () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()

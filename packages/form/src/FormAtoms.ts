@@ -907,9 +907,13 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
         if (debouncedSubmitRequestAtom === null) {
           requestSubmit = triggerSubmit
         } else {
+          // The debounce node outlives this build, so a timer started before the
+          // latest initialization can still land. Only requests made by this
+          // build may submit.
+          const baselineRequest = get.once(submitRequestAtom)
           get.mount(debouncedSubmitRequestAtom)
-          get.subscribe(debouncedSubmitRequestAtom, () => {
-            triggerSubmit()
+          get.subscribe(debouncedSubmitRequestAtom, (request) => {
+            if (request > baselineRequest) triggerSubmit()
           })
           requestSubmit = () => {
             get.set(submitRequestAtom, get.once(submitRequestAtom) + 1)
