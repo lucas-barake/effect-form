@@ -493,6 +493,7 @@ const siteForm = FormReact.make(siteFormBuilder, {
 - The mapping runs only when the Effect returned by `onSubmit` fails with a typed error. Schema errors, defects and interruptions skip it, and so does a rejected Promise, which is a defect. A `submitErrors` that throws is a defect too.
 - `form.submit` still fails with the original error, so notifications and navigation can keep reading the submit result. A failed submit does not update `lastSubmittedValues`.
 - A field's submit error shows only while the field holds the value that was submitted. Edit the field and the error hides. Type the rejected value again and it comes back. A schema error on the field takes precedence.
+- Array item errors belong to the index they were submitted at. Removing or reordering items moves the values but not the errors, so an item's error hides until the next submit, and shows on another item only if that item holds the same value at the same index.
 - Submit errors last until the next submit, `reset` or re-initialization, and they survive `validate`. `revertToLastSubmit` and `setValues` clear the form-level one. `rootError` shows a schema form-level error first and falls back to the submit one.
 
 ### Running an Existing Mutation Atom
