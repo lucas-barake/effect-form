@@ -371,7 +371,7 @@ export const make: {
           readonly encoded: Field.EncodedFromFields<TFields>
           readonly get: Atom.FnContext
         }
-      ) => A | Effect.Effect<A, E, R>
+      ) => A | PromiseLike<A> | Effect.Effect<A, E, R>
     }
   ): BuiltForm<TFields, R, A, E, SubmitArgs, CM>
 
@@ -397,7 +397,7 @@ export const make: {
           readonly encoded: Field.EncodedFromFields<TFields>
           readonly get: Atom.FnContext
         }
-      ) => A | Effect.Effect<A, E, R>
+      ) => A | PromiseLike<A> | Effect.Effect<A, E, R>
     }
   ): BuiltForm<TFields, R, A, E, SubmitArgs, CM>
 } = (self: any, options: any): any => {

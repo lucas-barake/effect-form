@@ -2,6 +2,7 @@ import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
 import * as Option from "effect/Option"
+import * as Predicate from "effect/Predicate"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
 import * as Schema from "effect/Schema"
@@ -48,7 +49,7 @@ export interface FormAtomsConfig<TFields extends Field.FieldsRecord, R, A, E, Su
       readonly encoded: Field.EncodedFromFields<TFields>
       readonly get: Atom.FnContext
     }
-  ) => A | Effect.Effect<A, E, R>
+  ) => A | PromiseLike<A> | Effect.Effect<A, E, R>
 }
 
 export type FieldRefs<TFields extends Field.FieldsRecord,> = {
@@ -524,8 +525,12 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
           const submitState = operations.createSubmitState(baseState)
           get.set(stateAtom, Option.some(submitState))
           const result = config.onSubmit(args, { decoded, encoded: values, get })
+          // A rejected Promise has no typed error channel, so it surfaces as a
+          // defect rather than being mistaken for a successful submit.
           const output = Effect.isEffect(result)
             ? yield* (result as Effect.Effect<A, E, R>)
+            : Predicate.isPromiseLike(result)
+            ? yield* Effect.promise(() => result as PromiseLike<A>)
             : (result as A)
           // Only record the values as "last submitted" once onSubmit has
           // succeeded. A failed onSubmit must not be reported as a successful

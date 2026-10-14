@@ -3,11 +3,12 @@ import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
+import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
 import * as AtomRegistry from "effect/reactivity/AtomRegistry"
 import * as Schema from "effect/Schema"
 import * as SchemaGetter from "effect/SchemaGetter"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest"
 import * as Field from "../src/Field.js"
 import * as FormAtoms from "../src/FormAtoms.js"
 import * as FormBuilder from "../src/FormBuilder.js"
@@ -1821,6 +1822,65 @@ describe("FormAtoms", () => {
       const stateAfter = registry.get(atoms.stateAtom).pipe(Option.getOrThrow)
       expect(Option.isNone(stateAfter.lastSubmittedValues)).toBe(true)
       expect(Option.isNone(registry.get(atoms.lastSubmittedValuesAtom))).toBe(true)
+    })
+
+    it("fails and does not record lastSubmittedValues when onSubmit returns a rejected Promise", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const rejection = new Error("409 Conflict")
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit: () => Promise.reject(rejection)
+      })
+      const registry = AtomRegistry.make()
+
+      registry.set(atoms.stateAtom, Option.some(atoms.operations.createInitialState({ name: "John", email: "j@x.io" })))
+      registry.mount(atoms.stateAtom)
+      registry.mount(atoms.lastSubmittedValuesAtom)
+      registry.mount(atoms.submitAtom)
+      registry.set(atoms.submitAtom, undefined)
+
+      const result = await vi.waitFor(() => {
+        const current = registry.get(atoms.submitAtom)
+        if (AsyncResult.isInitial(current) || current.waiting) throw new Error("submit still running")
+        return current
+      })
+
+      expect(AsyncResult.isFailure(result)).toBe(true)
+      if (AsyncResult.isFailure(result)) {
+        expect(Cause.squash(result.cause)).toBe(rejection)
+      }
+      expect(Option.isNone(registry.get(atoms.lastSubmittedValuesAtom))).toBe(true)
+    })
+
+    it("succeeds with the resolved value when onSubmit returns a Promise", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit: (_: void, { decoded }) => Promise.resolve({ savedName: decoded.name })
+      })
+      expectTypeOf(atoms.submitAtom).toEqualTypeOf<
+        Atom.AtomResultFn<void, { savedName: string }, unknown>
+      >()
+      const registry = AtomRegistry.make()
+
+      registry.set(atoms.stateAtom, Option.some(atoms.operations.createInitialState({ name: "John", email: "j@x.io" })))
+      registry.mount(atoms.stateAtom)
+      registry.mount(atoms.lastSubmittedValuesAtom)
+      registry.mount(atoms.submitAtom)
+      registry.set(atoms.submitAtom, undefined)
+
+      const result = await vi.waitFor(() => {
+        const current = registry.get(atoms.submitAtom)
+        if (AsyncResult.isInitial(current) || current.waiting) throw new Error("submit still running")
+        return current
+      })
+
+      expect(AsyncResult.isSuccess(result) && result.value).toEqual({ savedName: "John" })
+      expect(Option.isSome(registry.get(atoms.lastSubmittedValuesAtom))).toBe(true)
     })
   })
 
