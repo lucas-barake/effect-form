@@ -132,21 +132,7 @@ export const createTouchedRecord = (fields: FieldsRecord, value: boolean): Recor
   return result
 }
 
-// Field atoms are keyed by schema identity, so every caller must get the same
-// sub-field schema objects for an item schema. Otherwise the field component
-// and the form's error summary would read separate validation results.
-const structFieldDefsCache = new WeakMap<Schema.Top, ReadonlyArray<FieldDef<string, Schema.Top>> | undefined>()
-
 export const extractStructFieldDefs = (
-  schema: Schema.Top
-): ReadonlyArray<FieldDef<string, Schema.Top>> | undefined => {
-  if (structFieldDefsCache.has(schema)) return structFieldDefsCache.get(schema)
-  const defs = computeStructFieldDefs(schema)
-  structFieldDefsCache.set(schema, defs)
-  return defs
-}
-
-const computeStructFieldDefs = (
   schema: Schema.Top
 ): ReadonlyArray<FieldDef<string, Schema.Top>> | undefined => {
   const unwrapObjects = (ast: AST.AST): AST.Objects | undefined => {
