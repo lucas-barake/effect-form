@@ -2791,6 +2791,45 @@ describe("FormAtoms", () => {
       expect(completions).toHaveBeenCalledTimes(1)
     })
 
+    it("submits an edit made after re-initialization while an earlier submit is still in flight", async () => {
+      const runtime = Atom.runtime(Layer.empty)
+      const form = makeTestForm()
+      const submittedNames: Array<string> = []
+      const resolvers: Array<() => void> = []
+      const onSubmit = vi.fn((_args: void, ctx: { readonly encoded: { readonly name: string } }) =>
+        Effect.callback<void, never>((resume) => {
+          submittedNames.push(ctx.encoded.name)
+          resolvers.push(() => resume(Effect.void))
+        })
+      )
+      const atoms = FormAtoms.make({
+        runtime,
+        formBuilder: form,
+        onSubmit,
+        mode: { validation: "onChange", autoSubmit: true }
+      })
+      const registry = AtomRegistry.make()
+
+      registry.set(atoms.initializeAtom, { name: "a", email: "e@e.com" })
+      registry.mount(atoms.autoSubmitAtom)
+      registry.mount(atoms.submitAtom)
+      registry.mount(atoms.stateAtom)
+
+      const state0 = Option.getOrThrow(registry.get(atoms.stateAtom))
+      registry.set(atoms.stateAtom, Option.some(atoms.operations.setFieldValue(state0, "name", "b")))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(submittedNames).toEqual(["b"])
+
+      registry.set(atoms.initializeAtom, { name: "x", email: "e@e.com" })
+      const fresh = Option.getOrThrow(registry.get(atoms.stateAtom))
+      registry.set(atoms.stateAtom, Option.some(atoms.operations.setFieldValue(fresh, "name", "y")))
+
+      resolvers[0]()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(submittedNames).toEqual(["b", "y"])
+    })
+
     it("does not lose a change made during a follow-up auto-submit (no debounce)", async () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()

@@ -891,7 +891,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
           ? initialState.value.values
           : null
         let pendingChanges = false
-        let wasSubmitting = false
+        // A rebuild can start while a submit is in flight, and its completion
+        // must still flush changes queued against this build.
+        let wasSubmitting = AsyncResult.isWaiting(get.once(submitAtom))
 
         const triggerSubmit = () => {
           if (AsyncResult.isWaiting(get.once(submitAtom))) {
