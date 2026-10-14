@@ -83,7 +83,7 @@ describe("Field", () => {
       expect(defs![1]!.key).toBe("age")
     })
 
-    it("rejects an item schema whose encoded side has different keys", () => {
+    it("rejects an item schema that renames keys on decode", () => {
       const renamed = Schema.Struct({ full_name: Schema.String }).pipe(
         Schema.decodeTo(Schema.Struct({ name: Schema.String }), {
           decode: SchemaGetter.transform((e: { readonly full_name: string }) => ({ name: e.full_name })),
@@ -91,14 +91,14 @@ describe("Field", () => {
         })
       )
       expect(() => Field.extractStructFieldDefs(renamed)).toThrow(
-        "Array item fields must have the same keys when encoded and decoded, but the encoded keys are [full_name] and the decoded keys are [name]."
+        "Every decoded key of an array item must also be an encoded key, but the encoded keys are [full_name] and the decoded keys are [name]."
       )
     })
 
     it("rejects an item schema that is not a struct when encoded", () => {
       const fromJson = Schema.fromJsonString(Schema.Struct({ name: Schema.String }))
       expect(() => Field.extractStructFieldDefs(fromJson)).toThrow(
-        "Array item fields must have the same keys when encoded and decoded, but the encoded item is not a struct and the decoded keys are [name]."
+        "Every decoded key of an array item must also be an encoded key, but the encoded item is not a struct and the decoded keys are [name]."
       )
     })
 

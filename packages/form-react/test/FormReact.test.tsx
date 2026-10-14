@@ -469,7 +469,7 @@ describe("FormReact.make", () => {
       expect((screen.getByTestId("item-name") as HTMLInputElement).value).toBe("FirstA")
     })
 
-    it("fails at make when the item's encoded keys differ from its decoded keys", () => {
+    it("fails at make when the item renames keys on decode", () => {
       const Item = Schema.Struct({ full_name: Schema.String }).pipe(
         Schema.decodeTo(Schema.Struct({ name: Schema.String }), {
           decode: SchemaGetter.transform((e: { readonly full_name: string }) => ({ name: e.full_name })),
@@ -482,7 +482,55 @@ describe("FormReact.make", () => {
           fields: { items: { full_name: Input } },
           onSubmit: () => {}
         })
-      ).toThrow("Array item fields must have the same keys when encoded and decoded")
+      ).toThrow("Every decoded key of an array item must also be an encoded key")
+    })
+
+    it("edits and submits items whose encoded side has an extra key that decoding drops", async () => {
+      const user = userEvent.setup()
+      const submitHandler = vi.fn()
+
+      const Item = Schema.Struct({ id: Schema.String, name: Schema.String }).pipe(
+        Schema.decodeTo(Schema.Struct({ name: Schema.String }), {
+          decode: SchemaGetter.transform((e: { readonly id: string; readonly name: string }) => ({ name: e.name })),
+          encode: SchemaGetter.transform((d: { readonly name: string }) => ({ id: "", name: d.name }))
+        })
+      )
+      const ItemNameInput: FormReact.FieldComponent<string> = ({ field }) => (
+        <input
+          type="text"
+          value={field.value}
+          onChange={(e) => field.onChange(e.target.value)}
+          data-testid="item-name"
+        />
+      )
+      const form = FormReact.make(FormBuilder.empty.addField(Field.makeArrayField("items", Item)), {
+        fields: { items: { id: () => null, name: ItemNameInput } },
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded)
+      })
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+
+      render(
+        <form.Initialize defaultValues={{ items: [{ id: "a1", name: "First" }] }}>
+          <form.items>
+            {({ items }) => (
+              <>
+                {items.map((_, i) => (
+                  <form.items.Item key={i} index={i}>
+                    <form.items.name />
+                  </form.items.Item>
+                ))}
+              </>
+            )}
+          </form.items>
+          <SubmitButton />
+        </form.Initialize>
+      )
+
+      await user.type(screen.getByTestId("item-name"), "A")
+      expect((screen.getByTestId("item-name") as HTMLInputElement).value).toBe("FirstA")
+
+      await user.click(screen.getByTestId("submit"))
+      await waitFor(() => expect(submitHandler).toHaveBeenCalledWith({ items: [{ name: "FirstA" }] }))
     })
 
     it("remove() removes item at specified index", async () => {
