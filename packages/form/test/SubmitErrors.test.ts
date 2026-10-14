@@ -401,3 +401,58 @@ describe("submitErrors", () => {
     })
   })
 })
+
+describe("submitErrors kept while a schema form-level error hides them", () => {
+  it("falls back to the submit form-level error when rootErrorAtom is the only reader", async () => {
+    const refined = builder.refine((values) => values.email.endsWith(".io") ? undefined : "Use a .io address")
+    const atoms = FormAtoms.make({
+      runtime: Atom.runtime(Layer.empty),
+      formBuilder: refined,
+      onSubmit: () => Effect.fail(reject([{ path: "", message: "Could not save" }])),
+      submitErrors: toSubmitErrors
+    })
+    const registry = AtomRegistry.make()
+    registry.mount(atoms.stateAtom)
+    registry.mount(atoms.rootErrorAtom)
+    registry.set(atoms.initializeAtom, defaults)
+    const setEmail = atoms.getFieldAtoms<string>(atoms.fieldRefs.email).setValue
+
+    registry.set(atoms.submitAtom, undefined)
+    await settledSubmit(registry, atoms.submitAtom)
+    expect(registry.get(atoms.rootErrorAtom)).toEqual(Option.some("Could not save"))
+
+    registry.set(setEmail, "a@b.com")
+    registry.set(atoms.validateAtom, undefined)
+    await settledSubmit(registry, atoms.validateAtom)
+    expect(registry.get(atoms.rootErrorAtom)).toEqual(Option.some("Use a .io address"))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    registry.set(setEmail, "a@b.io")
+    registry.set(atoms.validateAtom, undefined)
+    await settledSubmit(registry, atoms.validateAtom)
+    expect(registry.get(atoms.rootErrorAtom)).toEqual(Option.some("Could not save"))
+  })
+})
+
+describe("submitErrors kept with no field mounted", () => {
+  it("keeps the rejection when only mountAtom reads it and a field mounts later", async () => {
+    const atoms = FormAtoms.make({
+      runtime: Atom.runtime(Layer.empty),
+      formBuilder: builder,
+      onSubmit: () => Effect.fail(reject([{ path: "slug", message: "Slug taken" }, { path: "", message: "Root" }])),
+      submitErrors: toSubmitErrors
+    })
+    const registry = AtomRegistry.make()
+    registry.mount(atoms.mountAtom)
+    registry.set(atoms.initializeAtom, defaults)
+    registry.set(atoms.submitAtom, undefined)
+    await settledSubmit(registry, atoms.submitAtom)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const error = atoms.getFieldAtoms<unknown>(atoms.fieldRefs.slug).error
+    registry.mount(error)
+    expect(registry.get(error)).toEqual(Option.some("Slug taken"))
+    registry.mount(atoms.rootErrorAtom)
+    expect(registry.get(atoms.rootErrorAtom)).toEqual(Option.some("Root"))
+  })
+})

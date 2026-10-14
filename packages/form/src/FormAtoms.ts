@@ -258,7 +258,11 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
   const submitErrorsAtom = Atom.make<ReadonlyMap<string, SubmitErrorEntry>>(new Map()).pipe(Atom.setIdleTTL(0))
 
   const rootErrorAtom = Atom.readable((get) => {
-    const entry = get(errorsAtom).get("") ?? get(submitErrorsAtom).get("")
+    // Both stores are read on every build so the submit store stays a dependency
+    // while a schema error hides it. An unread node with no TTL is swept.
+    const schemaEntry = get(errorsAtom).get("")
+    const submitEntry = get(submitErrorsAtom).get("")
+    const entry = schemaEntry ?? submitEntry
     return entry ? Option.some(entry.message) : Option.none<string>()
   }).pipe(Atom.setIdleTTL(0))
 
@@ -434,6 +438,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
 
       const livePerFieldError = Option.flatMap(AsyncResult.error(validationResult), Validation.extractFirstError)
 
+      // Read before branching, so a live error that hides the submit error does
+      // not leave the submit store without readers and let it be swept.
+      const submitError = get(submitErrorsAtom).get(fieldPath)
       const isStoredErrorShown = Option.isSome(storedError) && !(storedError.value.source === "field" &&
         (AsyncResult.isSuccess(validationResult) || AsyncResult.isWaiting(validationResult)))
 
@@ -442,11 +449,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
         validationError = livePerFieldError
       } else if (isStoredErrorShown) {
         validationError = Option.map(storedError, (entry) => entry.message)
-      } else {
-        const submitError = get(submitErrorsAtom).get(fieldPath)
-        if (submitError !== undefined && Equal.equals(get(valueAtom), submitError.value)) {
-          validationError = Option.some(submitError.message)
-        }
+      } else if (submitError !== undefined && Equal.equals(get(valueAtom), submitError.value)) {
+        validationError = Option.some(submitError.message)
       }
 
       const validationCount = get(validationCountAtom)

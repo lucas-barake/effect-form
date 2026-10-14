@@ -168,3 +168,49 @@ describe("submitErrors with FormReact", () => {
     })
   })
 })
+
+describe("submitErrors kept while no field reads them", () => {
+  it("shows the rejection once the field returns to the rejected value after an in-flight edit hid it", async () => {
+    const user = userEvent.setup()
+    let failSubmit: (() => void) | undefined
+    const strictBuilder = FormBuilder.empty.addField(
+      "slug",
+      Schema.String.pipe(Schema.check(Schema.isMinLength(3, { message: "Too short" })))
+    )
+    const form = FormReact.make(strictBuilder, {
+      fields: { slug: makeInput("slug") },
+      mode: { validation: "onChange" },
+      onSubmit: () =>
+        Effect.callback<void, SlugTaken>((resume) => {
+          failSubmit = () => resume(Effect.fail(new SlugTaken()))
+        }),
+      submitErrors: () => [{ path: "slug", message: "This slug is already in use." }]
+    })
+    const SubmitButton = () => {
+      const submit = useAtomSet(form.submit)
+      return <button onClick={() => submit()} data-testid="submit">Submit</button>
+    }
+    const registry = AtomRegistry.make()
+    render(
+      <RegistryContext.Provider value={registry}>
+        <form.Initialize defaultValues={{ slug: "taken" }}>
+          <form.slug />
+          <SubmitButton />
+        </form.Initialize>
+      </RegistryContext.Provider>
+    )
+
+    await user.click(screen.getByTestId("submit"))
+    await waitFor(() => expect(failSubmit).toBeDefined())
+    await user.clear(screen.getByTestId("slug"))
+    await user.type(screen.getByTestId("slug"), "ta")
+    expect(await screen.findByTestId("slug-error")).toHaveTextContent("Too short")
+
+    failSubmit?.()
+    await waitFor(() => expect(AsyncResult.isFailure(registry.get(form.submit))).toBe(true))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await user.type(screen.getByTestId("slug"), "ken")
+    await waitFor(() => expect(screen.getByTestId("slug-error")).toHaveTextContent("This slug is already in use."))
+  })
+})
