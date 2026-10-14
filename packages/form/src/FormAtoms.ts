@@ -516,7 +516,11 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     }
   })
 
+  // Reusing the recorded key object lets the family hit its cached hash and
+  // the identity check instead of hashing and comparing a fresh key structurally.
   const getOrCreateFieldAtoms = (fieldPath: string, schema: Schema.Top): FieldAtoms => {
+    const recorded = fieldAtomsKeys.get(fieldPath)
+    if (recorded !== undefined && recorded.schema === schema) return fieldAtomsFamily(recorded)
     const key: FieldFamilyKey = { path: fieldPath, schema }
     fieldAtomsKeys.set(fieldPath, key)
     return fieldAtomsFamily(key)
@@ -531,11 +535,12 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     }
   }
 
-  const itemFieldKeysByArrayKey = new Map<string, ReadonlySet<string>>()
+  const itemFieldDefsByArrayKey = new Map<string, ReadonlyArray<Field.FieldDef<string, Schema.Top>>>()
   for (const [key, def] of Object.entries(fields)) {
     if (!Field.isArrayFieldDef(def)) continue
     const itemFieldDefs = Field.extractStructFieldDefs(def.itemSchema)
-    if (itemFieldDefs) itemFieldKeysByArrayKey.set(key, new Set(itemFieldDefs.map((itemDef) => itemDef.key)))
+    if (!itemFieldDefs) continue
+    itemFieldDefsByArrayKey.set(key, itemFieldDefs)
   }
 
   const ITEM_FIELD_PATH = /^(.*)\[(0|[1-9]\d*)\]\.([^.[\]]*)$/
@@ -545,7 +550,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     const match = ITEM_FIELD_PATH.exec(path)
     if (match === null) return false
     const [, arrayKey, index, itemKey] = match as unknown as [string, string, string, string]
-    if (itemFieldKeysByArrayKey.get(arrayKey)?.has(itemKey) !== true) return false
+    if (itemFieldDefsByArrayKey.get(arrayKey)?.some((itemDef) => itemDef.key === itemKey) !== true) return false
     const items: unknown = getNestedValue(values, arrayKey)
     return Array.isArray(items) && Number(index) < items.length
   }
@@ -988,11 +993,10 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
       const error = get(getOrCreateFieldAtoms(path, schema).displayErrorAtom)
       if (Option.isSome(error)) fieldErrors.set(path as Field.FieldPath<TFields>, error.value)
     }
-    for (const [key, def] of Object.entries(fields)) {
-      addDisplayedError(key, fieldSchemasByKey.get(key)!)
-      if (!Field.isArrayFieldDef(def)) continue
-      const itemFieldDefs = Field.extractStructFieldDefs(def.itemSchema)
-      if (!itemFieldDefs) continue
+    for (const [key, schema] of fieldSchemasByKey) {
+      addDisplayedError(key, schema)
+      const itemFieldDefs = itemFieldDefsByArrayKey.get(key)
+      if (itemFieldDefs === undefined) continue
       const items = getNestedValue(state.value.values, key) as ReadonlyArray<unknown> | undefined
       for (let index = 0; index < (items?.length ?? 0); index++) {
         for (const itemDef of itemFieldDefs) {
