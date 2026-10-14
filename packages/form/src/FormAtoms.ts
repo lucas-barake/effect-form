@@ -726,22 +726,20 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
     }
   }
 
-  const clearSessionResults = (get: Atom.FnContext) => {
+  const clearValidationResults = (get: Atom.FnContext) => {
     get.set(errorsAtom, new Map())
     resetValidationAtoms(get)
-    get.set(submitAtom, Atom.Reset)
-    get.set(validateAtom, Atom.Reset)
   }
 
   // Registry nodes outlive an unmount until a scheduled sweep, so a form that
   // remounts in the same registry still holds the previous visit's validation
   // results and subscriptions. Writing the fresh state through a batched
   // fnSync lets those subscribers see a fully updated graph, and clearing the
-  // results drops anything computed against the old state.
+  // validation results drops anything computed against the old state.
   const initializeAtom = Atom.fnSync<Field.EncodedFromFields<TFields>>()(
     (defaultValues, get) => {
       get.set(stateAtom, Option.some(operations.createInitialState(defaultValues)))
-      clearSessionResults(get)
+      clearValidationResults(get)
     },
     { initialValue: undefined as void }
   ).pipe(Atom.setIdleTTL(0))
@@ -751,7 +749,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E, SubmitArgs = v
       const state = get(stateAtom)
       if (Option.isNone(state)) return
       get.set(stateAtom, Option.some(operations.createResetState(state.value)))
-      clearSessionResults(get)
+      clearValidationResults(get)
+      get.set(submitAtom, Atom.Reset)
+      get.set(validateAtom, Atom.Reset)
     },
     { initialValue: undefined as void }
   ).pipe(Atom.setIdleTTL(0))
