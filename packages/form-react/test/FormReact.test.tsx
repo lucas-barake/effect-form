@@ -77,6 +77,9 @@ describe("FormReact.make", () => {
 
       const firstVisit = render(<Page />)
       await user.click(screen.getByTestId("submit"))
+      await waitFor(() =>
+        expect(screen.getByTestId("error")).toHaveTextContent("Expected a value with a length of at least 1")
+      )
       await user.type(screen.getByTestId("text-input"), "a")
       await user.clear(screen.getByTestId("text-input"))
       await user.type(screen.getByTestId("text-input"), "abc")
