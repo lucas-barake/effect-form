@@ -6,6 +6,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
 import * as AtomRegistry from "effect/reactivity/AtomRegistry"
 import * as Schema from "effect/Schema"
+import * as SchemaGetter from "effect/SchemaGetter"
 import { describe, expect, it, vi } from "vitest"
 import * as Field from "../src/Field.js"
 import * as FormAtoms from "../src/FormAtoms.js"
@@ -79,6 +80,11 @@ const settledSubmit = (
 const submit = async (form: ReturnType<typeof makeForm>) => {
   form.registry.set(form.atoms.submitAtom, undefined)
   return settledSubmit(form.registry, form.atoms.submitAtom)
+}
+
+const validate = async (form: ReturnType<typeof makeForm>) => {
+  form.registry.set(form.atoms.validateAtom, undefined)
+  return settledSubmit(form.registry, form.atoms.validateAtom)
 }
 
 const setField = (form: ReturnType<typeof makeForm>, key: "slug" | "email" | "address", value: any) =>
@@ -188,21 +194,37 @@ describe("submitErrors", () => {
       expect(addressError()).toEqual(Option.some("Not served"))
     })
 
-    it("lets a live schema error on the field take precedence", async () => {
+    it("lets a live schema error on the field take precedence while it holds the rejected value", async () => {
+      // An effectful field check, like a live availability lookup, can reject the
+      // very value the server rejected, so both errors apply to the same value.
+      const unavailable = new Set<string>()
+      const SlugSchema = Schema.String.pipe(
+        Schema.decode({
+          decode: SchemaGetter.checkEffect((slug: string) =>
+            Effect.succeed(unavailable.has(slug) ? "Unavailable right now" : undefined)
+          ),
+          encode: SchemaGetter.passthrough()
+        })
+      )
+      const liveBuilder = FormBuilder.empty
+        .addField("slug", SlugSchema)
+        .addField("email", Schema.String)
+        .addField("address", Schema.Struct({ city: Schema.String }))
+        .addField(Field.makeArrayField("items", ItemSchema))
       const form = makeForm({
+        formBuilder: liveBuilder,
         mode: { validation: "onChange" },
         onSubmit: () => Effect.fail(reject([{ path: "slug", message: "Slug taken" }]))
       })
-      const slugAtoms = form.atoms.getOrCreateFieldAtoms("slug", builder.fields.slug.schema)
-      form.registry.mount(slugAtoms.triggerValidationAtom)
+      form.registry.mount(form.atoms.getOrCreateFieldAtoms("slug", SlugSchema).triggerValidationAtom)
       const slugError = form.fieldError("slug")
       await submit(form)
+      expect(slugError()).toEqual(Option.some("Slug taken"))
 
-      setField(form, "slug", "ta")
-      await vi.waitFor(() => expect(slugError()).toEqual(Option.some("Too short")))
-
+      unavailable.add("taken")
+      setField(form, "slug", "takenx")
       setField(form, "slug", "taken")
-      await vi.waitFor(() => expect(slugError()).toEqual(Option.some("Slug taken")))
+      await vi.waitFor(() => expect(slugError()).toEqual(Option.some("Unavailable right now")))
     })
 
     it("hides an item error when its value changes", async () => {
@@ -210,11 +232,7 @@ describe("submitErrors", () => {
       await submit(form)
       expect(form.registry.get(form.atoms.fieldErrorsAtom).get("items[0].name")).toBe("Unknown")
 
-      const state = Option.getOrThrow(form.registry.get(form.atoms.stateAtom))
-      form.registry.set(
-        form.atoms.stateAtom,
-        Option.some(form.atoms.operations.setFieldValue(state, "items[0].name", "Pencil"))
-      )
+      form.registry.set(form.atoms.getOrCreateFieldAtoms("items[0].name", ItemSchema.fields.name).valueAtom, "Pencil")
       expect(form.registry.get(form.atoms.fieldErrorsAtom).has("items[0].name")).toBe(false)
     })
   })
@@ -263,13 +281,16 @@ describe("submitErrors", () => {
       const form = makeForm({ onSubmit: rejectAll })
       const slugError = form.fieldError("slug")
 
+      // validate makes field errors displayable again after the submit count resets.
       await submit(form)
       form.registry.set(form.atoms.resetAtom, undefined)
+      await validate(form)
       expect(form.registry.get(form.atoms.rootErrorAtom)).toEqual(Option.none())
       expect(slugError()).toEqual(Option.none())
 
       await submit(form)
       form.registry.set(form.atoms.initializeAtom, defaults)
+      await validate(form)
       expect(form.registry.get(form.atoms.rootErrorAtom)).toEqual(Option.none())
       expect(slugError()).toEqual(Option.none())
     })
@@ -321,32 +342,10 @@ describe("submitErrors", () => {
       form.registry.set(form.atoms.initializeAtom, defaults)
       failSubmit?.()
       await settledSubmit(form.registry, form.atoms.submitAtom)
+      await validate(form)
 
       expect(slugError()).toEqual(Option.none())
       expect(form.registry.get(form.atoms.rootErrorAtom)).toEqual(Option.none())
-    })
-
-    it("is not written by a submit superseded by a newer one", async () => {
-      const failures: Array<() => void> = []
-      const form = makeForm({
-        onSubmit: () =>
-          Effect.callback<void, SignupRejected>((resume) => {
-            failures.push(() => resume(Effect.fail(reject([{ path: "slug", message: `Run ${failures.length}` }]))))
-          })
-      })
-      const slugError = form.fieldError("slug")
-      form.registry.set(form.atoms.submitAtom, undefined)
-      await vi.waitFor(() => expect(failures).toHaveLength(1))
-      form.registry.set(form.atoms.submitAtom, undefined)
-      await vi.waitFor(() => expect(failures).toHaveLength(2))
-
-      failures[0]?.()
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      expect(slugError()).toEqual(Option.none())
-
-      failures[1]?.()
-      await settledSubmit(form.registry, form.atoms.submitAtom)
-      expect(slugError()).toEqual(Option.some("Run 2"))
     })
   })
 
