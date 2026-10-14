@@ -469,6 +469,22 @@ describe("FormReact.make", () => {
       expect((screen.getByTestId("item-name") as HTMLInputElement).value).toBe("FirstA")
     })
 
+    it("fails at make when the item's encoded keys differ from its decoded keys", () => {
+      const Item = Schema.Struct({ full_name: Schema.String }).pipe(
+        Schema.decodeTo(Schema.Struct({ name: Schema.String }), {
+          decode: SchemaGetter.transform((e: { readonly full_name: string }) => ({ name: e.full_name })),
+          encode: SchemaGetter.transform((d: { readonly name: string }) => ({ full_name: d.name }))
+        })
+      )
+      const Input: FormReact.FieldComponent<string> = () => null
+      expect(() =>
+        FormReact.make(FormBuilder.empty.addField(Field.makeArrayField("items", Item)), {
+          fields: { items: { full_name: Input } },
+          onSubmit: () => {}
+        })
+      ).toThrow("Array item fields must have the same keys when encoded and decoded")
+    })
+
     it("remove() removes item at specified index", async () => {
       const user = userEvent.setup()
 
