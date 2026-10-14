@@ -55,6 +55,25 @@ export type DecodedFromFields<T extends FieldsRecord,> = {
     : never
 }
 
+type StructFieldsFromSchema<S,> = S extends Schema.Struct<infer Fields> ? Fields
+  : S extends { readonly from: infer From } ? StructFieldsFromSchema<From>
+  : never
+
+type ArrayItemPaths<K extends string, S,> = [StructFieldsFromSchema<S>] extends [never] ? never
+  : `${K}[${number}].${Extract<keyof StructFieldsFromSchema<S>, string>}`
+
+/**
+ * A path a field component reads its error from: a top-level field key, an
+ * array field key, or a struct property of an array item (`items[0].name`).
+ * `""` is the form-level error, shown by `rootError`.
+ */
+export type FieldPath<TFields extends FieldsRecord,> =
+  | ""
+  | {
+    readonly [K in keyof TFields & string]: TFields[K] extends ArrayFieldDef<any, infer S> ? K | ArrayItemPaths<K, S>
+      : K
+  }[keyof TFields & string]
+
 export const getDefaultFromSchema = (schema: Schema.Top): unknown => {
   const ast = AST.toEncoded(schema.ast)
   switch (ast._tag) {
@@ -113,7 +132,21 @@ export const createTouchedRecord = (fields: FieldsRecord, value: boolean): Recor
   return result
 }
 
+// Field atoms are keyed by schema identity, so every caller must get the same
+// sub-field schema objects for an item schema. Otherwise the field component
+// and the form's error summary would read separate validation results.
+const structFieldDefsCache = new WeakMap<Schema.Top, ReadonlyArray<FieldDef<string, Schema.Top>> | undefined>()
+
 export const extractStructFieldDefs = (
+  schema: Schema.Top
+): ReadonlyArray<FieldDef<string, Schema.Top>> | undefined => {
+  if (structFieldDefsCache.has(schema)) return structFieldDefsCache.get(schema)
+  const defs = computeStructFieldDefs(schema)
+  structFieldDefsCache.set(schema, defs)
+  return defs
+}
+
+const computeStructFieldDefs = (
   schema: Schema.Top
 ): ReadonlyArray<FieldDef<string, Schema.Top>> | undefined => {
   const unwrapObjects = (ast: AST.AST): AST.Objects | undefined => {
