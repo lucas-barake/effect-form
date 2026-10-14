@@ -146,14 +146,12 @@ export const extractStructFieldDefs = (
   const decoded = unwrapObjects(schema.ast, AST.toType)
   if (!decoded) return undefined
 
-  // Item fields read encoded values by key while schema errors use decoded keys,
-  // so a struct that renames keys on decode would show values and errors apart.
   const decodedKeys = propertyNames(decoded)
   const encoded = unwrapObjects(schema.ast, AST.toEncoded)
   const encodedKeys = encoded ? propertyNames(encoded) : undefined
-  if (encodedKeys?.length !== decodedKeys.length || !decodedKeys.every((key) => encodedKeys.includes(key))) {
+  if (!encodedKeys || !decodedKeys.every((key) => encodedKeys.includes(key))) {
     throw new Error(
-      "Array item fields must have the same keys when encoded and decoded, but " +
+      "Every decoded key of an array item must also be an encoded key, but " +
         (encodedKeys ? `the encoded keys are [${encodedKeys.join(", ")}]` : "the encoded item is not a struct") +
         ` and the decoded keys are [${decodedKeys.join(", ")}].`
     )
