@@ -55,17 +55,20 @@ export type DecodedFromFields<T extends FieldsRecord,> = {
     : never
 }
 
+// Mirrors Field.extractStructFieldDefs, which reads item sub-fields from the
+// decoded side of the item schema and unwraps suspended schemas.
 type StructFieldsFromSchema<S,> = S extends Schema.Struct<infer Fields> ? Fields
-  : S extends { readonly from: infer From } ? StructFieldsFromSchema<From>
+  : S extends Schema.suspend<infer Inner> ? StructFieldsFromSchema<Inner>
+  : S extends Schema.brand<infer Inner, any> ? StructFieldsFromSchema<Inner>
+  : S extends { readonly to: infer To } ? StructFieldsFromSchema<To>
   : never
 
 type ArrayItemPaths<K extends string, S,> = [StructFieldsFromSchema<S>] extends [never] ? never
   : `${K}[${number}].${Extract<keyof StructFieldsFromSchema<S>, string>}`
 
 /**
- * A path a field component reads its error from: a top-level field key, an
- * array field key, or a struct property of an array item (`items[0].name`).
- * `""` is the form-level error, shown by `rootError`.
+ * Only paths a field component reads its error from. `""` is the form-level
+ * error, shown by `rootError`.
  */
 export type FieldPath<TFields extends FieldsRecord,> =
   | ""

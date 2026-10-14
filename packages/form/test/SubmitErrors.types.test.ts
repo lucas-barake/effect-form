@@ -2,6 +2,7 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Atom from "effect/reactivity/Atom"
 import * as Schema from "effect/Schema"
+import * as SchemaTransformation from "effect/SchemaTransformation"
 import { describe, expectTypeOf, it } from "vitest"
 import * as Field from "../src/Field.js"
 import * as FormAtoms from "../src/FormAtoms.js"
@@ -134,5 +135,43 @@ describe("submitErrors", () => {
       // @ts-expect-error E is fixed to never before onSubmit is checked, so its failure no longer fits
       onSubmit: (_: void, { decoded }) => decoded.slug === "taken" ? Effect.fail(new SlugTaken()) : Effect.void
     })
+  })
+})
+
+const branded = FormBuilder.empty.addField(
+  Field.makeArrayField("items", Schema.Struct({ name: Schema.String }).pipe(Schema.brand("Item")))
+)
+const suspended = FormBuilder.empty.addField(
+  Field.makeArrayField("items", Schema.suspend(() => Schema.Struct({ name: Schema.String })))
+)
+class OpaqueItem extends Schema.Opaque<OpaqueItem>()(Schema.Struct({ name: Schema.String })) {}
+const opaque = FormBuilder.empty.addField(Field.makeArrayField("items", OpaqueItem))
+
+// The runtime path check and the bindings read item sub-fields from the decoded
+// side of the item schema, so the encoded-only key is not a field.
+const transformed = FormBuilder.empty.addField(
+  Field.makeArrayField(
+    "items",
+    Schema.Struct({ full_name: Schema.String }).pipe(Schema.decodeTo(
+      Schema.Struct({ name: Schema.String }),
+      SchemaTransformation.transform({
+        decode: (e: { readonly full_name: string }) => ({ name: e.full_name }),
+        encode: (d: { readonly name: string }) => ({ full_name: d.name })
+      })
+    ))
+  )
+)
+
+describe("FieldPath for wrapped struct items", () => {
+  it("includes item sub-field paths the bindings render", () => {
+    expectTypeOf<"items[0].name">().toExtend<Field.FieldPath<FieldsOf<typeof branded>>>()
+    expectTypeOf<"items[0].name">().toExtend<Field.FieldPath<FieldsOf<typeof suspended>>>()
+    expectTypeOf<"items[0].name">().toExtend<Field.FieldPath<FieldsOf<typeof opaque>>>()
+  })
+  it("matches the sub-fields the runtime path check accepts for a transformed item", () => {
+    expectTypeOf<"items[0].name">().toExtend<Field.FieldPath<FieldsOf<typeof transformed>>>()
+    // @ts-expect-error the encoded key full_name is not an item sub-field at runtime
+    const encodedKey: Field.FieldPath<FieldsOf<typeof transformed>> = "items[0].full_name"
+    void encodedKey
   })
 })

@@ -456,3 +456,45 @@ describe("submitErrors kept with no field mounted", () => {
     expect(registry.get(atoms.rootErrorAtom)).toEqual(Option.some("Root"))
   })
 })
+
+describe("submitErrors with wrapped struct items", () => {
+  const submitAndReadFieldErrors = async (
+    atoms:
+      & { readonly fieldErrorsAtom: Atom.Atom<ReadonlyMap<string, string>> }
+      & Pick<
+        FormAtoms.FormAtoms<any, never, void, SignupRejected>,
+        "initializeAtom" | "submitAtom"
+      >
+  ) => {
+    const registry = AtomRegistry.make()
+    registry.mount(atoms.fieldErrorsAtom)
+    registry.set(atoms.initializeAtom, { items: [{ name: "x" }] })
+    registry.set(atoms.submitAtom, undefined)
+    await settledSubmit(registry, atoms.submitAtom)
+    return [...registry.get(atoms.fieldErrorsAtom)]
+  }
+
+  it("accepts an item path for a branded item schema", async () => {
+    const atoms = FormAtoms.make({
+      runtime: Atom.runtime(Layer.empty),
+      formBuilder: FormBuilder.empty.addField(
+        Field.makeArrayField("items", Schema.Struct({ name: Schema.String }).pipe(Schema.brand("Item")))
+      ),
+      onSubmit: () => Effect.fail(reject([])),
+      submitErrors: () => [{ path: "items[0].name", message: "Bad" }]
+    })
+    expect(await submitAndReadFieldErrors(atoms)).toEqual([["items[0].name", "Bad"]])
+  })
+
+  it("accepts an item path for a suspended item schema", async () => {
+    const atoms = FormAtoms.make({
+      runtime: Atom.runtime(Layer.empty),
+      formBuilder: FormBuilder.empty.addField(
+        Field.makeArrayField("items", Schema.suspend(() => Schema.Struct({ name: Schema.String })))
+      ),
+      onSubmit: () => Effect.fail(reject([])),
+      submitErrors: () => [{ path: "items[0].name", message: "Bad" }]
+    })
+    expect(await submitAndReadFieldErrors(atoms)).toEqual([["items[0].name", "Bad"]])
+  })
+})
