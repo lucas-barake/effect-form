@@ -456,7 +456,81 @@ function FormWithSideEffects({ onClose }: { onClose: () => void }) {
 }
 ```
 
-## 15. Custom Submit Arguments
+## 15. Mapping Submit Failures to Field Errors
+
+`onSubmit` only runs once the values pass the schema, so a server rejection arrives as the failure of `onSubmit`. `submitErrors` maps that failure to field errors, which show up through the same field components, `getFieldAtoms(ref).error` and `rootError` as schema errors:
+
+```tsx
+class SlugTaken extends Schema.TaggedError<SlugTaken>()("SlugTaken", {}) {}
+
+class UpstreamValidation extends Schema.TaggedError<UpstreamValidation>()("UpstreamValidation", {
+  issues: Schema.Array(Schema.Struct({ field: Schema.Literals(["slug", "title"]), message: Schema.String }))
+}) {}
+
+class UnknownProduct extends Schema.TaggedError<UnknownProduct>()("UnknownProduct", { index: Schema.Number }) {}
+
+const siteForm = FormReact.make(siteFormBuilder, {
+  runtime,
+  fields: { slug: TextInput, title: TextInput, items: { name: TextInput } },
+  onSubmit: (_, { decoded }) => api.createSite(decoded),
+  submitErrors: (error) => {
+    switch (error._tag) {
+      case "SlugTaken":
+        return [{ path: "slug", message: "This slug is already in use." }]
+      case "UpstreamValidation":
+        return error.issues.map((issue) => ({ path: issue.field, message: issue.message }))
+      case "UnknownProduct":
+        return [{ path: `items[${error.index}].name`, message: "Unknown product" }]
+      default:
+        return [{ path: "", message: "Could not save" }]
+    }
+  }
+})
+```
+
+- `path` is `""` for the form-level error (shown by `rootError`), a field name, or a struct property of an array item such as `items[0].name`. A misspelled path, a nested struct path like `address.city`, and a plain `string` do not compile, so narrow server field names to the form's fields first. A path that matches no submitted field at runtime fails the submit with a defect instead of being dropped.
+- `error` is inferred from `onSubmit`. TypeScript infers left to right, so declare `submitErrors` after `onSubmit`. In the other order `error` is `never` and the form fails to compile.
+- The mapping runs only when the Effect returned by `onSubmit` fails with a typed error. Schema errors, defects and interruptions skip it, and so does a rejected Promise, which is a defect. A `submitErrors` that throws is a defect too.
+- `form.submit` still fails with the original error, so notifications and navigation can keep reading the submit result. A failed submit does not update `lastSubmittedValues`.
+- A field's submit error shows only while the field holds the value that was submitted. Edit the field and the error hides. Type the rejected value again and it comes back. A schema error on the field takes precedence.
+- Submit errors last until the next submit, `reset` or re-initialization, and they survive `validate`. `revertToLastSubmit` and `setValues` clear the form-level one. `rootError` shows a schema form-level error first and falls back to the submit one.
+
+### Running an Existing Mutation Atom
+
+If the request already lives in a mutation atom, run it from `onSubmit` with `get.setResult`:
+
+```ts
+const createSiteAtom = runtime.fn((input: SiteInput) => api.createSite(input))
+
+const siteForm = FormReact.make(siteFormBuilder, {
+  runtime,
+  fields: { slug: TextInput, title: TextInput, items: { name: TextInput } },
+  onSubmit: (_, { decoded, get }) => get.setResult(createSiteAtom, decoded),
+  submitErrors: (error) => error._tag === "SlugTaken" ? [{ path: "slug", message: "This slug is already in use." }] : []
+})
+```
+
+`get.setResult` writes `decoded` to `createSiteAtom`, so everything watching that atom sees the run, and returns an Effect that fails with the atom's error, which is what `submitErrors` receives. Interrupting the submit, for example by submitting again, stops waiting for the mutation, but a mutation atom that something else keeps mounted runs to completion.
+
+### Error Summaries
+
+`form.fieldErrors` lists every error the form's fields currently display, keyed by path in field order, array item paths included:
+
+```tsx
+function ErrorSummary() {
+  const errors = useAtomValue(siteForm.fieldErrors)
+  if (errors.size === 0) return null
+  return (
+    <ul>
+      {[...errors].map(([path, message]) => <li key={path}>{message}</li>)}
+    </ul>
+  )
+}
+```
+
+It follows the same rules as the fields: submit errors appear only while their value is unchanged, and errors stay hidden until the validation mode shows them. The form-level error is in `rootError`.
+
+## 16. Custom Submit Arguments
 
 Pass custom arguments to `onSubmit` by annotating the first parameter:
 
@@ -485,7 +559,7 @@ The `onSubmit` callback receives:
 
 > **Note:** Auto-submit mode is only available when `args` is `void`. TypeScript will prevent using `autoSubmit: true` with custom arguments since there's no way to provide them automatically.
 
-## 16. Reactivity (Query Invalidation)
+## 17. Reactivity (Query Invalidation)
 
 Invalidate reactive queries (`AtomRpc`, `AtomHttpApi`, etc.) after successful form submission using `reactivityKeys`:
 
@@ -506,7 +580,7 @@ const createUserForm = FormReact.make(formBuilder, {
 
 After a successful submit, all atoms registered with matching keys will rebuild. Invalidation does **not** fire on validation failure or `onSubmit` effect failure.
 
-## 17. Reusable Field Definitions
+## 18. Reusable Field Definitions
 
 For fields shared across multiple forms, use `Field.makeField` to define them once:
 
@@ -550,7 +624,7 @@ const billingForm = FormBuilder.empty
   .merge(addressFields)
 ```
 
-## 18. Persisting State Across Unmounts (KeepAlive)
+## 19. Persisting State Across Unmounts (KeepAlive)
 
 By default, form state is destroyed when `Initialize` unmounts. For multi-step wizards or conditional fields where you want state to persist, use `KeepAlive`:
 
@@ -602,7 +676,7 @@ function Wizard() {
 }
 ```
 
-## 19. Validate on Initialize
+## 20. Validate on Initialize
 
 Validate persisted or pre-filled default values on mount. Useful when restoring form state from local storage:
 
@@ -621,7 +695,7 @@ triggerValidate()
 
 Unlike `submit`, `validate` only runs schema validation and shows errors. It does not call `onSubmit`, bump `submitCount`, or store `lastSubmittedValues`.
 
-## 20. defaultValues Are Read Once
+## 21. defaultValues Are Read Once
 
 `Initialize` reads `defaultValues` on mount only — changing the prop on a mounted form is intentionally ignored (your users' in-progress edits are never clobbered by a re-render). To load new values into a live form, write them with `form.setValues`; to fully re-initialize (new initial values, cleared dirty/touched/submit state), remount `Initialize` with a `key`:
 
@@ -636,7 +710,7 @@ setValues(fetchedUser)
 </form.Initialize>
 ```
 
-> Remounting re-initializes because form state is disposed when `Initialize` unmounts — unless a `KeepAlive` is mounted (section 18), in which case the existing state survives and `defaultValues` is ignored on the next mount.
+> Remounting re-initializes because form state is disposed when `Initialize` unmounts — unless a `KeepAlive` is mounted (section 19), in which case the existing state survives and `defaultValues` is ignored on the next mount.
 
 ## Available Atoms
 
@@ -649,6 +723,7 @@ form.hasChangedSinceSubmit // Atom<boolean> - values differ from last submit
 form.lastSubmittedValues // Atom<Option<SubmittedValues>> - last submitted values
 form.submitCount // Atom<number> - number of submit attempts
 form.rootError // Atom<Option<string>> - root-level validation error (cross-field refinements without path)
+form.fieldErrors // Atom<ReadonlyMap<FieldPath, string>> - every displayed field error, array item paths included
 form.submit // AtomResultFn<SubmitArgs, A, E | SchemaError> - submit with .waiting, ._tag
 form.validate // AtomResultFn<void, void> - trigger schema validation without submitting
 form.validationCount // Atom<number> - number of validate() calls
