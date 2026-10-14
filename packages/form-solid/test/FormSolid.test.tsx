@@ -1,9 +1,10 @@
-import { useAtomSet, useAtomSubscribe } from "@effect/atom-solid"
+import { RegistryContext, useAtomSet, useAtomSubscribe } from "@effect/atom-solid"
 import { Field, FormBuilder, FormSolid } from "@lucas-barake/effect-form-solid"
 import { render, screen, waitFor } from "@solidjs/testing-library"
 import { userEvent } from "@testing-library/user-event"
 import * as Option from "effect/Option"
 import type * as Atom from "effect/reactivity/Atom"
+import * as AtomRegistry from "effect/reactivity/AtomRegistry"
 import * as Schema from "effect/Schema"
 import { describe, expect, it, vi } from "vitest"
 
@@ -46,6 +47,41 @@ describe("FormSolid.make", () => {
       ))
 
       expect(screen.getByTestId("text-input")).toHaveValue("John")
+    })
+
+    it("does not show a previous visit's validation error after remounting in the same registry", async () => {
+      const SlugField = Field.makeField("slug", Schema.String.pipe(Schema.check(Schema.isNonEmpty())))
+      const form = FormSolid.make(FormBuilder.empty.addField(SlugField), {
+        fields: { slug: TextInput },
+        onSubmit: () => {}
+      })
+      const SubmitButton = makeSubmitButton(form.submit, undefined)
+      const registry = AtomRegistry.make()
+      const Page = () => (
+        <RegistryContext.Provider value={registry}>
+          <form.Initialize defaultValues={{ slug: "" }}>
+            <form.slug />
+            <SubmitButton />
+          </form.Initialize>
+        </RegistryContext.Provider>
+      )
+      const user = userEvent.setup()
+
+      const firstVisit = render(() => <Page />)
+      await user.click(screen.getByTestId("submit"))
+      await user.type(screen.getByTestId("text-input"), "a")
+      await user.clear(screen.getByTestId("text-input"))
+      await user.type(screen.getByTestId("text-input"), "abc")
+      await user.click(screen.getByTestId("submit"))
+      await waitFor(() => expect(screen.queryByTestId("error")).not.toBeInTheDocument())
+      firstVisit.unmount()
+
+      render(() => <Page />)
+      await user.type(screen.getByTestId("text-input"), "my-slug")
+      await user.click(screen.getByTestId("submit"))
+
+      await waitFor(() => expect(registry.get(form.submitCount)).toBe(1))
+      expect(screen.queryByTestId("error")).not.toBeInTheDocument()
     })
   })
 

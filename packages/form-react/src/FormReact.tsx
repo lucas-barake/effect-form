@@ -420,6 +420,7 @@ export const make: {
     getFieldAtoms,
     getOrCreateFieldAtoms,
     hasChangedSinceSubmitAtom,
+    initializeAtom,
     isDirtyAtom,
     keepAliveActiveAtom,
     lastSubmittedValuesAtom,
@@ -445,14 +446,14 @@ export const make: {
   }> = ({ children, defaultValues, validateOnInit }) => {
     const registry = React.useContext(RegistryContext)
     const state = useAtomValue(stateAtom)
-    const setFormState = useAtomSet(stateAtom)
+    const initialize = useAtomSet(initializeAtom)
     const triggerValidate = useAtomSet(validateAtom)
     const [isInitialized, setIsInitialized] = React.useState(false)
 
     React.useEffect(() => {
       const shouldInit = !registry.get(keepAliveActiveAtom) || Option.isNone(registry.get(stateAtom))
       if (shouldInit) {
-        setFormState(Option.some(operations.createInitialState(defaultValues)))
+        initialize(defaultValues)
         if (validateOnInit) {
           triggerValidate()
         }
