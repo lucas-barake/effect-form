@@ -859,6 +859,39 @@ describe("FormAtoms", () => {
   })
 
   describe("stateAtom", () => {
+    it("submits a form whose state was seeded through registry initialValues", async () => {
+      const onSubmit = vi.fn()
+      const atoms = FormAtoms.make({ runtime: Atom.runtime(Layer.empty), formBuilder: makeTestForm(), onSubmit })
+      const initialState = Option.some(atoms.operations.createInitialState({ name: "John", email: "j@x.io" }))
+      const registry = AtomRegistry.make({ initialValues: [[atoms.stateAtom, initialState]] })
+      registry.mount(atoms.stateAtom)
+      registry.mount(atoms.submitAtom)
+
+      registry.set(atoms.submitAtom, undefined)
+      await vi.waitFor(() => expect(AsyncResult.isWaiting(registry.get(atoms.submitAtom))).toBe(false))
+
+      expect(AsyncResult.isSuccess(registry.get(atoms.submitAtom))).toBe(true)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(Option.getOrThrow(registry.get(atoms.stateAtom)).submitCount).toBe(1)
+    })
+
+    it("validates a form whose state was seeded through registry initialValues", async () => {
+      const atoms = FormAtoms.make({
+        runtime: Atom.runtime(Layer.empty),
+        formBuilder: makeTestForm(),
+        onSubmit: () => {}
+      })
+      const initialState = Option.some(atoms.operations.createInitialState({ name: "John", email: "j@x.io" }))
+      const registry = AtomRegistry.make({ initialValues: [[atoms.stateAtom, initialState]] })
+      registry.mount(atoms.stateAtom)
+      registry.mount(atoms.validateAtom)
+
+      registry.set(atoms.validateAtom, undefined)
+      await vi.waitFor(() => expect(AsyncResult.isWaiting(registry.get(atoms.validateAtom))).toBe(false))
+
+      expect(Option.getOrThrow(registry.get(atoms.stateAtom)).validationCount).toBe(1)
+    })
+
     it("notifies a subscriber registered before the first read when stateAtom is written", () => {
       const atoms = FormAtoms.make({
         runtime: Atom.runtime(Layer.empty),
