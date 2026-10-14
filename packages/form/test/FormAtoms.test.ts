@@ -1935,6 +1935,40 @@ describe("FormAtoms", () => {
         expect(registry.get(atoms.errorsAtom).size).toBe(0)
         expect(Option.getOrThrow(registry.get(atoms.stateAtom)).submitCount).toBe(0)
       })
+
+      it("does not write the previous values' validation errors into the new session", async () => {
+        const { form, settleDecode } = makeGatedDecodeForm()
+        const atoms = FormAtoms.make({ runtime: Atom.runtime(Layer.empty), formBuilder: form, onSubmit: () => {} })
+        const registry = AtomRegistry.make()
+        registry.mount(atoms.stateAtom)
+        registry.mount(atoms.errorsAtom)
+        registry.mount(atoms.validateAtom)
+
+        registry.set(atoms.initializeAtom, { name: "Old" })
+        registry.set(atoms.validateAtom, undefined)
+        registry.set(atoms.initializeAtom, { name: "New" })
+        settleDecode("Name is taken")
+        await waitForSubmit(registry, atoms.validateAtom)
+
+        expect(registry.get(atoms.errorsAtom).size).toBe(0)
+        expect(Option.getOrThrow(registry.get(atoms.stateAtom)).validationCount).toBe(0)
+      })
+
+      it("does not count a validation of the previous values against the new session", async () => {
+        const { form, settleDecode } = makeGatedDecodeForm()
+        const atoms = FormAtoms.make({ runtime: Atom.runtime(Layer.empty), formBuilder: form, onSubmit: () => {} })
+        const registry = AtomRegistry.make()
+        registry.mount(atoms.stateAtom)
+        registry.mount(atoms.validateAtom)
+
+        registry.set(atoms.initializeAtom, { name: "Old" })
+        registry.set(atoms.validateAtom, undefined)
+        registry.set(atoms.initializeAtom, { name: "New" })
+        settleDecode(undefined)
+        await waitForSubmit(registry, atoms.validateAtom)
+
+        expect(Option.getOrThrow(registry.get(atoms.stateAtom)).validationCount).toBe(0)
+      })
     })
 
     it("does not record lastSubmittedValues when onSubmit itself fails", async () => {

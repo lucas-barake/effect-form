@@ -511,8 +511,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
         Effect.gen(function*() {
           const { id: sessionId, state } = get(sessionAtom)
           // A submit that settles after the form was initialized again must not
-          // write the previous session's errors, submit count, or last
-          // submitted values into the new one.
+          // write the previous session's results into the new one.
           const isSameSession = () => get(sessionAtom).id === sessionId
           if (Option.isNone(state)) {
             return yield* Effect.die(
@@ -583,7 +582,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     .fn<void>()(
       (_: void, get) =>
         Effect.gen(function*() {
-          const state = get(stateAtom)
+          const { id: sessionId, state } = get(sessionAtom)
+          const isSameSession = () => get(sessionAtom).id === sessionId
           if (Option.isNone(state)) return
           const values = state.value.values
           get.set(errorsAtom, new Map())
@@ -595,12 +595,13 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
             >,
             Effect.catchTag("SchemaError", (parseError) =>
               Effect.sync(() => {
+                if (!isSameSession()) return
                 const routedErrors = Validation.routeErrorsWithSource(parseError)
                 get.set(errorsAtom, routedErrors)
               }))
           )
           const currentState = get(stateAtom)
-          if (Option.isSome(currentState)) {
+          if (Option.isSome(currentState) && isSameSession()) {
             get.set(
               stateAtom,
               Option.some({
