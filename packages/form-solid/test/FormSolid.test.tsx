@@ -98,6 +98,38 @@ describe("FormSolid.make", () => {
     })
   })
 
+  describe("auto-submit", () => {
+    it("does NOT auto-submit the default values when remounting in the same registry", async () => {
+      const user = userEvent.setup()
+      const submitHandler = vi.fn()
+
+      const form = FormSolid.make(FormBuilder.empty.addField(Field.makeField("name", Schema.String)), {
+        fields: { name: TextInput },
+        mode: { validation: "onChange", autoSubmit: true },
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded)
+      })
+      const registry = AtomRegistry.make()
+      const Page = () => (
+        <RegistryContext.Provider value={registry}>
+          <form.Initialize defaultValues={{ name: "Initial" }}>
+            <form.name />
+          </form.Initialize>
+        </RegistryContext.Provider>
+      )
+
+      const firstVisit = render(() => <Page />)
+      await user.type(screen.getByTestId("text-input"), "!")
+      await waitFor(() => expect(submitHandler).toHaveBeenLastCalledWith({ name: "Initial!" }))
+      const submitsBeforeLeaving = submitHandler.mock.calls.length
+      firstVisit.unmount()
+
+      render(() => <Page />)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(submitHandler).toHaveBeenCalledTimes(submitsBeforeLeaving)
+    })
+  })
+
   describe("Field Component", () => {
     it("updates value on change", async () => {
       const user = userEvent.setup()

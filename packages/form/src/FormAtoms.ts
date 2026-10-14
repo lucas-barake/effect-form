@@ -726,6 +726,8 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
     }
   }
 
+  const initializationCountAtom = Atom.make(0).pipe(Atom.setIdleTTL(0))
+
   const clearValidationResults = (get: Atom.FnContext) => {
     get.set(errorsAtom, new Map())
     resetValidationAtoms(get)
@@ -739,6 +741,7 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
   const initializeAtom = Atom.fnSync<Field.EncodedFromFields<TFields>>()(
     (defaultValues, get) => {
       get.set(stateAtom, Option.some(operations.createInitialState(defaultValues)))
+      get.set(initializationCountAtom, get(initializationCountAtom) + 1)
       clearValidationResults(get)
     },
     { initialValue: undefined as void }
@@ -880,6 +883,9 @@ export const make = <TFields extends Field.FieldsRecord, R, A, E = never, Submit
         : Atom.debounce(submitRequestAtom, autoSubmitDebounce)
 
       return Atom.readable((get) => {
+        // Rebuild on every initialization so a node kept from a previous mount
+        // does not treat the newly initialized values as an edit to submit.
+        get(initializationCountAtom)
         const initialState = get.once(stateAtom)
         let lastValues: unknown = Option.isSome(initialState)
           ? initialState.value.values

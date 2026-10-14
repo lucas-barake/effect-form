@@ -2491,6 +2491,37 @@ describe("FormReact.make", () => {
       expect(submitHandler).not.toHaveBeenCalled()
     })
 
+    it("does NOT auto-submit the default values when remounting in the same registry", async () => {
+      const user = userEvent.setup()
+      const submitHandler = vi.fn()
+
+      const form = FormReact.make(FormBuilder.empty.addField(NameField), {
+        runtime: createRuntime(),
+        fields: { name: DebounceTextInput },
+        mode: { validation: "onChange", autoSubmit: true },
+        onSubmit: (_: void, { decoded }) => submitHandler(decoded)
+      })
+      const registry = AtomRegistry.make()
+      const Page = () => (
+        <RegistryContext.Provider value={registry}>
+          <form.Initialize defaultValues={{ name: "Initial" }}>
+            <form.name />
+          </form.Initialize>
+        </RegistryContext.Provider>
+      )
+
+      const firstVisit = render(<Page />)
+      await user.type(screen.getByTestId("text-input"), "!")
+      await waitFor(() => expect(submitHandler).toHaveBeenLastCalledWith({ name: "Initial!" }))
+      const submitsBeforeLeaving = submitHandler.mock.calls.length
+      firstVisit.unmount()
+
+      render(<Page />)
+      await delay(50)
+
+      expect(submitHandler).toHaveBeenCalledTimes(submitsBeforeLeaving)
+    })
+
     it("auto-submits valid form data after debounce", async () => {
       const user = userEvent.setup()
       const submitHandler = vi.fn()
