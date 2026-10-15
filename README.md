@@ -130,6 +130,8 @@ function OrderPage() {
 }
 ```
 
+An item schema can transform values, but every decoded key must also be an encoded key. Item fields read encoded values by key while errors use decoded keys, so a schema that renames keys (for example with `Schema.encodeKeys`) or decodes from a non-struct such as a JSON string throws when the form is built. The encoded struct may have extra keys that decoding drops.
+
 ## 3. Validation Modes
 
 ```tsx

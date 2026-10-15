@@ -95,6 +95,13 @@ describe("Field", () => {
       )
     })
 
+    it("rejects an item schema built with encodeKeys", () => {
+      const renamed = Schema.Struct({ name: Schema.String }).pipe(Schema.encodeKeys({ name: "full_name" }))
+      expect(() => Field.extractStructFieldDefs(renamed)).toThrow(
+        "Every decoded key of an array item must also be an encoded key, but the encoded keys are [full_name] and the decoded keys are [name]."
+      )
+    })
+
     it("rejects an item schema that is not a struct when encoded", () => {
       const fromJson = Schema.fromJsonString(Schema.Struct({ name: Schema.String }))
       expect(() => Field.extractStructFieldDefs(fromJson)).toThrow(
