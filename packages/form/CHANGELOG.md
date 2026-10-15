@@ -1,5 +1,19 @@
 # @lucas-barake/effect-form
 
+## 1.1.0
+
+### Minor Changes
+
+- [#114](https://github.com/lucas-barake/effect-form/pull/114) [`e64bea9`](https://github.com/lucas-barake/effect-form/commit/e64bea9b7b222e4a17f421abe58fe33b693e42a8) Thanks [@lucas-barake](https://github.com/lucas-barake)! - `onSubmit` may now return a Promise. It is awaited and its resolved value becomes the submit result. A rejected Promise fails the submit as a defect and does not record `lastSubmittedValues`. Previously the Promise itself was treated as a successful result. When `onSubmit` returns a plain value or a Promise, the submit error type is now `SchemaError` instead of `unknown`, since a throw or rejection is a defect.
+
+  `Initialize` now initializes through the new core `initializeAtom`, which writes the initial state and clears errors and per-field validation results. This fixes a stale schema error that could appear after a form remounted in a long-lived registry. Submit and validate results are left as they are. Auto-submit no longer submits the default values when a form remounts in the same registry. A submit or `validate` still in flight when `Initialize` runs again no longer writes its errors, counts, or last submitted values into the newly initialized form.
+
+- [#116](https://github.com/lucas-barake/effect-form/pull/116) [`2d1d83f`](https://github.com/lucas-barake/effect-form/commit/2d1d83fb0674545fe018435aaf66b54d344cebd4) Thanks [@lucas-barake](https://github.com/lucas-barake)! - Add `submitErrors`, which maps a typed failure of `onSubmit` to field and form-level errors. Paths are typed by the new `Field.FieldPath`, so misspelled or nested paths do not compile. A field shows its submit error only while it holds the rejected value, and submit errors survive `validate` until the next submit, `reset` or re-initialization. `revertToLastSubmit` and `setValues` clear the form-level one. Forms also expose a read-only `fieldErrors` atom (`fieldErrorsAtom` in core) listing every displayed field error, array item paths included.
+
+### Patch Changes
+
+- [#118](https://github.com/lucas-barake/effect-form/pull/118) [`37e8813`](https://github.com/lucas-barake/effect-form/commit/37e88137fef4b23b7a9ce9bc77b1ee17bdd9dd27) Thanks [@lucas-barake](https://github.com/lucas-barake)! - `Field.extractStructFieldDefs`, which React and Solid forms call when they are built, now throws when an array item schema decodes to a key its encoded struct does not have, such as a struct that renames keys or a JSON string decoded into a struct. Item fields read encoded values by key while schema errors use decoded keys, so such items showed empty inputs and errors on fields that held no value. The bindings used to fail with a misleading "Missing field component" error.
+
 ## 1.0.0
 
 ### Major Changes
