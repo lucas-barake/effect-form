@@ -150,11 +150,11 @@ const opaque = FormBuilder.empty.addField(Field.makeArrayField("items", OpaqueIt
 const transformed = FormBuilder.empty.addField(
   Field.makeArrayField(
     "items",
-    Schema.Struct({ full_name: Schema.String }).pipe(Schema.decodeTo(
+    Schema.Struct({ id: Schema.String, name: Schema.String }).pipe(Schema.decodeTo(
       Schema.Struct({ name: Schema.String }),
       SchemaTransformation.transform({
-        decode: (e: { readonly full_name: string }) => ({ name: e.full_name }),
-        encode: (d: { readonly name: string }) => ({ full_name: d.name })
+        decode: (e: { readonly id: string; readonly name: string }) => ({ name: e.name }),
+        encode: (d: { readonly name: string }) => ({ id: "", name: d.name })
       })
     ))
   )
@@ -168,8 +168,8 @@ describe("FieldPath for wrapped struct items", () => {
   })
   it("matches the sub-fields the runtime path check accepts for a transformed item", () => {
     expectTypeOf<"items[0].name">().toExtend<Field.FieldPath<FieldsOf<typeof transformed>>>()
-    // @ts-expect-error the encoded key full_name is not an item sub-field at runtime
-    const encodedKey: Field.FieldPath<FieldsOf<typeof transformed>> = "items[0].full_name"
+    // @ts-expect-error the encoded key id is dropped on decode, so it is not an item sub-field at runtime
+    const encodedKey: Field.FieldPath<FieldsOf<typeof transformed>> = "items[0].id"
     void encodedKey
   })
 })
