@@ -79,7 +79,9 @@ export const recalculateDirtySubtree = (
   const recurse = (current: unknown, initial: unknown, path: string): void => {
     if (current === initial) return
 
-    if (Array.isArray(current)) {
+    if (current instanceof Date || initial instanceof Date) {
+      if (!Equal.equals(current, initial) && path) nextDirty.add(path)
+    } else if (Array.isArray(current)) {
       const initialArr = (initial ?? []) as ReadonlyArray<unknown>
       for (let i = 0; i < Math.max(current.length, initialArr.length); i++) {
         recurse(current[i], initialArr[i], path ? `${path}[${i}]` : `[${i}]`)

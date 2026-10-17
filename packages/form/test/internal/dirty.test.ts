@@ -124,6 +124,24 @@ describe("dirty tracking utilities", () => {
   })
 
   describe("recalculateDirtySubtree", () => {
+    it.each([
+      { name: "different timestamps", initial: new Date(0), current: new Date(1), dirty: true },
+      { name: "equal timestamps", initial: new Date(0), current: new Date(0), dirty: false },
+      { name: "Date to null", initial: new Date(0), current: null, dirty: true },
+      { name: "null to Date", initial: null, current: new Date(0), dirty: true },
+      { name: "Date to undefined", initial: new Date(0), current: undefined, dirty: true },
+      { name: "undefined to Date", initial: undefined, current: new Date(0), dirty: true }
+    ])("compares Date leaves: $name", ({ initial, current, dirty }) => {
+      const result = recalculateDirtySubtree(
+        new Set(["items[0].date", "other"]),
+        { items: [{ date: initial }] },
+        { items: [{ date: current }] },
+        "items"
+      )
+
+      expect(result).toEqual(new Set(dirty ? ["items[0].date", "other"] : ["other"]))
+    })
+
     it("marks leaf fields as dirty when values differ", () => {
       const currentDirty = new Set<string>()
       const initial = { name: "John", age: 30 }

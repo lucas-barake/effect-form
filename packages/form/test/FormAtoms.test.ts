@@ -957,6 +957,41 @@ describe("FormAtoms", () => {
   })
 
   describe("derived atoms", () => {
+    it("tracks Date edits against initial and successfully submitted values", async () => {
+      const atoms = FormAtoms.make({
+        runtime: Atom.runtime(Layer.empty),
+        formBuilder: FormBuilder.empty.addField("date", Schema.Date),
+        onSubmit: (_, { decoded }) => decoded
+      })
+      const registry = AtomRegistry.make()
+      try {
+        registry.mount(atoms.mountAtom)
+        registry.set(atoms.initializeAtom, { date: new Date(0) })
+        const field = atoms.getFieldAtoms(atoms.fieldRefs.date)
+
+        registry.set(field.setValue, new Date(1))
+        expect(registry.get(atoms.isDirtyAtom)).toBe(true)
+        expect(registry.get(field.isDirty)).toBe(true)
+
+        registry.set(atoms.submitAtom, undefined)
+        await Effect.runPromise(
+          AtomRegistry.getResult(registry, atoms.submitAtom, { suspendOnWaiting: true })
+        )
+
+        registry.set(field.setValue, new Date(0))
+        expect(registry.get(atoms.isDirtyAtom)).toBe(false)
+        expect(registry.get(field.isDirty)).toBe(false)
+        expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(true)
+
+        registry.set(field.setValue, new Date(1))
+        expect(registry.get(atoms.isDirtyAtom)).toBe(true)
+        expect(registry.get(field.isDirty)).toBe(true)
+        expect(registry.get(atoms.hasChangedSinceSubmitAtom)).toBe(false)
+      } finally {
+        registry.dispose()
+      }
+    })
+
     it("dirtyFieldsAtom reflects state", () => {
       const runtime = Atom.runtime(Layer.empty)
       const form = makeTestForm()
