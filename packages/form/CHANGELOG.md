@@ -1,5 +1,11 @@
 # @lucas-barake/effect-form
 
+## 1.1.1
+
+### Patch Changes
+
+- [#119](https://github.com/lucas-barake/effect-form/pull/119) [`c3ac66a`](https://github.com/lucas-barake/effect-form/commit/c3ac66acb4ce3565183e94329a27091df6b4c309) Thanks [@Marve10s](https://github.com/Marve10s)! - Track Date timestamp changes in dirty and changed-since-submit state.
+
 ## 1.1.0
 
 ### Minor Changes
